@@ -388,7 +388,7 @@ def visualize(
         Optional figure size for plotting the image.
         Corresponds to ``matplotlib.figure.figsize``.
 
-    **kwargs:
+    kwargs:
         Additional keyword arguments to pass to `plt.show()` (matplotlib.pyplot.show).
     """
     try:
