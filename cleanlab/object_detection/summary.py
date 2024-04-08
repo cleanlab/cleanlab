@@ -267,7 +267,7 @@ def plot_class_size_distributions(
         Defaults to `MAX_CLASS_TO_SHOW` which is set to 10.
 
     kwargs:
-        Additional keyword arguments to pass to `plt.show()`.
+        Additional keyword arguments to pass to ``plt.show()`` (matplotlib.pyplot.show).
     """
     try:
         import matplotlib.pyplot as plt
@@ -317,7 +317,7 @@ def plot_class_distribution(labels, predictions, class_names=None, **kwargs):
         Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
 
     kwargs:
-        Additional keyword arguments to pass to `plt.show()` (matplotlib.pyplot.show).
+        Additional keyword arguments to pass to ``plt.show()`` (matplotlib.pyplot.show).
     """
     try:
         import matplotlib.pyplot as plt
@@ -389,7 +389,7 @@ def visualize(
         Corresponds to ``matplotlib.figure.figsize``.
 
     kwargs:
-        Additional keyword arguments to pass to `plt.show()` (matplotlib.pyplot.show).
+        Additional keyword arguments to pass to ``plt.show()`` (matplotlib.pyplot.show).
     """
     try:
         import matplotlib.pyplot as plt
