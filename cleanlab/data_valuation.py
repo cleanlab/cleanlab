@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 """
-Provides methods for computing the data valuation score.
-This approach allows for the assessment of individual data points' contributions to the model's performance in a dataset.
+Methods for quantifying the value of each data point in a Machine Learning dataset.
+Data Valuation helps us assess individual training data points' contributions to a ML model's predictive performance.
 """
 
 
@@ -79,7 +79,7 @@ def data_shapley_knn(
 
     The examples in the dataset with lowest data valuation scores contribute least
     to a trained ML model’s performance (those whose value falls below a threshold are flagged with this type of issue).
-    The data valuation score is an approximate Data Shapley value, calculated based on the labels of the top k nearest neighbors of an example. The details of this KNN-Shapley value could be found in the papers:
+    The data valuation score is an approximate Data Shapley value, calculated based on the labels of the top k nearest neighbors of an example. Details on this KNN-Shapley value can be found in these papers:
     https://arxiv.org/abs/1908.08619 and https://arxiv.org/abs/1911.07128.
 
     Parameters
