@@ -389,7 +389,7 @@ def visualize(
         Corresponds to ``matplotlib.figure.figsize``.
 
     **kwargs:
-        Additional keyword arguments to pass to `plt.show()`.
+        Additional keyword arguments to pass to `plt.show()` (matplotlib.pyplot.show).
     """
     try:
         import matplotlib.pyplot as plt
