@@ -266,7 +266,7 @@ def plot_class_size_distributions(
         The number of classes to show in the plots. Classes over `class_to_show` are hidden. If this argument is provided, then the classes are sorted by the number of instances in the dataset.
         Defaults to `MAX_CLASS_TO_SHOW` which is set to 10.
 
-    **kwargs:
+    kwargs:
         Additional keyword arguments to pass to `plt.show()`.
     """
     try:
