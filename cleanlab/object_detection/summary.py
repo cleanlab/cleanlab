@@ -241,7 +241,7 @@ def get_sorted_bbox_count_idxs(labels, predictions):
 
 
 def plot_class_size_distributions(
-    labels, predictions, class_names=None, class_to_show=MAX_CLASS_TO_SHOW
+    labels, predictions, class_names=None, class_to_show=MAX_CLASS_TO_SHOW, **kwargs
 ):
     """
     Plots the size distributions for bounding boxes for each class.
@@ -265,6 +265,9 @@ def plot_class_size_distributions(
     class_to_show: optional
         The number of classes to show in the plots. Classes over `class_to_show` are hidden. If this argument is provided, then the classes are sorted by the number of instances in the dataset.
         Defaults to `MAX_CLASS_TO_SHOW` which is set to 10.
+
+    kwargs:
+        Additional keyword arguments to pass to `plt.show()`.
     """
     try:
         import matplotlib.pyplot as plt
@@ -291,10 +294,10 @@ def plot_class_size_distributions(
             axs[i].set_ylabel("count")
             axs[i].set_title("annotated" if i == 0 else "predicted")
 
-        plt.show()
+        plt.show(**kwargs)
 
 
-def plot_class_distribution(labels, predictions, class_names=None):
+def plot_class_distribution(labels, predictions, class_names=None, **kwargs):
     """
     Plots the distribution of class labels associated with all annotated bounding boxes and predicted bounding boxes in the dataset.
 
@@ -312,6 +315,9 @@ def plot_class_distribution(labels, predictions, class_names=None):
 
     class_names: optional
         Optional dictionary mapping one-hot-encoded class labels back to their original class names in the format ``{"integer-label": "original-class-name"}``.
+
+    kwargs:
+        Additional keyword arguments to pass to `plt.show()` (matplotlib.pyplot.show).
     """
     try:
         import matplotlib.pyplot as plt
@@ -327,7 +333,7 @@ def plot_class_distribution(labels, predictions, class_names=None):
         axs[i].pie(d.values(), labels=d.keys(), autopct="%1.1f%%")
         axs[i].set_title("Annotated" if i == 0 else "Predicted")
 
-    plt.show()
+    plt.show(**kwargs)
 
 
 def visualize(
@@ -340,6 +346,7 @@ def visualize(
     class_names: Optional[Dict[Any, Any]] = None,
     figsize: Optional[Tuple[int, int]] = None,
     save_path: Optional[str] = None,
+    **kwargs,
 ) -> None:
     """Display the annotated bounding boxes (given labels) and predicted bounding boxes (model predictions) for a particular image.
     Given labels are shown in red, model predictions in blue.
@@ -380,6 +387,9 @@ def visualize(
     figsize:
         Optional figure size for plotting the image.
         Corresponds to ``matplotlib.figure.figsize``.
+
+    kwargs:
+        Additional keyword arguments to pass to `plt.show()` (matplotlib.pyplot.show).
     """
     try:
         import matplotlib.pyplot as plt
@@ -451,7 +461,7 @@ def visualize(
             transparent=True,
             pad_inches=0.5,
         )
-    plt.show()
+    plt.show(**kwargs)
 
 
 def _get_per_class_confusion_matrix_dict_(
