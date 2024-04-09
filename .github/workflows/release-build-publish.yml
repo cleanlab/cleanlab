@@ -1,0 +1,256 @@
+name: Release Build Publish
+
+on:
+    release:
+      types: [ published ]
+
+jobs:
+  extract_project_name:
+    runs-on: ubuntu-latest
+    outputs:
+      cleanlab_package_name: ${{ steps.extract_name.outputs.value }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: TOML Reader
+        uses: SebRollen/toml-action@v1.2.0
+        id: extract_name
+        with:
+          file: "pyproject.toml"
+          field: "project.name"
+
+  store_published_version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.compare.outputs.version }}
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install package
+        run: pip install .
+
+      - name: Compare the published version with the package version
+        id: compare
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          # TAG_NAME must be in the form "v1.2.3[...]", error if it doesn't match
+            if [[ ! $TAG_NAME =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+                echo "Tag name '$TAG_NAME' does not match the expected pattern 'vX.Y.Z'"
+                exit 1
+            fi
+          # Strip the 'v' prefix from the tag, and store the version in an output variable
+          VERSION=${TAG_NAME:1} # Strip the 'v' prefix from the tag
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # Check that the package version matches the tag version
+          PACKAGE_VERSION=$(python -c "import cleanlab; print(cleanlab.__version__)")
+          if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+            echo "Package version $PACKAGE_VERSION does not match tag $VERSION"
+            exit 1
+          fi
+
+  build:
+    needs: [store_published_version, extract_project_name]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Remove tests directory
+        run: |
+          # Remove the tests directory from the package
+          TEST_DIR=$(find . -type d -name "tests")
+          if [ -n "$TEST_DIR" ]; then
+            rm -rf $TEST_DIR
+          else
+            echo "No tests directory found! This is unexpected."
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: pip install --upgrade setuptools wheel twine
+
+      - name: Perform some tests on the metadata of the package
+        run: |
+          python setup.py check --metadata --strict
+
+      - name: Build package
+        run: |
+          python setup.py sdist bdist_wheel
+
+      - name: Test package
+        run: |
+          twine check dist/*
+
+      - name: Verify contents of the tar.gz
+        env:
+          CLEANLAB_PACKAGE_NAME: ${{ needs.extract_project_name.outputs.cleanlab_package_name }}
+        run: |
+          # Extract the tar.gz to a temporary directory
+          TMPDIR=$(mktemp -d)
+          tar -xzf dist/*.tar.gz -C $TMPDIR
+          PACKAGE_DIR=$TMPDIR/$(ls $TMPDIR) # Assuming there's only one directory extracted
+
+          # Define expected files and directories
+          EXPECTED_FILES="LICENSE PKG-INFO MANIFEST.in DEVELOPMENT.md CONTRIBUTING.md CODE_OF_CONDUCT.md README.md pyproject.toml setup.cfg setup.py"
+          EXPECTED_DIRS="cleanlab $CLEANLAB_PACKAGE_NAME.egg-info"
+
+          # Collect actual top-level files and directories
+          ACTUAL_CONTENTS=$(ls $PACKAGE_DIR)
+          ACTUAL_FILES=$(find $PACKAGE_DIR -maxdepth 1 -type f -exec basename {} \;)
+          ACTUAL_DIRS=$(find $PACKAGE_DIR -maxdepth 1 -type d -exec basename {} \; | sed "1d") # Remove the package directory itself from the list
+
+          # Function to check for unexpected or missing files and directories
+          check_contents() {
+            local missing=0
+            # Check for expected files
+            for expected_file in $EXPECTED_FILES; do
+              echo $ACTUAL_FILES | grep -qw $expected_file || { echo "Missing expected file: $expected_file"; missing=1; }
+            done
+            
+            # Check for expected directories
+            for expected_dir in $EXPECTED_DIRS; do
+              echo $ACTUAL_DIRS | grep -qw $expected_dir || { echo "Missing expected directory: $expected_dir"; missing=1; }
+            done
+
+            # Check for unexpected files and directories
+            for actual in $ACTUAL_CONTENTS; do
+              echo $EXPECTED_FILES $EXPECTED_DIRS | grep -qw $actual || { echo "Unexpected item in package: $actual"; missing=1; }
+            done
+
+            # Exit if anything unexpected or missing
+            if [ $missing -ne 0 ]; then
+              echo "Package content verification failed."
+              exit 1
+            fi
+          }
+
+          # Execute checks
+          check_contents
+
+      - name: Store build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: dist/*
+
+  publish-testpypi:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+        id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+
+    steps:
+      - name: Fetch build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          verify-metadata: true
+
+  verify-version:
+    needs: [publish-testpypi, store_published_version, extract_project_name]
+    runs-on: ubuntu-latest
+    environment: testpypi
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install package from TestPyPI
+        env:
+          CLEANLAB_PACKAGE_NAME: ${{ needs.extract_project_name.outputs.cleanlab_package_name }}
+        run: pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ $CLEANLAB_PACKAGE_NAME
+
+      - name: Verify the published version
+        env:
+          VERSION: ${{ needs.store_published_version.outputs.version }}
+        run: |
+          TEST_IMPORT_VERSION=$(python -c "import cleanlab; print(cleanlab.__version__)")
+          if [ "$TEST_IMPORT_VERSION" != "$VERSION" ]; then
+            echo "Imported version $TEST_IMPORT_VERSION does not match tag $VERSION"
+            exit 1
+          fi
+
+  test-basic-import:
+    needs: [verify-version, extract_project_name]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install package from TestPyPI
+        env:
+          CLEANLAB_PACKAGE_NAME: ${{ needs.extract_project_name.outputs.cleanlab_package_name }}
+        run: pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ $CLEANLAB_PACKAGE_NAME
+
+      - name: Test importing package
+        run: |
+          python -c "import cleanlab
+          from cleanlab.outlier import OutOfDistribution
+          ood = OutOfDistribution()
+          print(ood)"
+
+  test-extras-import:
+    needs: [verify-version, extract_project_name]
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install package with extras
+        env:
+          CLEANLAB_PACKAGE_NAME: ${{ needs.extract_project_name.outputs.cleanlab_package_name }}
+        run: pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ $CLEANLAB_PACKAGE_NAME[all]
+
+      - name: Test importing package with extras
+        run: |
+          python -c "import cleanlab
+          from cleanlab import Datalab
+          lab = Datalab({'a': [1, 2, 3, 4, 5], 'b': ['a', 'b', 'c', 'b', 'a']})
+          print(lab)"
+
+  publish-pypi:
+    needs: [test-basic-import, test-extras-import]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+        id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+
+    steps:
+      - name: Fetch build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
+        with:
+          verify-metadata: true

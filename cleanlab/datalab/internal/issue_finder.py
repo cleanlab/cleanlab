@@ -59,7 +59,7 @@ _CLASSIFICATION_ARGS_DICT = {
     "near_duplicate": ["features", "knn_graph"],
     "non_iid": ["pred_probs", "features", "knn_graph"],
     "underperforming_group": ["pred_probs", "features", "knn_graph", "cluster_ids"],
-    "data_valuation": ["knn_graph"],
+    "data_valuation": ["features", "knn_graph"],
     "class_imbalance": [],
     "null": ["features"],
 }
@@ -68,6 +68,7 @@ _REGRESSION_ARGS_DICT = {
     "outlier": ["features", "knn_graph"],
     "near_duplicate": ["features", "knn_graph"],
     "non_iid": ["features", "knn_graph"],
+    "data_valuation": ["features", "knn_graph"],
     "null": ["features"],
 }
 
@@ -76,6 +77,7 @@ _MULTILABEL_ARGS_DICT = {
     "outlier": ["features", "knn_graph"],
     "near_duplicate": ["features", "knn_graph"],
     "non_iid": ["features", "knn_graph"],
+    "data_valuation": ["features", "knn_graph"],
     "null": ["features"],
 }
 
@@ -471,5 +473,13 @@ class IssueFinder:
                     "No labels were provided. " "The 'outlier' issue type will not be run."
                 )
                 issue_types_copy.pop("outlier")
+
+        drop_class_imbalance_check = (
+            "class_imbalance" in issue_types_copy
+            and not self.datalab.has_labels
+            and self.task == Task.CLASSIFICATION
+        )
+        if drop_class_imbalance_check:
+            issue_types_copy.pop("class_imbalance")
 
         return issue_types_copy

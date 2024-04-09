@@ -27,6 +27,20 @@ You must have `Tensorflow 2 installed <https://www.tensorflow.org/install>`_ (on
 This wrapper class is only fully compatible with ``tensorflow<2.11``, if using ``tensorflow>=2.11``, 
 please replace your Optimizer class with the legacy Optimizer `here <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/legacy/Optimizer>`_.
 
+.. warning::
+
+    For those on TensorFlow version 2.16 or higher, please note that direct compatibility is not yet fully established.
+    We are actively working to extend support to these newer versions.
+    
+    In the interim, users are advised to use TensorFlow versions up to 2.15 to ensure stability and maintain compatibility.
+    This can be done by specifying the TensorFlow version in your package manager, for example:
+    
+    .. code-block::
+        
+        pip install tensorflow<2.16
+    
+    This approach ensures that you can continue utilizing the full functionality of this wrapper class until an update accommodating newer TensorFlow versions is released.
+
 Tips:
 
 * If this class lacks certain functionality, you can alternatively try `scikeras <https://github.com/adriangb/scikeras>`_.

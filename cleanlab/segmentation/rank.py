@@ -17,12 +17,13 @@
 """
 Methods to rank and score images in a semantic segmentation dataset based on how likely they are to contain mislabeled pixels.
 """
-import numpy as np
 import warnings
-from typing import Optional, Union, Tuple
-from cleanlab.segmentation.filter import find_label_issues
+from typing import Optional, Tuple
 
-from cleanlab.internal.segmentation_utils import _get_valid_optional_params, _check_input
+import numpy as np
+
+from cleanlab.internal.segmentation_utils import _check_input, _get_valid_optional_params
+from cleanlab.segmentation.filter import find_label_issues
 
 
 def get_label_quality_scores(
@@ -119,32 +120,34 @@ def get_label_quality_scores(
         )
 
     num_im, num_class, h, w = pred_probs.shape
-    image_scores = []
-    pixel_scores = []
+    image_scores = np.empty((num_im,))
+    pixel_scores = np.empty((num_im, h, w))
     if verbose:
         from tqdm.auto import tqdm
 
         pbar = tqdm(desc=f"images processed using {method}", total=num_im)
+
+    h_array = np.arange(h)[:, None]
+    w_array = np.arange(w)
+
     for image in range(num_im):
         image_probs = pred_probs[image][
             labels[image],
-            np.arange(h)[:, None],
-            np.arange(w),
+            h_array,
+            w_array,
         ]
-        pixel_scores.append(image_probs)
-        image_scores.append(
-            _get_label_quality_per_image(
-                np.array(image_probs.flatten()), method=method, temperature=softmin_temperature
-            )
+        pixel_scores[image, :, :] = image_probs
+        image_scores[image] = _get_label_quality_per_image(
+            image_probs.flatten(), method=method, temperature=softmin_temperature
         )
         if verbose:
             pbar.update(1)
-    return np.array(image_scores), np.array(pixel_scores)
+    return image_scores, pixel_scores
 
 
 def issues_from_scores(
     image_scores: np.ndarray, pixel_scores: Optional[np.ndarray] = None, threshold: float = 0.1
-) -> Union[list, np.ndarray]:
+) -> np.ndarray:
     """
     Converts scores output by `~cleanlab.segmentation.rank.get_label_quality_scores`
     to a list of issues of similar format as output by :py:func:`segmentation.filter.find_label_issues <cleanlab.segmentation.filter.find_label_issues>`.
@@ -191,12 +194,11 @@ def issues_from_scores(
         raise ValueError("threshold must be between 0 and 1")
 
     if pixel_scores is not None:
-        issues = np.where(pixel_scores < threshold, True, False)
-    else:
-        ranking = np.argsort(image_scores)
-        cutoff = np.searchsorted(image_scores[ranking], threshold)
-        issues = ranking[: cutoff + 1]
-    return issues
+        return pixel_scores < threshold
+
+    ranking = np.argsort(image_scores)
+    cutoff = np.searchsorted(image_scores[ranking], threshold)
+    return ranking[: cutoff + 1]
 
 
 def _get_label_quality_per_image(pixel_scores, method=None, temperature=0.1):

@@ -327,7 +327,8 @@ class MultiLabel(Label):
         self, data: Dataset, label_name: str, map_to_int: bool
     ) -> Tuple[List[List[int]], Dict[int, Any]]:
         labels: List[List[int]] = labels_to_list_multilabel(data[label_name])
-        unique_labels = set((x for ele in labels for x in ele))
+        # label_map needs to be lexicographically sorted. np.unique should sort it
+        unique_labels = np.unique([x for ele in labels for x in ele])
         label_map = {label: i for i, label in enumerate(unique_labels)}
         formatted_labels = [[label_map[item] for item in label] for label in labels]
         inverse_map = {i: label for label, i in label_map.items()}
@@ -383,7 +384,7 @@ class MultiClass(Label):
             formatted_labels = labels
         else:
             label_map = {label: i for i, label in enumerate(np.unique(labels))}
-            formatted_labels = np.vectorize(label_map.get)(labels)
+            formatted_labels = np.vectorize(label_map.get, otypes=[int])(labels)
         inverse_map = {i: label for label, i in label_map.items()}
 
         return formatted_labels, inverse_map

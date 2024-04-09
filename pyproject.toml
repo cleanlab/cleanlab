@@ -1,3 +1,81 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cleanlab"
+# List run-time dependencies here.  These will be installed by pip when
+# your project is installed. For an analysis of "install_requires" vs pip's
+# requirements files see:
+# https://packaging.python.org/en/latest/discussions/install-requires-vs-requirements/
+dependencies = [
+  "numpy>=1.22.0",
+  "scikit-learn>=1.1",
+  "tqdm>=4.53.0",
+  "pandas>=1.4.0",
+  "termcolor>=2.4.0",
+]
+description = "The standard package for data-centric AI, machine learning with label errors, and automatically finding and fixing dataset issues in Python."
+readme = "README.md"
+authors = [
+  {name = "Cleanlab Inc.", email = "team@cleanlab.ai"}
+]
+# See https://pypi.python.org/pypi?%3Aaction=list_classifiers
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Information Technology",
+  "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+  "Natural Language :: English",
+  # We believe this package works will these versions, but we do not guarantee it!
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python",
+  "Topic :: Software Development",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.8"
+# What does your project relate to?
+keywords = [
+  "machine_learning",
+  "data_cleaning",
+  "confident_learning",
+  "classification",
+  "weak_supervision",
+  "learning_with_noisy_labels",
+  "unsupervised_learning",
+  "datacentric_ai",
+  "datacentric",
+]
+license = {file = "LICENSE"}
+dynamic = [
+  "version",
+  "optional-dependencies",
+]
+
+[project.urls]
+Homepage = "https://cleanlab.ai"
+Documentation = "https://docs.cleanlab.ai"
+"Bug Tracker" =  "https://github.com/cleanlab/cleanlab/issues"
+"Source Code" = "https://github.com/cleanlab/cleanlab"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["cleanlab*", "cleanlab.*"]
+exclude = ["tests*", "tests.*", "*.tests", "*.tests.*", "*.tests*"]
+
 [tool.black]
 line-length = 100
 exclude = '''

@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 
 import cleanlab
+from cleanlab.datalab.internal.adapter.constants import DEFAULT_CLEANVISION_ISSUES
 from cleanlab.datalab.internal.adapter.imagelab import create_imagelab
 from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.display import _Displayer
@@ -91,9 +92,11 @@ class Datalab:
         The name of the label column in the dataset.
 
     image_key : str, optional
-        Optional key that can be specified for image datasets to point to the field containing the actual images themselves.
-        If specified, additional image-specific issue types can be detected in the dataset.
-        See the CleanVision package `documentation <https://cleanvision.readthedocs.io/en/latest/>`_ for descriptions of these image-specific issue types.
+        Optional key that can be specified for image datasets to point to the field (column) containing the actual images themselves (as PIL objects).
+        If specified, additional image-specific issue types will be checked for in the dataset.
+        See the `CleanVision package <https://github.com/cleanlab/cleanvision?tab=readme-ov-file#clean-your-data-for-better-computer-vision>`_ for descriptions of these image-specific issue types.
+        Currently, this argument is only supported for data formatted as a Hugging Face ``datasets.Dataset`` object.
+
 
     verbosity : int, optional
         The higher the verbosity level, the more information
@@ -136,10 +139,10 @@ class Datalab:
 
     # todo: check displayer methods
     def __repr__(self) -> str:
-        return _Displayer(data_issues=self.data_issues).__repr__()
+        return _Displayer(data_issues=self.data_issues, task=self.task).__repr__()
 
     def __str__(self) -> str:
-        return _Displayer(data_issues=self.data_issues).__str__()
+        return _Displayer(data_issues=self.data_issues, task=self.task).__str__()
 
     @property
     def labels(self) -> Union[np.ndarray, List[List[int]]]:
@@ -175,14 +178,9 @@ class Datalab:
         The more of these inputs you provide, the more types of issues Datalab can detect in your dataset/labels.
         If you provide a subset of these inputs, Datalab will output what insights it can based on the limited information from your model.
 
-        Note
+        NOTE
         ----
-        This method acts as a wrapper around the :py:meth:`IssueFinder.find_issues <cleanlab.datalab.internal.issue_finder.IssueFinder.find_issues>` method,
-        where the core logic for issue detection is implemented.
-
-        Note
-        ----
-        The issues are saved in the ``self.issues`` attribute, but are not returned.
+        The issues are saved in the ``self.issues`` attribute of the ``Datalab`` object, but are not returned.
 
         Parameters
         ----------
@@ -191,7 +189,13 @@ class Datalab:
             To best detect label issues, provide this input obtained from the most accurate model you can produce.
 
             For classification data, this must be a 2D array with shape ``(num_examples, K)`` where ``K`` is the number of classes in the dataset.
+            Make sure that the columns of your `pred_probs` are properly ordered with respect to the ordering of classes, which for Datalab is: lexicographically sorted by class name.
+
             For regression data, this must be a 1D array with shape ``(num_examples,)`` containing the predicted value for each example.
+
+            For multilabel classification data, this must be a 2D array with shape ``(num_examples, K)`` where ``K`` is the number of classes in the dataset.
+                Make sure that the columns of your `pred_probs` are properly ordered with respect to the ordering of classes, which for Datalab is: lexicographically sorted by class name.
+
 
         features : Optional[np.ndarray]
             Feature embeddings (vector representations) of every example in the dataset.
@@ -387,10 +391,12 @@ class Datalab:
             Consider setting this to ``False`` once you're familiar with how each issue type is defined.
 
         show_summary_score :
-            Whether or not to include the overall severity of each issue type in the report.
+            Whether or not to include the overall severity score of each issue type in the report.
+            These scores are not comparable across different issue types,
+            see the ``issue_summary`` documentation to learn more.
 
         show_all_issues :
-            Whether or not to show all issues in the report, or only the issues for which examples were found in the dataset
+            Whether or not the report should show all issue types that were checked for, or only the types of issues detected in the dataset.
             With this set to ``True``, the report may include more types of issues that were not detected in the dataset.
 
         See Also
@@ -428,7 +434,17 @@ class Datalab:
     def issue_summary(self) -> pd.DataFrame:
         """Summary of issues found in the dataset and the overall severity of each type of issue.
 
-        This is a wrapper around the ``DataIssues.issue_summary`` attribute.
+        Each type of issue has a summary score, which is usually defined as an average of
+        per-example issue-severity scores (over all examples in the dataset).
+        So these summary scores are not directly tied to the number of examples estimated to exhibit
+        a particular type of issue. Issue-severity (ie. quality of each example) is measured differently for each issue type,
+        and these per-example scores are only comparable across different examples for the same issue-type, but are not comparable across different issue types.
+        For instance, label quality might be scored via estimated likelihood of the given label,
+        whereas outlier quality might be scored via distance to K-nearest-neighbors in feature space (fundamentally incomparable quantities).
+        For some issue types, the summary score is not an average of per-example scores, but rather a global statistic of the dataset
+        (eg. for `non_iid` issue type, the p-value for hypothesis test that data are IID).
+
+        In summary, you can compare these summary scores across datasets for the same issue type, but never compare them across different issue types.
 
         Examples
         -------
@@ -450,8 +466,6 @@ class Datalab:
     @property
     def info(self) -> Dict[str, Dict[str, Any]]:
         """Information and statistics about the dataset issues found.
-
-        This is a wrapper around the ``DataIssues.info`` attribute.
 
         Examples
         -------
@@ -483,10 +497,6 @@ class Datalab:
         """
         Use this after finding issues to see which examples suffer from which types of issues.
 
-        NOTE
-        ----
-        This is a wrapper around the :py:meth:`DataIssues.get_issues <cleanlab.datalab.internal.data_issues.DataIssues.get_issues>` method.
-
         Parameters
         ----------
         issue_name : str or None
@@ -506,16 +516,22 @@ class Datalab:
 
             Additional columns may be present in the DataFrame depending on the type of issue specified.
         """
+
+        # Validate issue_name
+        if issue_name is not None and issue_name not in self.list_possible_issue_types():
+            raise ValueError(
+                f"""Invalid issue_name: {issue_name}. Please specify a valid issue_name from the list of possible issue types.
+            Either, specify one of the following: {self.list_possible_issue_types()}
+            or set issue_name as None to get all issue types.
+            """
+            )
         return self.data_issues.get_issues(issue_name=issue_name)
 
     def get_issue_summary(self, issue_name: Optional[str] = None) -> pd.DataFrame:
         """Summarize the issues found in dataset of a particular type,
         including how severe this type of issue is overall across the dataset.
 
-        NOTE
-        ----
-        This is a wrapper around the
-        :py:meth:`DataIssues.get_issue_summary <cleanlab.datalab.internal.data_issues.DataIssues.get_issue_summary>` method.
+        See the documentation of the ``issue_summary`` attribute to learn more.
 
         Parameters
         ----------
@@ -537,11 +553,6 @@ class Datalab:
 
         This function is used to get the info for a specific issue_name. If the info is not computed yet, it will raise an error.
 
-        NOTE
-        ----
-        This is a wrapper around the
-        :py:meth:`DataIssues.get_info <cleanlab.datalab.internal.data_issues.DataIssues.get_info>` method.
-
         Parameters
         ----------
         issue_name :
@@ -559,29 +570,27 @@ class Datalab:
 
         Any issue type that is not in this list cannot be used in the :py:meth:`find_issues` method.
 
-        Note
-        ----
-        This method is a wrapper around :py:meth:`IssueFinder.list_possible_issue_types <cleanlab.datalab.internal.issue_finder.IssueFinder.list_possible_issue_types>`.
-
         See Also
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return _list_possible_issue_types(task=self.task)
+        possible_issue_types = _list_possible_issue_types(task=self.task)
+        if self._imagelab is not None:
+            possible_issue_types.extend(DEFAULT_CLEANVISION_ISSUES.keys())
+        return possible_issue_types
 
     def list_default_issue_types(self) -> List[str]:
         """Returns a list of the issue types that are run by default
         when :py:meth:`find_issues` is called without specifying `issue_types`.
 
-        Note
-        ----
-        This method is a wrapper around :py:meth:`IssueFinder.list_default_issue_types <cleanlab.datalab.internal.issue_finder.IssueFinder.list_default_issue_types>`.
-
         See Also
         --------
         :py:class:`REGISTRY <cleanlab.datalab.internal.issue_manager_factory.REGISTRY>` : All available issue types and their corresponding issue managers can be found here.
         """
-        return _list_default_issue_types(task=self.task)
+        default_issue_types = _list_default_issue_types(task=self.task)
+        if self._imagelab is not None:
+            default_issue_types.extend(DEFAULT_CLEANVISION_ISSUES.keys())
+        return default_issue_types
 
     def save(self, path: str, force: bool = False) -> None:
         """Saves this Datalab object to file (all files are in folder at `path/`).
@@ -595,7 +604,7 @@ class Datalab:
         force :
             If ``True``, overwrites any existing files in the folder at `path`. Use this with caution!
 
-        Note
+        NOTE
         ----
         You have to save the Dataset yourself separately if you want it saved to file.
         """

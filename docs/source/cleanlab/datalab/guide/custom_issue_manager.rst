@@ -149,10 +149,7 @@ Optionally, you can also add a description of the type of issue this issue manag
 Advanced Issue Check
 ~~~~~~~~~~~~~~~~~~~~
 
-.. note::
-
-    WIP: This section is a work in progress.
-
+There could be different types of issues detected in a dataset. A local issue which affects individual data points in a dataset and can be tracked via `Datalab.issues` dataframe (to see which data points are exhibiting this type of issue). Alternatively, a global issue which affects the overall dataset but is not easily attributable to individual data points (hard to say one data point exhibits the issue but another does not). Even for global issues, we recommend trying to assign a per data point score (and boolean) if possible, see the Non-IID IssueManager as an example of this. Note that a global issue must have num_issues greater than 0 in its `issue_summary`, otherwise it won't show up in `Datalab.report()` by default.
 
 
 Use with Datalab

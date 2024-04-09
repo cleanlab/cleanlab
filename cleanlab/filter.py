@@ -47,7 +47,7 @@ from cleanlab.multilabel_classification.filter import find_multilabel_issues_per
 # tqdm is a package to print time-to-complete when multiprocessing is used.
 # This package is not necessary, but when installed improves user experience for large datasets.
 try:
-    import tqdm
+    import tqdm.auto as tqdm
 
     tqdm_exists = True
 except ImportError as e:  # pragma: no cover

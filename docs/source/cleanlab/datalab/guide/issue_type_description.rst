@@ -8,6 +8,9 @@ Types of issues Datalab can detect
 This page describes the various types of issues that Datalab can detect in a dataset.
 For each type of issue, we explain: what it says about your data if detected, why this matters, and what parameters you can optionally specify to control the detection of this issue.
 
+In case you didn't know: you can alternatively use `Cleanlab Studio <https://cleanlab.ai/blog/data-centric-ai/>`_ to detect the same data issues as this package, plus `many more types of issues <https://help.cleanlab.ai/guide/concepts/cleanlab_columns/>`_, all without having to do any Machine Learning (or even write any code).
+
+
 Estimates for Each Issue Type
 ------------------------------
 
@@ -41,8 +44,8 @@ Label Issue
 Examples whose given label is estimated to be potentially incorrect (e.g. due to annotation error) are flagged as having label issues.
 Datalab estimates which examples appear mislabeled as well as a numeric label quality score for each, which quantifies the likelihood that an example is correctly labeled.
 
-For now, Datalab can only detect label issues in a multi-class classification dataset.
-The cleanlab library has alternative methods you can us to detect label issues in other types of datasets (multi-label, multi-annotator, token classification, etc.).
+For now, Datalab can only detect label issues in multi-class classification datasets, regression datasets, and multi-label classification datasets.
+The cleanlab library has alternative methods you can use to detect label issues in other types of datasets (multi-annotator, token classification, etc.).
 
 Label issues are calculated based on provided `pred_probs` from a trained model. If you do not provide this argument, but you do provide `features`, then a K Nearest Neighbor model will be fit to produce `pred_probs` based on your `features`. Otherwise if neither `pred_probs` nor `features` is provided, then this type of issue will not be considered.
 For the most accurate results, provide out-of-sample `pred_probs` which can be obtained for a dataset via `cross-validation <https://docs.cleanlab.ai/stable/tutorials/pred_probs_cross_val.html>`_.
@@ -52,6 +55,12 @@ For evaluating models or performing other types of data analytics, mislabeled ex
 To handle mislabeled examples, you can either filter out the data with label issues or try to correct their labels.
 
 Learn more about the method used to detect label issues in our paper: `Confident Learning: Estimating Uncertainty in Dataset Labels <https://arxiv.org/abs/1911.00068>`_
+
+.. jinja ::
+
+    {% with issue_name = "label" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
 
 
 Outlier Issue
@@ -72,6 +81,12 @@ Closely inspect them and consider removing some outliers that may be negatively 
 
 
 Learn more about the methods used to detect outliers in our article: `Out-of-Distribution Detection via Embeddings or Predictions <https://cleanlab.ai/blog/outlier-detection/>`_
+
+.. jinja ::
+
+    {% with issue_name = "outlier" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
 
 (Near) Duplicate Issue
 ----------------------
@@ -94,6 +109,11 @@ Including near-duplicate examples in a dataset may negatively impact a ML model'
 In particular, it is questionable to include examples in a test dataset which are (nearly) duplicated in the corresponding training dataset.
 More generally, examples which happen to be duplicated can affect the final modeling results much more than other examples — so you should at least be aware of their presence.
 
+.. jinja ::
+
+    {% with issue_name = "near_duplicate" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
 
 Non-IID Issue
 -------------
@@ -113,6 +133,12 @@ The assumption that examples in a dataset are Independent and Identically Distri
 
 For datasets with low non-IID score, you should consider why your data are not IID and act accordingly. For example, if the data distribution is drifting over time, consider employing a time-based train/test split instead of a random partition.  Note that shuffling the data ahead of time will ensure a good non-IID score, but this is not always a fix to the underlying problem (e.g. future deployment data may stem from a different distribution, or you may overlook the fact that examples influence each other). We thus recommend **not** shuffling your data to be able to diagnose this issue if it exists.
 
+.. jinja ::
+
+    {% with issue_name = "non_iid" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
+
 Class Imbalance Issue
 ---------------------
 
@@ -122,27 +148,45 @@ In a dataset identified as having class imbalance, the class imbalance quality s
 
 Class imbalance in a dataset can lead to subpar model performance for the under-represented class. Consider collecting more data from the under-represented class, or at least take special care while modeling via techniques like over/under-sampling, SMOTE, asymmetric class weighting, etc.
 
+.. jinja ::
+
+    {% with issue_name = "class_imbalance" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
+
 Image-specific Issues
 ---------------------
 
-For image datasets which are properly specified as such, Datalab can detect additional types of image-specific issues (if the necessary optional dependencies are installed).
-Specifically, low-quality images which are too: dark/bright, blurry, low information, abnormally sized, etc.
-Descriptions of these image-specific issues are provided in the `CleanVision package <https://github.com/cleanlab/cleanvision>`_ and its documentation.
+Datalab can identify image-specific issues in datasets, such as images that are excessively dark or bright, blurry, lack detail, or have unusual sizes.
+To detect these issues, simply specify the `image_key` argument in :py:meth:`~cleanlab.datalab.datalab.Datalab`, indicating the image column name in your dataset.
+This functionality currently works only with Hugging Face datasets. You can convert other local dataset formats into a Hugging Face dataset by following `this guide <https://huggingface.co/docs/datasets/en/loading>`_.
+More information on these image-specific issues is available in the `CleanVision package <https://github.com/cleanlab/cleanvision?tab=readme-ov-file#clean-your-data-for-better-computer-vision>`_ .
 
 Underperforming Group Issue
-------------------------------
+---------------------------
 
 An underperforming group refers to a cluster of similar examples (i.e. a slice) in the dataset for which the ML model predictions are poor.  The examples in this underperforming group may have noisy labels or feature values, or the trained ML model may not have learned how to properly handle them (consider collecting more data from this subpopulation or up-weighting the existing data from this group).
 
-Underperforming Group issues are detected based on provided `features`  and `pred_probs`.
+Underperforming Group issues are detected based on one of:
+
+- provided `pred_probs` and `features`,
+- provided `pred_probs` and `knn_graph`, or
+- provided `pred_probs` and `cluster_ids`. (This option is for advanced users, see the `FAQ <../../../tutorials/faq.html#How-do-I-specify-pre-computed-data-slices/clusters-when-detecting-the-Underperforming-Group-Issue?>`_ for more details.)
+
 If you do not provide both these arguments, this type of issue will not be considered.
 
 To find the underperforming group, Cleanlab clusters the data using the provided `features` and determines the cluster `c` with the lowest average model predictive performance. Model predictive performance is evaluated via the model's self-confidence of the given labels, calculated using :py:func:`rank.get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>`. Suppose the average predictive power across the full dataset is `r` and is `q` within a cluster of examples. This cluster is considered to be an underperforming group if `q/r` falls below a threshold. A dataset suffers from the Underperforming Group issue if there exists such a cluster within it.
 The underperforming group quality score is equal to `q/r` for examples belonging to the underperforming group, and is equal to 1 for all other examples.
 Advanced users:  If you have pre-computed cluster assignments for each example in the dataset, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` dict argument.  This is useful for tabular datasets where you want to group/slice the data based on a categorical column. An integer encoding of the categorical column can be passed as cluster assignments for finding the underperforming group, based on the data slices you define.
 
+.. jinja ::
+
+    {% with issue_name = "underperforming_group" %}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
+
 Null Issue
------------
+----------
 
 Examples identified with the null issue correspond to rows that have null/missing values across all feature columns (i.e. the entire row is missing values).
 
@@ -154,14 +198,26 @@ equals the average of the individual examples' quality scores.
 Presence of null examples in the dataset can lead to errors when training ML models. It can also
 result in the model learning incorrect patterns due to the null values.
 
+.. jinja ::
+
+    {% with issue_name = "null"%}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
+
 Data Valuation Issue
 --------------------
 
 The examples in the dataset with lowest data valuation scores contribute least to a trained ML model's performance (those whose value falls below a threshold are flagged with this type of issue).
 
-Data valuation issues can only be detected based on a provided `knn_graph`` (or one pre-computed during the computation of other issue types).  If you do not provide this argument and there isn't a `knn_graph` already stored in the Datalab object, this type of issue will not be considered.
+Data valuation issues can be detected based on provided `features` or a provided `knn_graph` (or one pre-computed during the computation of other issue types).  If you do not provide one of these two arguments and there isn't a `knn_graph` already stored in the Datalab object, this type of issue will not be considered.
 
 The data valuation score is an approximate Data Shapley value, calculated based on the labels of the top k nearest neighbors of an example. The details of this KNN-Shapley value could be found in the papers: `Efficient Task-Specific Data Valuation for Nearest Neighbor Algorithms <https://arxiv.org/abs/1908.08619>`_ and `Scalability vs. Utility: Do We Have to Sacrifice One for the Other in Data Importance Quantification? <https://arxiv.org/abs/1911.07128>`_.
+
+.. jinja ::
+
+    {% with issue_name = "data_valuation"%}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
 
 Optional Issue Parameters
 =========================
@@ -176,7 +232,7 @@ Appropriate defaults are used for any parameters you do not specify, so no need 
         "label": label_kwargs, "outlier": outlier_kwargs,
         "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs,
         "class_imbalance": class_imbalance_kwargs, "underperforming_group": underperforming_group_kwargs,
-        "null": null_kwargs
+        "null": null_kwargs, "data_valuation": data_valuation_kwargs,
     }
 
 
@@ -284,7 +340,7 @@ Imbalance Issue Parameters
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager <cleanlab.datalab.internal.issue_manager.imbalance.ClassImbalanceIssueManager>`.
 
 Underperforming Group Issue Parameters
---------------------------
+--------------------------------------
 
 .. code-block:: python
 
@@ -318,7 +374,7 @@ Null Issue Parameters
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.null.NullIssueManager <cleanlab.datalab.internal.issue_manager.null.NullIssueManager>`.
 
 Data Valuation Issue Parameters
---------------------------
+-------------------------------
 
 .. code-block:: python
 
@@ -331,7 +387,7 @@ Data Valuation Issue Parameters
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.data_valuation.DataValuationIssueManager <cleanlab.datalab.internal.issue_manager.data_valuation.DataValuationIssueManager>`.
 
 Image Issue Parameters
---------------------------
+----------------------
 
 To customize optional parameters for specific image issue types, you can provide a dictionary format corresponding to each image issue. The following codeblock demonstrates how to specify optional parameters for all image issues. However, it's important to note that providing optional parameters for specific image issues is not mandatory. If no specific parameters are provided, defaults will be used for those issues.
 
@@ -349,3 +405,15 @@ To customize optional parameters for specific image issue types, you can provide
 .. note::
 
     For more information, view the cleanvision `docs <https://cleanvision.readthedocs.io/en/latest/tutorials/tutorial.html#5.-Check-for-an-issue-with-a-different-threshold>`_.
+
+
+Cleanlab Studio (Easy Mode)
+---------------------------
+
+`Cleanlab Studio <https://cleanlab.ai/blog/data-centric-ai/>`_ is a fully automated platform that can detect the same data issues as this package, as well as `many more types of issues <https://help.cleanlab.ai/guide/concepts/cleanlab_columns/>`_, all without you having to do any Machine Learning (or even write any code). Beyond being 100x faster to use and producing more useful results, `Cleanlab Studio <https://cleanlab.ai/blog/data-centric-ai/>`_ also provides an intelligent data correction interface for you to quickly fix the issues detected in your dataset (a single data scientist can fix millions of data points thanks to AI suggestions).
+
+`Cleanlab Studio <https://cleanlab.ai/blog/data-centric-ai/>`_ offers a powerful AutoML system (with Foundation models) that is useful for more than improving data quality. With a few clicks, you can: find + fix issues in your dataset, identify the best type of ML model and train/tune it, and deploy this model to serve accurate predictions for new data. Also use the same AutoML to auto-label large datasets (a single user can label millions of data points thanks to powerful Foundation models). `Try Cleanlab Studio for free! <https://cleanlab.ai/signup/>`_
+
+.. image:: https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/ml-with-cleanlab-studio.png
+   :width: 800
+   :alt: Stages of modern AI pipeline that can now be automated with Cleanlab Studio

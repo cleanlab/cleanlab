@@ -32,7 +32,7 @@ class TestCleanvisionIntegration:
 
     @pytest.fixture
     def num_datalab_issues(self):
-        return 5
+        return 6
 
     @pytest.fixture
     def pred_probs(self, image_dataset):
@@ -69,11 +69,12 @@ class TestCleanvisionIntegration:
             "near_duplicate",
             "class_imbalance",
             "null",
+            "underperforming_group",
             # "non_iid",
         ]
 
         assert set(all_keys) == set(datalab.info.keys())
-        datalab.report()
+        datalab.report(show_all_issues=True)
         captured = capsys.readouterr()
 
         for issue_type in IMAGELAB_ISSUE_TYPES:
@@ -94,12 +95,14 @@ class TestCleanvisionIntegration:
                     "near_duplicate",
                     "class_imbalance",
                     "null",
+                    "underperforming_group",
                 ],
-                "num_issues": [1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+                "num_issues": [1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
             }
         )
         expected_count = df.sort_values(by="issue_type")["num_issues"].tolist()
         count = datalab.issue_summary.sort_values(by="issue_type")["num_issues"].tolist()
+        assert set(datalab.issue_summary["issue_type"].tolist()) == set(df["issue_type"].tolist())
         assert count == expected_count
         assert datalab.issue_summary["num_issues"].sum() == df["num_issues"].sum()
 
@@ -147,10 +150,18 @@ class TestCleanvisionIntegration:
         assert len(datalab.issues.columns) == num_datalab_issues * 2
         assert len(datalab.issue_summary) == num_datalab_issues
 
-        all_keys = ["statistics", "label", "outlier", "near_duplicate", "class_imbalance", "null"]
+        all_keys = [
+            "statistics",
+            "label",
+            "outlier",
+            "near_duplicate",
+            "class_imbalance",
+            "null",
+            "underperforming_group",
+        ]
 
         assert set(all_keys) == set(datalab.info.keys())
-        datalab.report()
+        datalab.report(show_all_issues=True)
         captured = capsys.readouterr()
 
         for issue_type in IMAGELAB_ISSUE_TYPES:
@@ -169,7 +180,7 @@ class TestCleanvisionIntegration:
 
         assert set(all_keys) == set(datalab.info.keys())
 
-        datalab.report()
+        datalab.report(show_all_issues=True)
         captured = capsys.readouterr()
         assert "label" in captured.out
 
@@ -183,7 +194,7 @@ class TestCleanvisionIntegration:
 
         assert set(all_keys) == set(datalab.info.keys())
 
-        datalab.report()
+        datalab.report(show_all_issues=True)
         captured = capsys.readouterr()
         assert "label" in captured.out
         assert "dark" in captured.out
@@ -211,7 +222,7 @@ class TestCleanvisionIntegration:
 
         assert set(all_keys) == set(datalab.info.keys())
 
-        datalab.report()
+        datalab.report(show_all_issues=True)
         captured = capsys.readouterr()
         assert "label" in captured.out
         assert "dark" in captured.out
@@ -234,8 +245,58 @@ class TestCleanvisionIntegration:
         all_keys = IMAGELAB_ISSUE_TYPES + ["statistics"]
 
         assert set(all_keys) == set(datalab.info.keys())
-        datalab.report()
+        datalab.report(show_all_issues=True)
         captured = capsys.readouterr()
 
         for issue_type in IMAGELAB_ISSUE_TYPES:
             assert issue_type in captured.out
+
+    @pytest.fixture
+    def lab(self, image_dataset):
+        lab = Datalab(data=image_dataset, label_name=LABEL_NAME, image_key=IMAGE_NAME)
+        lab.find_issues()
+        return lab
+
+    def test_get_summary(self, lab):
+        summary = lab.get_issue_summary("dark")
+        assert len(summary) == 1
+        num_issues = summary["num_issues"].values[0]
+        assert num_issues == 1
+
+    @pytest.mark.parametrize(
+        "list_method", ["list_possible_issue_types", "list_default_issue_types"]
+    )
+    def test_list_issue_type_method(self, image_dataset, lab, list_method):
+        method = getattr(lab, list_method)
+        issue_types = method()
+
+        # Check that Datalab without Imagelab injected has just a subset of possible/default issue types
+        minimal_lab = Datalab(data=image_dataset)
+        minimal_method = getattr(minimal_lab, list_method)
+        datalab_issue_types = minimal_method()
+        assert set(datalab_issue_types).issubset(set(issue_types))
+
+        # The additional issue types found by method should be the same as IMAGELAB_ISSUE_TYPES
+        assert set(issue_types).difference(datalab_issue_types) == set(IMAGELAB_ISSUE_TYPES)
+
+    @pytest.mark.issue1027
+    def test_get_issues(self, lab):
+        """
+        Test the `get_issues` method of the `lab` object.
+
+        This method checks if the columns returned by the `get_issues` method
+        match the expected columns for each issue type defined in `IMAGELAB_ISSUE_TYPES`.
+
+        Raises:
+            AssertionError: If the columns returned by `get_issues` do not match the expected columns.
+
+        """
+        test_condition = lambda s: set(lab.get_issues(s).columns) == set(
+            [f"{s}_score", f"is_{s}_issue"]
+        )
+        failed_assertions = [
+            issue_type for issue_type in IMAGELAB_ISSUE_TYPES if not test_condition(issue_type)
+        ]
+        assert (
+            len(failed_assertions) == 0
+        ), f"Tests for `get_issues` with these `issue_types` failed: {failed_assertions}"

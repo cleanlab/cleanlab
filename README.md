@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_open_source_transparent_optimized_size.png" width=60% height=60%>
+  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_open_source.png" width=60% height=60%>
 </p>
 
 
@@ -68,7 +68,8 @@ cleanlab is:
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/label-errors-examples.png)
 <p align="center">
-Examples of incorrect given labels in various image datasets <a href="https://l7.curtisnorthcutt.com/label-errors">found and corrected</a> using cleanlab.
+Examples of incorrect given labels in various image datasets <a href="https://l7.curtisnorthcutt.com/label-errors">found and corrected</a> using cleanlab. 
+While these examples are from image datasets, this also works for text, audio, tabular data.
 </p>
 
 ## Run cleanlab
@@ -88,7 +89,7 @@ cleanlab supports Linux, macOS, and Windows and runs on Python 3.8+.
 Most folks jump from Step 1 → 4, but you may achieve big gains without *any* change to your modeling code by using cleanlab!
 Continuously boost performance by iterating Steps 2 → 4 (and try to evaluate with *cleaned* data).
 
-![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/dcai_flowchart.png)
+![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/flowchart.png)
 
 
 ## Use cleanlab with any model for most ML tasks
@@ -316,13 +317,20 @@ To understand/cite other cleanlab functionality not described above, check out o
 
 - [Release notes for past versions](https://github.com/cleanlab/cleanlab/releases)
 
-- [Cleanlab Studio](https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio): *No-code Data Improvement*
 
-While this open-source library **finds** data issues, its utility depends on you having a decent existing ML model and an interface to efficiently **fix** these issues in your dataset. Providing all these pieces, [Cleanlab Studio](https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio) is a no-code platform to **find and fix** problems in real-world ML datasets. Cleanlab Studio [automatically runs](https://cleanlab.ai/blog/data-centric-ai/) optimized versions of the algorithms from this open-source library on top of AutoML & Foundation models fit to your data, and presents detected issues in a smart data editing interface. It's a data cleaning assistant to quickly turn unreliable data into reliable models/insights (via AI/automation + streamlined UX). [Try it for free!](https://cleanlab.ai/signup)
+## Easy mode: *No-code Data Improvement*
+
+While this open-source package **finds** data issues, its utility depends on you having: a good existing ML model + an interface to efficiently **fix** these issues in your dataset. Providing all these pieces, [Cleanlab Studio](https://cleanlab.ai/blog/data-centric-ai/) is a Data Curation platform to **find and fix** problems in any {image, text, tabular} dataset. Cleanlab Studio [automatically](https://cleanlab.ai/blog/data-centric-ai/) runs optimized algorithms from this package on top of **AutoML & Foundation** models fit to your data, and presents detected issues (+ AI-suggested fixes) in an intelligent [data correction interface](https://www.youtube.com/playlist?list=PLn_2rr2ltYqA1uAC0AnRbPyY-wWVf1aeg).
+
+**[Try it for free!](https://cleanlab.ai/signup/)** Adopting Cleanlab Studio enables users of this package to:
+- work 100x faster (1 min to analyze your raw data with **zero** code or ML work; optionally use [Python API](https://help.cleanlab.ai/tutorials/))
+- produce better-quality data (10x more [types of issues](https://help.cleanlab.ai/guide/concepts/cleanlab_columns/) auto detected & **corrected** via built-in AI)
+- accomplish more (auto-label data, deploy ML instantly, audit LLM inputs/outputs, moderate content, ...)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/studio.png" width=80% height=80% alt="Cleanlab Studio logo">
+  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/ml-with-cleanlab-studio.png" alt="The modern AI pipeline automated with Cleanlab Studio">
 </p>
+
 
 ## Join our community
 
