@@ -154,7 +154,7 @@ Link to Cleanlab Studio docs: `help.cleanlab.ai <https://help.cleanlab.ai/>`_
    Datalab Tutorials <tutorials/datalab/index>
    CleanLearning Tutorials <tutorials/clean_learning/index>
    Workflows of Data-Centric AI <tutorials/indepth_overview>
-   Understand Dataset-level Issues <tutorials/dataset_health>
+   Analyze Dataset-level Issues <tutorials/dataset_health>
    Outlier Detection <tutorials/outliers>
    Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
    Multi-Label Classification <tutorials/multilabel_classification>
