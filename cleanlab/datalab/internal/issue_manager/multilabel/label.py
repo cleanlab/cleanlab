@@ -142,7 +142,7 @@ class MultilabelIssueManager(IssueManager):
 
     def collect_info(
         self, given_labels: List[List[int]], predicted_labels: List[List[int]]
-    ) -> Dict[str, List[List[int]]]:
+    ) -> Dict[str, Any]:
         issues_info = {
             "given_label": given_labels,
             "predicted_label": predicted_labels,
