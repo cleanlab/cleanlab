@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from cleanlab import Datalab
 from cleanlab.datalab.internal.issue_manager.multilabel.label import MultilabelIssueManager
 from cleanlab.internal.multilabel_utils import onehot2int
-from cleanlab import Datalab
 
 
 class TestLabelIssueManager:
@@ -42,3 +42,7 @@ class TestLabelIssueManager:
         assert issues.index[issues["is_label_issue"]].tolist() == [3, 6]
         assert pytest.approx(summary["score"].values[0], abs=1e-3) == 0.6714
         assert isinstance(info, dict), "Info should be a dict"
+
+        issue_manager.find_issues(pred_probs=pred_probs, frac_noise=0.5)
+        issues = issue_manager.issues
+        assert issues.index[issues["is_label_issue"]].tolist() == [3]
