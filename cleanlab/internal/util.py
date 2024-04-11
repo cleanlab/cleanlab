@@ -174,22 +174,25 @@ def value_counts(x, *, num_classes: Optional[int] = None, multi_label=False) -> 
     if multi_label:
         x = [z for lst in x for z in lst]  # Flatten
     unique_classes, counts = np.unique(x, return_counts=True)
+
+    # Early exit if num_classes is not provided or redundant
     if num_classes is None or num_classes == len(unique_classes):
         return counts
+
     # Else, there are missing classes
-    if num_classes <= np.max(unique_classes):
+    labels_are_integers = np.issubdtype(np.array(x).dtype, np.integer)
+    if labels_are_integers and num_classes <= np.max(unique_classes):
         raise ValueError(f"Required: num_classes > max(x), but {num_classes} <= {np.max(x)}.")
+
     # Add zero counts for all missing classes in [0, 1,..., num_classes-1]
-    # multi_label=False regardless because x was flattened.
     total_counts = np.zeros(num_classes, dtype=int)
-    index = 0
-    length = unique_classes.shape[0]
-    for i in range(num_classes):
-        if index >= length:
-            break
-        if unique_classes[index] == i:
-            total_counts[i] = counts[index]
-            index += 1
+    # Fill in counts for classes that are present.
+    # If labels are integers, unique_classes can be used directly as indices to place counts
+    # into the correct positions in total_counts array.
+    # If labels are strings, use a slice to fill counts sequentially since strings do not map to indices.
+    count_ids = unique_classes if labels_are_integers else slice(len(unique_classes))
+    total_counts[count_ids] = counts
+
     # Return counts with zeros for all missing classes.
     return total_counts
 
