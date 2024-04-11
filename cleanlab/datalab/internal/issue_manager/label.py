@@ -175,7 +175,7 @@ class LabelIssueManager(IssueManager):
         self.issues = self.cl.find_label_issues(
             labels=labels,
             pred_probs=pred_probs,
-            **self._process_find_label_issues_kwargs(kwargs),
+            **self._process_find_label_issues_kwargs(**kwargs),
         )
         self.issues.rename(columns={"label_quality": self.issue_score_key}, inplace=True)
 
