@@ -346,8 +346,6 @@ def _get_iou(bb1: np.ndarray, bb2: np.ndarray) -> np.ndarray:
     x_right = np.minimum(bb1[2], bb2[:, 2])
     y_bottom = np.minimum(bb1[3], bb2[:, 3])
 
-    iou = np.empty(bb2.shape[0])
-
     # The intersection of two axis-aligned bounding boxes is always an
     # axis-aligned bounding box
     intersection_area = (x_right - x_left) * (y_bottom - y_top)
