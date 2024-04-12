@@ -17,19 +17,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
+import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import OneHotEncoder
 
-import numpy as np
-
 from cleanlab.classification import CleanLearning
-from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.count import get_confident_thresholds
+from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.internal.validation import assert_valid_inputs
 
 if TYPE_CHECKING:  # pragma: no cover
-    import pandas as pd
     import numpy.typing as npt
+    import pandas as pd
+
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -83,14 +83,14 @@ class LabelIssueManager(IssueManager):
         self._reset()
 
     @staticmethod
-    def _process_find_label_issues_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_find_label_issues_kwargs(**kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """Searches for keyword arguments that are meant for the
         CleanLearning.find_label_issues method call
 
         Examples
         --------
         >>> from cleanlab.datalab.internal.issue_manager.label import LabelIssueManager
-        >>> LabelIssueManager._process_clean_learning_kwargs(thresholds=[0.1, 0.9])
+        >>> LabelIssueManager._process_find_label_issues_kwargs(thresholds=[0.1, 0.9])
         {'thresholds': [0.1, 0.9]}
         """
         accepted_kwargs = [
@@ -175,7 +175,7 @@ class LabelIssueManager(IssueManager):
         self.issues = self.cl.find_label_issues(
             labels=labels,
             pred_probs=pred_probs,
-            **self._process_find_label_issues_kwargs(kwargs),
+            **self._process_find_label_issues_kwargs(**kwargs),
         )
         self.issues.rename(columns={"label_quality": self.issue_score_key}, inplace=True)
 
