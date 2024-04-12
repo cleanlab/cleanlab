@@ -280,12 +280,13 @@ def _separate_prediction_single_box(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Separates predictions into class labels, bounding boxes and pred_prob lists"""
     labels = []
-    boxes = []
+    bboxes = []
+    pred_probs = []
     for idx, prediction_class in enumerate(prediction):
         labels.extend([idx] * len(prediction_class))
-        boxes.extend(prediction_class.tolist())
-    bboxes = [box[:4] for box in boxes]
-    pred_probs = [box[-1] for box in boxes]
+        for inner_pred_class in prediction_class:
+            bboxes.append(inner_pred_class[:4])
+            pred_probs.append(inner_pred_class[-1])
     return np.array(bboxes), np.array(labels), np.array(pred_probs)
 
 
@@ -315,12 +316,9 @@ def _separate_prediction(
 def _get_overlap_matrix(bb1_list: np.ndarray, bb2_list: np.ndarray) -> np.ndarray:
     """Takes in two lists of bounding boxes and returns an IoU matrix where IoU[i][j] is the overlap between
     the i-th box in `bb1_list` and the j-th box in `bb2_list`."""
-    wd = np.zeros(shape=(len(bb1_list), len(bb2_list)))
-    if not len(bb2_list):
-        return wd
-    for i, bb1 in enumerate(bb1_list):
-        wd[i] = _get_iou(bb1, bb2_list)
-    return wd
+    if not len(bb1_list) or not len(bb2_list):
+        return np.zeros(shape=(len(bb1_list), len(bb2_list)))
+    return _get_iou(bb1_list, bb2_list)
 
 
 def _get_iou(bb1: np.ndarray, bb2: np.ndarray) -> np.ndarray:
@@ -341,23 +339,25 @@ def _get_iou(bb1: np.ndarray, bb2: np.ndarray) -> np.ndarray:
         in [0, 1]
     """
     # determine the coordinates of the intersection rectangle
-    x_left = np.maximum(bb1[0], bb2[:, 0])
-    y_top = np.maximum(bb1[1], bb2[:, 1])
-    x_right = np.minimum(bb1[2], bb2[:, 2])
-    y_bottom = np.minimum(bb1[3], bb2[:, 3])
+    x_left = np.maximum(bb1[:, 0][:, np.newaxis], bb2[:, 0][np.newaxis, :])
+    y_top = np.maximum(bb1[:, 1][:, np.newaxis], bb2[:, 1][np.newaxis, :])
+    x_right = np.minimum(bb1[:, 2][:, np.newaxis], bb2[:, 2][np.newaxis, :])
+    y_bottom = np.minimum(bb1[:, 3][:, np.newaxis], bb2[:, 3][np.newaxis, :])
 
     # The intersection of two axis-aligned bounding boxes is always an
     # axis-aligned bounding box
     intersection_area = (x_right - x_left) * (y_bottom - y_top)
 
     # compute the area of both AABBs
-    bb1_area = (bb1[2] - bb1[0]) * (bb1[3] - bb1[1])
+    bb1_area = (bb1[:, 2] - bb1[:, 0]) * (bb1[:, 3] - bb1[:, 1])
     bb2_area = (bb2[:, 2] - bb2[:, 0]) * (bb2[:, 3] - bb2[:, 1])
 
     # compute the intersection over union by taking the intersection
     # area and dividing it by the sum of prediction + ground-truth
     # areas - the interesection area
-    iou = intersection_area / (bb1_area + bb2_area - intersection_area)
+    iou = intersection_area / (
+        bb1_area[:, np.newaxis] + bb2_area[np.newaxis, :] - intersection_area
+    )
     # There are some hyper-parameters here like consider tile area/object area
 
     mask = (x_right < x_left) | (y_bottom < y_top)
@@ -382,24 +382,23 @@ def _has_overlap(bbox_list, labels):
     return np.array(results_overlap)
 
 
-def _euc_dis(box1: np.ndarray, box2: np.ndarray) -> float:
+def _euc_dis(box1: np.ndarray, box2: np.ndarray) -> np.ndarray:
     """Calculates the Euclidean distance between `box1` and `box2`."""
+    p1 = np.empty((box1.shape[0], 2))
+    p1[:, 0] = (box1[:, 0] + box1[:, 2]) / 2
+    p1[:, 1] = (box1[:, 1] + box1[:, 3]) / 2
+
     p2 = np.empty((box2.shape[0], 2))
-    x1, y1 = (box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2
     p2[:, 0] = (box2[:, 0] + box2[:, 2]) / 2
     p2[:, 1] = (box2[:, 1] + box2[:, 3]) / 2
-    p1 = np.array([x1, y1])
-    return np.exp(-np.linalg.norm(p1 - p2, axis=1) * EUC_FACTOR)
+    return np.exp(-np.linalg.norm(p1[:, np.newaxis] - p2[np.newaxis, :], axis=2) * EUC_FACTOR)
 
 
 def _get_dist_matrix(bb1_list: np.ndarray, bb2_list: np.ndarray) -> np.ndarray:
     """Returns a distance matrix of distances from all of boxes in bb1_list to all of boxes in bb2_list."""
-    wd = np.zeros(shape=(len(bb1_list), len(bb2_list)))
-    if not len(bb2_list):
-        return wd
-    for i, bb1 in enumerate(bb1_list):
-        wd[i] = _euc_dis(bb1, bb2_list)
-    return wd
+    if not len(bb2_list) or not len(bb1_list):
+        return np.zeros(shape=(len(bb1_list), len(bb2_list)))
+    return _euc_dis(bb1_list, bb2_list)
 
 
 def _get_min_possible_similarity(
