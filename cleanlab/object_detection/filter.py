@@ -24,15 +24,16 @@ import numpy as np
 
 from cleanlab.internal.constants import (
     ALPHA,
+    AP_SCALE_FACTOR,
+    BADLOC_THRESHOLD_FACTOR,
     HIGH_PROBABILITY_THRESHOLD,
     LOW_PROBABILITY_THRESHOLD,
     OVERLOOKED_THRESHOLD_FACTOR,
-    BADLOC_THRESHOLD_FACTOR,
     SWAP_THRESHOLD_FACTOR,
-    AP_SCALE_FACTOR,
 )
 from cleanlab.internal.object_detection_utils import assert_valid_inputs
 from cleanlab.object_detection.rank import (
+    _get_overlap_matrix,
     _get_valid_inputs_for_compute_scores,
     _separate_label,
     _separate_prediction,
@@ -41,7 +42,6 @@ from cleanlab.object_detection.rank import (
     compute_swap_box_scores,
     get_label_quality_scores,
     issues_from_scores,
-    _get_overlap_matrix,
 )
 
 

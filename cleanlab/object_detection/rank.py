@@ -17,7 +17,11 @@
 """Methods to rank and score images in an object detection dataset (object detection data), based on how likely they
 are to contain label errors. """
 
+import copy
 import warnings
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
+
+import numpy as np
 
 from cleanlab.internal.constants import (
     ALPHA,
@@ -26,22 +30,16 @@ from cleanlab.internal.constants import (
     CUSTOM_SCORE_WEIGHT_SWAP,
     EUC_FACTOR,
     HIGH_PROBABILITY_THRESHOLD,
+    LABEL_OVERLAP_THRESHOLD,
     LOW_PROBABILITY_THRESHOLD,
     MAX_ALLOWED_BOX_PRUNE,
-    TINY_VALUE,
     TEMPERATURE,
-    LABEL_OVERLAP_THRESHOLD,
+    TINY_VALUE,
 )
-
-
-import copy
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
-
-import numpy as np
 from cleanlab.internal.object_detection_utils import (
-    softmin1d,
     assert_valid_aggregation_weights,
     assert_valid_inputs,
+    softmin1d,
 )
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -314,72 +312,58 @@ def _separate_prediction(
     return boxes, labels, pred_probs
 
 
-def _mod_coordinates(x: List[float]) -> Dict[str, Any]:
-    """Takes is a list of xyxy coordinates and returns them in dictionary format."""
-
-    wd = {"x1": x[0], "y1": x[1], "x2": x[2], "y2": x[3]}
-    return wd
-
-
-def _get_overlap(bb1: List[float], bb2: List[float]) -> float:
-    """Takes in two bounding boxes `bb1` and `bb2` and returns their IoU overlap."""
-
-    return _get_iou(_mod_coordinates(bb1), _mod_coordinates(bb2))
-
-
 def _get_overlap_matrix(bb1_list: np.ndarray, bb2_list: np.ndarray) -> np.ndarray:
     """Takes in two lists of bounding boxes and returns an IoU matrix where IoU[i][j] is the overlap between
     the i-th box in `bb1_list` and the j-th box in `bb2_list`."""
     wd = np.zeros(shape=(len(bb1_list), len(bb2_list)))
-    for i in range(len(bb1_list)):
-        for j in range(len(bb2_list)):
-            wd[i][j] = _get_overlap(bb1_list[i], bb2_list[j])
+    if not len(bb2_list):
+        return wd
+    for i, bb1 in enumerate(bb1_list):
+        wd[i] = _get_iou(bb1, bb2_list)
     return wd
 
 
-def _get_iou(bb1: Dict[str, Any], bb2: Dict[str, Any]) -> float:
+def _get_iou(bb1: np.ndarray, bb2: np.ndarray) -> np.ndarray:
     """
-    Calculate the Intersection over Union (IoU) of two bounding boxes.
+    Calculate the Intersection over Union (IoU) of one bounding box with an array of bounding_boxes.
     I've modified this to calculate overlap ratio in the line:
-    iou = np.clip(intersection_area / float(min(bb1_area,bb2_area)),0.0,1.0)
+    iou = np.clip(intersection_area / (bb1_area + bb2_area - intersection_area), 0.0, 1.0)
 
     Parameters
     ----------
-    bb1 : dict
-        Keys: {'x1', 'x2', 'y1', 'y2'}
-        The (x1, y1) position is at the top left corner,
-        the (x2, y2) position is at the bottom right corner
-    bb2 : dict
-        Keys: {'x1', 'x2', 'y1', 'y2'}
-        The (x, y) position is at the top left corner,
-        the (x2, y2) position is at the bottom right corner
+    bb1 : np.ndarray
+        Shape [x1, y1, x2, y2]
+    bb2 : np.ndarray
+        Shape [N, 4] where bb2[i, :] must be an array of shape [x1, y1, x2, y2] corresponding to the bouding box i.
     Returns
     -------
-    float
+    np.ndarray
         in [0, 1]
     """
     # determine the coordinates of the intersection rectangle
-    x_left = max(bb1["x1"], bb2["x1"])
-    y_top = max(bb1["y1"], bb2["y1"])
-    x_right = min(bb1["x2"], bb2["x2"])
-    y_bottom = min(bb1["y2"], bb2["y2"])
+    x_left = np.maximum(bb1[0], bb2[:, 0])
+    y_top = np.maximum(bb1[1], bb2[:, 1])
+    x_right = np.minimum(bb1[2], bb2[:, 2])
+    y_bottom = np.minimum(bb1[3], bb2[:, 3])
 
-    if x_right < x_left or y_bottom < y_top:
-        return 0.0
+    iou = np.empty(bb2.shape[0])
 
     # The intersection of two axis-aligned bounding boxes is always an
     # axis-aligned bounding box
     intersection_area = (x_right - x_left) * (y_bottom - y_top)
 
     # compute the area of both AABBs
-    bb1_area = (bb1["x2"] - bb1["x1"]) * (bb1["y2"] - bb1["y1"])
-    bb2_area = (bb2["x2"] - bb2["x1"]) * (bb2["y2"] - bb2["y1"])
+    bb1_area = (bb1[2] - bb1[0]) * (bb1[3] - bb1[1])
+    bb2_area = (bb2[:, 2] - bb2[:, 0]) * (bb2[:, 3] - bb2[:, 1])
 
     # compute the intersection over union by taking the intersection
     # area and dividing it by the sum of prediction + ground-truth
     # areas - the interesection area
-    iou = intersection_area / float(bb1_area + bb2_area - intersection_area)
+    iou = intersection_area / (bb1_area + bb2_area - intersection_area)
     # There are some hyper-parameters here like consider tile area/object area
+
+    mask = (x_right < x_left) | (y_bottom < y_top)
+    iou[mask] = 0.0
     return iou
 
 
