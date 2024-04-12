@@ -90,9 +90,6 @@ def display_issues(
     ...     ["An", "sentence", "with", "a", "typo"],
     ... ]
     >>> display_issues(issues, tokens)
-    Classes will be printed in terms of their integer index since `class_names` was not provided.
-    Specify this argument to see the string names of each class.
-    <BLANKLINE>
     Sentence index: 2, Token index: 0
     Token: An
     ----
@@ -104,11 +101,11 @@ def display_issues(
     ----
     A ?weird sentence
     """
-    if not class_names:
+    if not class_names and (labels or pred_probs):
         print(
-            "Classes will be printed in terms of their integer index since `class_names` was not provided."
+            "Classes will be printed in terms of their integer index since `class_names` was not provided.\n"
+            "Specify this argument to see the string names of each class.\n"
         )
-        print("Specify this argument to see the string names of each class.\n")
 
     top = min(top, len(issues))
     shown = 0
