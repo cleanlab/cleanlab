@@ -384,22 +384,23 @@ def _has_overlap(bbox_list, labels):
     return np.array(results_overlap)
 
 
-def _euc_dis(box1: List[float], box2: List[float]) -> float:
+def _euc_dis(box1: np.ndarray, box2: np.ndarray) -> float:
     """Calculates the Euclidean distance between `box1` and `box2`."""
+    p2 = np.empty((box2.shape[0], 2))
     x1, y1 = (box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2
-    x2, y2 = (box2[0] + box2[2]) / 2, (box2[1] + box2[3]) / 2
+    p2[:, 0] = (box2[:, 0] + box2[:, 2]) / 2
+    p2[:, 1] = (box2[:, 1] + box2[:, 3]) / 2
     p1 = np.array([x1, y1])
-    p2 = np.array([x2, y2])
-    val2 = np.exp(-np.linalg.norm(p1 - p2) * EUC_FACTOR)
-    return val2
+    return np.exp(-np.linalg.norm(p1 - p2, axis=1) * EUC_FACTOR)
 
 
 def _get_dist_matrix(bb1_list: np.ndarray, bb2_list: np.ndarray) -> np.ndarray:
     """Returns a distance matrix of distances from all of boxes in bb1_list to all of boxes in bb2_list."""
     wd = np.zeros(shape=(len(bb1_list), len(bb2_list)))
-    for i in range(len(bb1_list)):
-        for j in range(len(bb2_list)):
-            wd[i][j] = _euc_dis(bb1_list[i], bb2_list[j])
+    if not len(bb2_list):
+        return wd
+    for i, bb1 in enumerate(bb1_list):
+        wd[i] = _euc_dis(bb1, bb2_list)
     return wd
 
 
