@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
-from numpy import ndarray
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
 
