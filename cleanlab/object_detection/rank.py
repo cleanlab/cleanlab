@@ -323,20 +323,20 @@ def _get_overlap_matrix(bb1_list: np.ndarray, bb2_list: np.ndarray) -> np.ndarra
 
 def _get_iou(bb1: np.ndarray, bb2: np.ndarray) -> np.ndarray:
     """
-    Calculate the Intersection over Union (IoU) of one bounding box with an array of bounding_boxes.
+    Calculate the Intersection over Union (IoU) of an array of bounding box with an array of bounding_boxes.
     I've modified this to calculate overlap ratio in the line:
     iou = np.clip(intersection_area / (bb1_area + bb2_area - intersection_area), 0.0, 1.0)
 
     Parameters
     ----------
     bb1 : np.ndarray
-        Shape [x1, y1, x2, y2]
+        Shape [N1, 4] where bb2[i, :] must be an array of shape [x1, y1, x2, y2] corresponding to the bouding box i.
     bb2 : np.ndarray
-        Shape [N, 4] where bb2[i, :] must be an array of shape [x1, y1, x2, y2] corresponding to the bouding box i.
+        Shape [N2, 4] where bb2[j, :] must be an array of shape [x1, y1, x2, y2] corresponding to the bouding box j.
     Returns
     -------
     np.ndarray
-        in [0, 1]
+        values in [0, 1]
     """
     # determine the coordinates of the intersection rectangle
     x_left = np.maximum(bb1[:, 0][:, np.newaxis], bb2[:, 0][np.newaxis, :])
