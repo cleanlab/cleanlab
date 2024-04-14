@@ -1,9 +1,8 @@
-import pytest
 import numpy as np
-
-from cleanlab.datalab.internal.issue_finder import IssueFinder
+import pytest
 
 from cleanlab import Datalab
+from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.task import Task
 
 
@@ -46,6 +45,11 @@ class TestIssueFinder:
             available_issue_types = issue_finder.get_available_issue_types(issue_types=issue_types)
             fail_msg = f"Failed to get available issue types with issue_types={issue_types}"
             assert available_issue_types == issue_types, fail_msg
+
+        only_features_available = {"features": np.random.random((10, 2))}
+        available_issue_types = issue_finder.get_available_issue_types(**only_features_available)
+        fail_msg = "underperforming_group should not be available if 'pred_probs' is not provided"
+        assert "underperforming_group" not in available_issue_types
 
     def test_find_issues(self, issue_finder, lab):
         N = len(lab.data)

@@ -41,14 +41,15 @@ from cleanlab.datalab.internal.issue_manager_factory import (
 )
 from cleanlab.datalab.internal.model_outputs import (
     MultiClassPredProbs,
-    RegressionPredictions,
     MultiLabelPredProbs,
+    RegressionPredictions,
 )
 from cleanlab.datalab.internal.task import Task
 
 if TYPE_CHECKING:  # pragma: no cover
-    import numpy.typing as npt
     from typing import Callable
+
+    import numpy.typing as npt
 
     from cleanlab.datalab.datalab import Datalab
 
@@ -481,5 +482,12 @@ class IssueFinder:
         )
         if drop_class_imbalance_check:
             issue_types_copy.pop("class_imbalance")
+
+        if (
+            self.task == Task.CLASSIFICATION
+            and "underperforming_group" in issue_types_copy
+            and pred_probs is None
+        ):
+            issue_types_copy.pop("underperforming_group")
 
         return issue_types_copy
