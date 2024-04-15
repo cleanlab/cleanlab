@@ -15,26 +15,75 @@ In case you didn't know: you can alternatively use `Cleanlab Studio <https://cle
 
     .. tab:: Classification task
 
-        +------------------------------------------------------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+
-        | Issue Name                                                             | Default          | Required keyword arguments in :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>`            |
-        +========================================================================+==================+========================================================================================================================+
-        | :ref:`label<Label Issue>`                                              | YES              | `pred_probs` or `features`                                                                                             |
-        +------------------------------------------------------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+
-        | :ref:`outlier<Outlier Issues>`                                         | YES              | `pred_probs` or `features` or `knn_graph`                                                                              |
-        +------------------------------------------------------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+
-        | :ref:`near_duplicate<(Near) Duplicate Issue>`                          | YES              | `features` or `knn_graph`                                                                                              |
-        +------------------------------------------------------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+
-        | :ref:`non_iid<Non-IID Issue>`                                          | YES              | `pred_probs` or `features` or `knn_graph`                                                                              |
-        +------------------------------------------------------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+
-        | :ref:`class_imbalance<Class Imbalance Issue>`                          | YES              | None [#f1]_                                                                                                            |
-        +------------------------------------------------------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+
-        | :ref:`underperforming_group<Underperforming Group Issue>`              | YES              | (`pred_probs`, `features`) or (`pred_probs`, `knn_graph`) or (`pred_probs`, `cluster_ids`) [#f2]_                      |
-        +------------------------------------------------------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+
-        | :ref:`null<Null Issue>`                                                | YES              | `features`                                                                                                             |
-        +------------------------------------------------------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+
-        | :ref:`data_valuation<Data Valuation Issue>`                            | no               | `knn_graph`                                                                                                            |
-        +------------------------------------------------------------------------+------------------+------------------------------------------------------------------------------------------------------------------------+
-        
+        .. list-table::
+            :widths: 20 10 20 50
+            :header-rows: 1
+
+            * - Issue Name
+              - Default
+              - Column Name
+              - Required keyword arguments in :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>`
+            * - :ref:`label<Label Issue>`
+              - YES
+              - 
+                :ref:`is_label_issue<\`\`is_label_issue\`\`>`
+
+                :ref:`label_score<\`\`label_score\`\`>` 
+              - `pred_probs` or `features`
+            * - :ref:`outlier<Outlier Issues>`
+              - YES
+              - 
+                :ref:`is_outlier_issue<\`\`is_outlier_issue\`\`>`
+                
+                :ref:`outlier_score<\`\`outlier_score\`\`>`
+              - `pred_probs` or `features` or `knn_graph`
+            * - :ref:`near_duplicate<(Near) Duplicate Issue>`
+              - YES
+              - 
+                :ref:`is_near_duplicate_issue<\`\`is_near_duplicate_issue\`\`>`
+                
+                :ref:`near_duplicate_score<\`\`near_duplicate_score\`\`>`
+              - `features` or `knn_graph`
+            * - :ref:`non_iid<Non-IID Issue>`
+              - YES
+              - 
+                :ref:`is_non_iid_issue<\`\`is_non_iid_issue\`\`>`
+                
+                :ref:`non_iid_score<\`\`non_iid_score\`\`>`
+              - `pred_probs` or `features` or `knn_graph`
+            * - :ref:`class_imbalance<Class Imbalance Issue>`
+              - YES
+              - 
+                :ref:`is_class_imbalance_issue<\`\`is_class_imbalance_issue\`\`>`
+                
+                :ref:`class_imbalance_score<\`\`class_imbalance_score\`\`>`
+              - None [#f1]_
+            * - :ref:`underperforming_group<Underperforming Group Issue>`
+              - YES
+              - 
+                :ref:`is_underperforming_group_issue<\`\`is_underperforming_group_issue\`\`>`
+                
+                :ref:`underperforming_group_score<\`\`underperforming_group_score\`\`>`
+              - (`pred_probs`, `features`) or (`pred_probs`, `knn_graph`) or (`pred_probs`, `cluster_ids`) [#f2]_
+            * - :ref:`null<Null Issue>`
+              - YES
+              - 
+                is_null_issue
+                :ref:`is_null_issue<\`\`is_null_issue\`\`>`
+                
+                null_score
+                :ref:`null_score<\`\`null_score\`\`>`
+              - `features`
+            * - :ref:`data_valuation<Data Valuation Issue>`
+              - no
+              - 
+                is_data_valuation_issue
+                :ref:`is_data_valuation_issue<\`\`is_data_valuation_issue\`\`>`
+                
+                data_valuation_score
+                :ref:`data_valuation_score<\`\`data_valuation_score\`\`>`
+              - `knn_graph`
+
         .. rubric:: Notes
 
         .. [#f1] Only runs if `label_name` is provided in `Datalab()` constructor
@@ -42,20 +91,44 @@ In case you didn't know: you can alternatively use `Cleanlab Studio <https://cle
 
     .. tab:: Regression task 
 
-        +----------------------------------------------------------------+------------------+----------------------------------------------------------------------------------------------------------------------+
-        | Issue Name                                                     | Default          | Required keyword arguments in :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>`          |
-        +================================================================+==================+======================================================================================================================+
-        | :ref:`label<Label Issue>`                                      | YES              | `pred_probs` [#f3]_ or `features` or (`features`, `model`) [#f4]_                                                    |
-        +----------------------------------------------------------------+------------------+----------------------------------------------------------------------------------------------------------------------+
-        | :ref:`outlier<Outlier Issues>`                                 | YES              | `features` or `knn_graph`                                                                                            |
-        +----------------------------------------------------------------+------------------+----------------------------------------------------------------------------------------------------------------------+
-        | :ref:`near_duplicate<(Near) Duplicate Issue>`                  | YES              | `features` or `knn_graph`                                                                                            |
-        +----------------------------------------------------------------+------------------+----------------------------------------------------------------------------------------------------------------------+
-        | :ref:`non_iid<Non-IID Issue>`                                  | YES              | `features` or `knn_graph`                                                                                            |
-        +----------------------------------------------------------------+------------------+----------------------------------------------------------------------------------------------------------------------+
-        | :ref:`null<Null Issue>`                                        | YES              | `features`                                                                                                           |
-        +----------------------------------------------------------------+------------------+----------------------------------------------------------------------------------------------------------------------+
+        .. list-table::
+            :widths: 20 10 20 50
+            :header-rows: 1
 
+            * - Issue Name
+              - Default
+              - Column Name
+              - Required keyword arguments in :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>`
+            * - :ref:`label<Label Issue>`
+              - YES
+              - 
+                is_label_issue
+                label_score
+              - `pred_probs` [#f3]_ or `features` or (`features`, `model`) [#f4]_
+            * - :ref:`outlier<Outlier Issues>`
+              - YES
+              - 
+                is_outlier_issue
+                outlier_score
+              - `features` or `knn_graph`
+            * - :ref:`near_duplicate<(Near) Duplicate Issue>`
+              - YES
+              - 
+                is_near_duplicate_issue
+                near_duplicate_score
+              - `features` or `knn_graph`
+            * - :ref:`non_iid<Non-IID Issue>`
+              - YES
+              - 
+                is_non_iid_issue
+                non_iid_score
+              - `features` or `knn_graph`
+            * - :ref:`null<Null Issue>`
+              - YES
+              - 
+                is_null_issue
+                null_score
+              - `features`
 
         .. rubric:: Notes
 
@@ -64,19 +137,44 @@ In case you didn't know: you can alternatively use `Cleanlab Studio <https://cle
 
     .. tab:: Multilabel task 
 
-        +----------------------------------------------------------------+----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-        | Issue Name                                                     | Default        | Required keyword arguments in :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>`                          |
-        +================================================================+================+======================================================================================================================================+
-        | :ref:`label<Label Issue>`                                      | YES            | `pred_probs` or `features`                                                                                                           |
-        +----------------------------------------------------------------+----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-        | :ref:`outlier<Outlier Issues>`                                 | YES            | `features` or `knn_graph`                                                                                                            |
-        +----------------------------------------------------------------+----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-        | :ref:`near_duplicate<(Near) Duplicate Issue>`                  | YES            | `features` or `knn_graph`                                                                                                            |
-        +----------------------------------------------------------------+----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-        | :ref:`non_iid<Non-IID Issue>`                                  | YES            | `features` or `knn_graph`                                                                                                            |
-        +----------------------------------------------------------------+----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-        | :ref:`null<Null Issue>`                                        | YES            | `features`                                                                                                                           |
-        +----------------------------------------------------------------+----------------+--------------------------------------------------------------------------------------------------------------------------------------+
+        .. list-table::
+            :widths: 20 10 20 50
+            :header-rows: 1
+
+            * - Issue Name
+              - Default
+              - Column Name
+              - Required keyword arguments in :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>`
+            * - :ref:`label<Label Issue>`
+              - YES
+              - 
+                is_label_issue
+                label_score
+              - `pred_probs` or `features`
+            * - :ref:`outlier<Outlier Issues>`
+              - YES
+              - 
+                is_outlier_issue
+                outlier_score
+              - `features` or `knn_graph`
+            * - :ref:`near_duplicate<(Near) Duplicate Issue>`
+              - YES
+              - 
+                is_near_duplicate_issue
+                near_duplicate_score
+              - `features` or `knn_graph`
+            * - :ref:`non_iid<Non-IID Issue>`
+              - YES
+              - 
+                is_non_iid_issue
+                non_iid_score
+              - `features` or `knn_graph`
+            * - :ref:`null<Null Issue>`
+              - YES
+              - 
+                is_null_issue
+                null_score
+              - `features`
 
 
 Estimates for Each Issue Type
@@ -124,6 +222,21 @@ To handle mislabeled examples, you can either filter out the data with label iss
 
 Learn more about the method used to detect label issues in our paper: `Confident Learning: Estimating Uncertainty in Dataset Labels <https://arxiv.org/abs/1911.00068>`_
 
+``is_label_issue``
+~~~~~~~~~~~~~~~~~~
+
+A boolean column that flags examples with label issues. 
+If `True`, the example is estimated to have a label issue.
+If `False`, the example is estimated to not have a label issue.
+
+``label_score``
+~~~~~~~~~~~~~~~
+
+A numeric column that gives the label quality score for each example.
+The score lies between 0 and 1.
+The lower the score, the less likely the given label is to be correct.
+
+
 .. jinja ::
 
     {% with issue_name = "label" %}
@@ -149,6 +262,19 @@ Closely inspect them and consider removing some outliers that may be negatively 
 
 
 Learn more about the methods used to detect outliers in our article: `Out-of-Distribution Detection via Embeddings or Predictions <https://cleanlab.ai/blog/outlier-detection/>`_
+
+``is_outlier_issue``
+~~~~~~~~~~~~~~~~~~~~
+
+A boolean column, where `True` indicates that an example is identified as an outlier.
+
+``outlier_score``
+~~~~~~~~~~~~~~~~~
+
+A numeric column with scores between 0 and 1. 
+A smaller value for an example indicates that it is less common or typical in the dataset, suggesting that it is more likely to be an outlier.
+
+If most of the nearest-neighbors of an example are exact-duplicates, then the outlier score of the example is set to 1.0.
 
 .. jinja ::
 
@@ -177,6 +303,18 @@ Including near-duplicate examples in a dataset may negatively impact a ML model'
 In particular, it is questionable to include examples in a test dataset which are (nearly) duplicated in the corresponding training dataset.
 More generally, examples which happen to be duplicated can affect the final modeling results much more than other examples — so you should at least be aware of their presence.
 
+``is_near_duplicate_issue``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A boolean column, where `True` indicates that an example is identified as either a near- or exact-duplicate of other examples in the dataset.
+
+``near_duplicate_score``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+A numeric column with scores between 0 and 1. The lower the score, the more likely the example is to be a near-duplicate of another example in the dataset.
+
+Exact duplicates are assigned a score of 0, while near-duplicates are assigned a score close to 0.
+
 .. jinja ::
 
     {% with issue_name = "near_duplicate" %}
@@ -201,6 +339,24 @@ The assumption that examples in a dataset are Independent and Identically Distri
 
 For datasets with low non-IID score, you should consider why your data are not IID and act accordingly. For example, if the data distribution is drifting over time, consider employing a time-based train/test split instead of a random partition.  Note that shuffling the data ahead of time will ensure a good non-IID score, but this is not always a fix to the underlying problem (e.g. future deployment data may stem from a different distribution, or you may overlook the fact that examples influence each other). We thus recommend **not** shuffling your data to be able to diagnose this issue if it exists.
 
+``is_non_iid_issue``
+~~~~~~~~~~~~~~~~~~~~
+
+A boolean column, where `True` indicates that the dataset exhibits statistically significant violations of the IID assumption.
+The specific violation considered is whether the examples are ordered such that almost adjacent examples tend to have more similar feature values.
+
+``non_iid_score``
+~~~~~~~~~~~~~~~~~
+
+A numeric column with scores between 0 and 1.
+The score represents the variant of the Kolmogorov-Smirnov statistic for each example.
+It is used to compare the distribution of index-distances between an example and its nearest neighbors, and the distribution of index-distances between the example and its non-neighbors.
+A smaller score indicates that the index distance with the nearest neighbors of an example is significantly different from the index distance with the non-neighbors of the example.
+
+Be cautious when interpreting the non-IID issue score for individual examples.
+The dataset as a whole receives a p-value for the non-IID test, which is a more reliable indicator of whether the dataset exhibits non-IID behavior.
+When the p-value is low, you can use the per-example non-IID scores to identify which examples contribute the most to the non-IID behavior.
+
 .. jinja ::
 
     {% with issue_name = "non_iid" %}
@@ -215,6 +371,20 @@ Class imbalance is diagnosed just using the `labels` provided as part of the dat
 In a dataset identified as having class imbalance, the class imbalance quality score for each example is set equal to `q` if it is labeled as the rarest class, and is equal to 1 for all other examples.
 
 Class imbalance in a dataset can lead to subpar model performance for the under-represented class. Consider collecting more data from the under-represented class, or at least take special care while modeling via techniques like over/under-sampling, SMOTE, asymmetric class weighting, etc.
+
+``is_class_imbalance_issue``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A boolean column, where `True` indicates that the dataset suffers class imbalance. All examples belonging to the rarest class are flagged with this issue.
+But the dataset is considered to have class imbalance only if the proportion of examples belonging to the rarest class must be much lower than the inverse of the number of classes in the dataset.
+
+``class_imbalance_score``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A numeric column with scores between 0 and 1.
+Any example belonging to the most under-represented class is assigned a score equal to the proportion of examples in the dataset belonging to that class.
+All other examples are assigned a score of 1.
+
 
 .. jinja ::
 
@@ -246,6 +416,18 @@ If you do not provide both these arguments, this type of issue will not be consi
 To find the underperforming group, Cleanlab clusters the data using the provided `features` and determines the cluster `c` with the lowest average model predictive performance. Model predictive performance is evaluated via the model's self-confidence of the given labels, calculated using :py:func:`rank.get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>`. Suppose the average predictive power across the full dataset is `r` and is `q` within a cluster of examples. This cluster is considered to be an underperforming group if `q/r` falls below a threshold. A dataset suffers from the Underperforming Group issue if there exists such a cluster within it.
 The underperforming group quality score is equal to `q/r` for examples belonging to the underperforming group, and is equal to 1 for all other examples.
 Advanced users:  If you have pre-computed cluster assignments for each example in the dataset, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` dict argument.  This is useful for tabular datasets where you want to group/slice the data based on a categorical column. An integer encoding of the categorical column can be passed as cluster assignments for finding the underperforming group, based on the data slices you define.
+
+``is_underperforming_group_issue``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A boolean column, where `True` indicates that the dataset has a cluster of "difficult" examples for which the model predictions are poor.
+
+``underperforming_group_score``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A numeric column with scores between 0 and 1. Only examples belonging to the underperforming group have a score less than 1.
+Every score in the group receive the same score, which which is the ratio of group's label quality score and the mean label quality score across the dataset.
+The lower the score, the lower quality the group is considered to have.
 
 .. jinja ::
 
