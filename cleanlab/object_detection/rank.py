@@ -330,38 +330,47 @@ def _get_iou(bb1: np.ndarray, bb2: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     bb1 : np.ndarray
-        Shape [N1, 4] where bb2[i, :] must be an array of shape [x1, y1, x2, y2] corresponding to the bouding box i.
+        An array of shape [N1, 4] where N1 is the number of bounding boxes, and each row represents the coordinates of the top-left and bottom-right corners of a bounding box.
     bb2 : np.ndarray
-        Shape [N2, 4] where bb2[j, :] must be an array of shape [x1, y1, x2, y2] corresponding to the bouding box j.
+        An array of shape [N2, 4] where N2 is the number of bounding boxes, and each row represents the coordinates of the top-left and bottom-right corners of a bounding box.
+
+    Notes
+    -----
+    - Each bounding box is defined by four values [x1, y1, x2, y2], where (x1, y1) is the top-left corner coordinate and (x2, y2) is the bottom-right corner coordinate.
+    - Ensure that the bounding box coordinates follow the format [x1, y1, x2, y2] for consistency and compatibility with the expected functionality.
     Returns
     -------
-    np.ndarray
-        values in [0, 1]
+    iou: np.ndarray
+        An array of shape [N1, N2] with values in [0, 1], where iou[i, j] shows the Intersection over Union between bounding box i in bb1 and bounding box j in bb2.
     """
+    # Transpose bounding boxes and extend dimensions for easier broadcasting
+    bb1, bb2 = bb1.T, bb2.T
+    bb1_ext = np.expand_dims(bb1, 2)  # Extending dimension for bb1
+    bb2_ext = np.expand_dims(bb2, 1)  # Extending dimension for bb2
+
+    # Indices for readability
+    X1, Y1, X2, Y2 = 0, 1, 2, 3
+
     # determine the coordinates of the intersection rectangle
-    x_left = np.maximum(bb1[:, 0][:, np.newaxis], bb2[:, 0][np.newaxis, :])
-    y_top = np.maximum(bb1[:, 1][:, np.newaxis], bb2[:, 1][np.newaxis, :])
-    x_right = np.minimum(bb1[:, 2][:, np.newaxis], bb2[:, 2][np.newaxis, :])
-    y_bottom = np.minimum(bb1[:, 3][:, np.newaxis], bb2[:, 3][np.newaxis, :])
+    x_left = np.maximum(bb1_ext[X1], bb2_ext[X1])
+    y_top = np.maximum(bb1_ext[Y1], bb2_ext[Y1])
+    x_right = np.minimum(bb1_ext[X2], bb2_ext[X2])
+    y_bottom = np.minimum(bb1_ext[Y2], bb2_ext[Y2])
 
     # The intersection of two axis-aligned bounding boxes is always an
     # axis-aligned bounding box
-    intersection_area = (x_right - x_left) * (y_bottom - y_top)
+    intersection_area = np.maximum(0, x_right - x_left) * np.maximum(0, y_bottom - y_top)
 
     # compute the area of both AABBs
-    bb1_area = (bb1[:, 2] - bb1[:, 0]) * (bb1[:, 3] - bb1[:, 1])
-    bb2_area = (bb2[:, 2] - bb2[:, 0]) * (bb2[:, 3] - bb2[:, 1])
+    bb1_area = (bb1[X2] - bb1[X1]) * (bb1[Y2] - bb1[Y1])
+    bb2_area = (bb2[X2] - bb2[X1]) * (bb2[Y2] - bb2[Y1])
 
     # compute the intersection over union by taking the intersection
     # area and dividing it by the sum of prediction + ground-truth
     # areas - the interesection area
-    iou = intersection_area / (
-        bb1_area[:, np.newaxis] + bb2_area[np.newaxis, :] - intersection_area
-    )
+    union_area = bb1_area[:, np.newaxis] + bb2_area[np.newaxis, :] - intersection_area
+    iou = intersection_area / union_area
     # There are some hyper-parameters here like consider tile area/object area
-
-    mask = (x_right < x_left) | (y_bottom < y_top)
-    iou[mask] = 0.0
     return iou
 
 
