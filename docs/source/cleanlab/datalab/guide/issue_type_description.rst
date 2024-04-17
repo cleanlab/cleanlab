@@ -222,6 +222,55 @@ To handle mislabeled examples, you can either filter out the data with label iss
 
 Learn more about the method used to detect label issues in our paper: `Confident Learning: Estimating Uncertainty in Dataset Labels <https://arxiv.org/abs/1911.00068>`_
 
+.. testsetup:: *
+
+    import numpy as np
+    from cleanlab import Datalab
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.model_selection import cross_val_predict
+
+    # Load a dataset
+    np.random.seed(0)
+
+    X = np.random.rand(100, 10)
+    X[-1] = X[-2]  # Create an exact-duplicate example
+    y = np.random.randint(0, 3, 100)
+
+    X[y == 1] -= 0.85  # Add noise to the features of class 1
+    X[y == 2] += 0.85  # Add noise to the features of class 2
+
+    y[-3] = {0: 1, 1: 2, 2: 0}[y[-3]]  # Swap the label of the example at index -3
+
+    clf = LogisticRegression(random_state=0)
+    pred_probs = cross_val_predict(clf, X, y, cv=3, method="predict_proba")
+
+    data = {"features": X, "labels": y}
+
+    lab = Datalab(data, label_name="labels", task="classification")
+
+.. testsetup::
+
+    lab.find_issues(features=X, pred_probs=pred_probs)
+    lab.find_issues(features=X, pred_probs=pred_probs, issue_types={"data_valuation": {}})
+
+Some metadata about label issues is stored in the `issues` attribute of the Datalab object.
+Let's look at one way to access this information.
+
+.. testcode::
+    
+    lab.get_issues("label").sort_values("label_score").head(5)
+
+The output will look something like this:
+
+.. testoutput::
+
+        is_label_issue  label_score  given_label  predicted_label
+    97            True     0.064045            0                2
+    58           False     0.680894            2                2
+    41           False     0.746043            0                0
+    4            False     0.794894            2                2
+    98           False     0.802911            1                1
+
 ``is_label_issue``
 ~~~~~~~~~~~~~~~~~~
 
@@ -236,6 +285,16 @@ A numeric column that gives the label quality score for each example.
 The score lies between 0 and 1.
 The lower the score, the less likely the given label is to be correct.
 
+
+``given_label``
+~~~~~~~~~~~~~~~
+
+A column of the actual labels as provided in the dataset.
+
+``predicted_label``
+~~~~~~~~~~~~~~~~~~~
+
+A column of the predicted labels for each example. This column may contain different labels than the given label, especially when the example is estimated to have a label issue or when a model predicts a different label than the given label.
 
 .. jinja ::
 
@@ -315,6 +374,22 @@ A numeric column with scores between 0 and 1. The lower the score, the more like
 
 Exact duplicates are assigned a score of 0, while near-duplicates are assigned a score close to 0.
 
+``near_duplicate_sets``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+A column of lists of integers, where each list contains the indices of examples that belong to the same set of near-duplicates (not including the example itself).
+Each set represents a group of examples that are extremely similar to each other, relative to the rest of the dataset.
+The examples in each set may be exactly duplicated or have very similar feature representations.
+
+``distance_to_nearest_neighbor``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A numeric column that represents the distance between each example and its nearest neighbor in the dataset.
+The distance is calculated based on the provided `features` or `knn_graph`.
+A smaller distance indicates that the example is more similar to its nearest neighbor.
+Examples that are (near) duplicates have smaller distances to their nearest neighbors compared to other examples in the dataset.
+Exact duplicates ideally have a distance of 0 to their nearest neighbor. However, due to floating point precision, especially when using certain distance metrics like Euclidean distance, this might not always be the case.
+
 .. jinja ::
 
     {% with issue_name = "near_duplicate" %}
@@ -385,6 +460,10 @@ A numeric column with scores between 0 and 1.
 Any example belonging to the most under-represented class is assigned a score equal to the proportion of examples in the dataset belonging to that class.
 All other examples are assigned a score of 1.
 
+``given_label``
+~~~~~~~~~~~~~~~
+
+A column of the actual labels as provided in the dataset.
 
 .. jinja ::
 
@@ -448,6 +527,20 @@ equals the average of the individual examples' quality scores.
 Presence of null examples in the dataset can lead to errors when training ML models. It can also
 result in the model learning incorrect patterns due to the null values.
 
+``is_null_issue``
+~~~~~~~~~~~~~~~~~
+
+A boolean column, where `True` indicates that an example is identified as having null/missing values across all feature columns.
+Even if an example has a single non-null value, it is not flagged with this issue.
+
+``null_score``
+~~~~~~~~~~~~~~
+
+A numeric column with scores between 0 and 1. The score represents the proportion of non-null values in the example.
+A lower score indicates that the example has more null/missing values.
+A score of 0 indicates that all feature values in the example are null. These examples are flagged with the null issue.
+A score of 1 indicates that none of the feature values in the example are null.
+
 .. jinja ::
 
     {% with issue_name = "null"%}
@@ -462,6 +555,18 @@ The examples in the dataset with lowest data valuation scores contribute least t
 Data valuation issues can be detected based on provided `features` or a provided `knn_graph` (or one pre-computed during the computation of other issue types).  If you do not provide one of these two arguments and there isn't a `knn_graph` already stored in the Datalab object, this type of issue will not be considered.
 
 The data valuation score is an approximate Data Shapley value, calculated based on the labels of the top k nearest neighbors of an example. The details of this KNN-Shapley value could be found in the papers: `Efficient Task-Specific Data Valuation for Nearest Neighbor Algorithms <https://arxiv.org/abs/1908.08619>`_ and `Scalability vs. Utility: Do We Have to Sacrifice One for the Other in Data Importance Quantification? <https://arxiv.org/abs/1911.07128>`_.
+
+``is_data_valuation_issue``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A boolean column, where `True` indicates that an example is contributes negatively to a model's training performance.
+
+``data_valuation_score``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+A numeric column with scores between 0 and 1. The score reflects how valuable an example is in terms of improving or maintaining the performance of the model during training.
+A score below 0.5 indicates that the example contributes negatively to the model's performance. Such examples are flagged as having a data valuation issue.
+A score above 0.5 indicates that the example positively influences the model's performance, contributing to better learning and predictive accuracy.
 
 .. jinja ::
 
