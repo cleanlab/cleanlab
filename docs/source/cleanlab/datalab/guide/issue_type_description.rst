@@ -621,7 +621,7 @@ A boolean column, where `True` indicates that the dataset has a cluster of "diff
 
 A numeric column with scores between 0 and 1. Only examples belonging to the underperforming group have a score less than 1.
 Every score in the group receive the same score, which which is the ratio of group's label quality score and the mean label quality score across the dataset.
-The lower the score, the lower quality the group is considered to have.
+The lower the score, the quality the group is considered to be worse than the rest of the dataset.
 
 .. jinja ::
 
