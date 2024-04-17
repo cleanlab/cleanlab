@@ -29,6 +29,10 @@ In case you didn't know: you can alternatively use `Cleanlab Studio <https://cle
                 :ref:`is_label_issue<\`\`is_label_issue\`\`>`
 
                 :ref:`label_score<\`\`label_score\`\`>` 
+
+                :ref:`given_label<\`\`given_label\`\`>`
+
+                :ref:`predicted_label<\`\`predicted_label\`\`>`
               - `pred_probs` or `features`
             * - :ref:`outlier<Outlier Issues>`
               - YES
@@ -43,6 +47,10 @@ In case you didn't know: you can alternatively use `Cleanlab Studio <https://cle
                 :ref:`is_near_duplicate_issue<\`\`is_near_duplicate_issue\`\`>`
                 
                 :ref:`near_duplicate_score<\`\`near_duplicate_score\`\`>`
+
+                :ref:`near_duplicate_sets<\`\`near_duplicate_sets\`\`>`
+
+                :ref:`distance_to_nearest_neighbor<\`\`distance_to_nearest_neighbor\`\`>`
               - `features` or `knn_graph`
             * - :ref:`non_iid<Non-IID Issue>`
               - YES
@@ -68,19 +76,15 @@ In case you didn't know: you can alternatively use `Cleanlab Studio <https://cle
             * - :ref:`null<Null Issue>`
               - YES
               - 
-                is_null_issue
                 :ref:`is_null_issue<\`\`is_null_issue\`\`>`
                 
-                null_score
                 :ref:`null_score<\`\`null_score\`\`>`
               - `features`
             * - :ref:`data_valuation<Data Valuation Issue>`
               - no
               - 
-                is_data_valuation_issue
                 :ref:`is_data_valuation_issue<\`\`is_data_valuation_issue\`\`>`
                 
-                data_valuation_score
                 :ref:`data_valuation_score<\`\`data_valuation_score\`\`>`
               - `knn_graph`
 
@@ -102,32 +106,41 @@ In case you didn't know: you can alternatively use `Cleanlab Studio <https://cle
             * - :ref:`label<Label Issue>`
               - YES
               - 
-                is_label_issue
-                label_score
+                :ref:`is_label_issue<\`\`is_label_issue\`\`>`
+
+                :ref:`label_score<\`\`label_score\`\`>`
+
+                :ref:`given_label<\`\`given_label\`\`>`
+
+                :ref:`predicted_label<\`\`predicted_label\`\`>`
               - `pred_probs` [#f3]_ or `features` or (`features`, `model`) [#f4]_
             * - :ref:`outlier<Outlier Issues>`
               - YES
               - 
-                is_outlier_issue
-                outlier_score
+                :ref:`is_outlier_issue<\`\`is_outlier_issue\`\`>`
+                
+                :ref:`outlier_score<\`\`outlier_score\`\`>`
               - `features` or `knn_graph`
             * - :ref:`near_duplicate<(Near) Duplicate Issue>`
               - YES
               - 
-                is_near_duplicate_issue
-                near_duplicate_score
+                :ref:`is_near_duplicate_issue<\`\`is_near_duplicate_issue\`\`>`
+                
+                :ref:`near_duplicate_score<\`\`near_duplicate_score\`\`>`
               - `features` or `knn_graph`
             * - :ref:`non_iid<Non-IID Issue>`
               - YES
               - 
-                is_non_iid_issue
-                non_iid_score
+                :ref:`is_non_iid_issue<\`\`is_non_iid_issue\`\`>`
+                
+                :ref:`non_iid_score<\`\`non_iid_score\`\`>`
               - `features` or `knn_graph`
             * - :ref:`null<Null Issue>`
               - YES
               - 
-                is_null_issue
-                null_score
+                :ref:`is_null_issue<\`\`is_null_issue\`\`>`
+                
+                :ref:`null_score<\`\`null_score\`\`>`
               - `features`
 
         .. rubric:: Notes
@@ -148,32 +161,41 @@ In case you didn't know: you can alternatively use `Cleanlab Studio <https://cle
             * - :ref:`label<Label Issue>`
               - YES
               - 
-                is_label_issue
-                label_score
+                :ref:`is_label_issue<\`\`is_label_issue\`\`>`
+
+                :ref:`label_score<\`\`label_score\`\`>`
+                
+                :ref:`given_label<\`\`given_label\`\`>`
+
+                :ref:`predicted_label<\`\`predicted_label\`\`>` 
               - `pred_probs` or `features`
             * - :ref:`outlier<Outlier Issues>`
               - YES
               - 
-                is_outlier_issue
-                outlier_score
+                :ref:`is_outlier_issue<\`\`is_outlier_issue\`\`>`
+                
+                :ref:`outlier_score<\`\`outlier_score\`\`>`
               - `features` or `knn_graph`
             * - :ref:`near_duplicate<(Near) Duplicate Issue>`
               - YES
               - 
-                is_near_duplicate_issue
-                near_duplicate_score
+                :ref:`is_near_duplicate_issue<\`\`is_near_duplicate_issue\`\`>`
+                
+                :ref:`near_duplicate_score<\`\`near_duplicate_score\`\`>`
               - `features` or `knn_graph`
             * - :ref:`non_iid<Non-IID Issue>`
               - YES
               - 
-                is_non_iid_issue
-                non_iid_score
+                :ref:`is_non_iid_issue<\`\`is_non_iid_issue\`\`>`
+                
+                :ref:`non_iid_score<\`\`non_iid_score\`\`>`
               - `features` or `knn_graph`
             * - :ref:`null<Null Issue>`
               - YES
               - 
-                is_null_issue
-                null_score
+                :ref:`is_null_issue<\`\`is_null_issue\`\`>`
+                
+                :ref:`null_score<\`\`null_score\`\`>`
               - `features`
 
 
