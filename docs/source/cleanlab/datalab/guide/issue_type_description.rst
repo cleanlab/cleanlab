@@ -322,6 +322,26 @@ Closely inspect them and consider removing some outliers that may be negatively 
 
 Learn more about the methods used to detect outliers in our article: `Out-of-Distribution Detection via Embeddings or Predictions <https://cleanlab.ai/blog/outlier-detection/>`_
 
+Some metadata about outlier issues is stored in the `issues` attribute of the Datalab object.
+Let's look at one way to access this information.
+
+.. testcode::
+
+    lab.get_issues("outlier").sort_values("outlier_score").head(5)
+
+The output will look something like this:
+
+.. testoutput::
+
+        is_outlier_issue  outlier_score
+    98              True       0.011562
+    62             False       0.019657
+    22             False       0.035243
+    1              False       0.040907
+    42             False       0.056865
+
+
+
 ``is_outlier_issue``
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -361,6 +381,25 @@ Scoring the numeric quality of an example in terms of the near duplicate issue t
 Including near-duplicate examples in a dataset may negatively impact a ML model's generalization performance and lead to overfitting.
 In particular, it is questionable to include examples in a test dataset which are (nearly) duplicated in the corresponding training dataset.
 More generally, examples which happen to be duplicated can affect the final modeling results much more than other examples — so you should at least be aware of their presence.
+
+Some metadata about near-duplicate issues is stored in the `issues` attribute of the Datalab object.
+Let's look at one way to access this information.
+
+.. testcode::
+
+    lab.get_issues("near_duplicate").sort_values("near_duplicate_score").head(5)
+
+The output will look something like this:
+
+.. testoutput::
+
+        is_near_duplicate_issue  near_duplicate_score near_duplicate_sets distance_to_nearest_neighbor  
+    36                     True              0.066009            [11, 80]                     0.003906    
+    11                     True              0.066009                [36]                     0.003906    
+    80                     True              0.093245                [36]                     0.005599    
+    27                    False              0.156720                  []                     0.009751    
+    72                    False              0.156720                  []                     0.009751    
+
 
 ``is_near_duplicate_issue``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -414,6 +453,24 @@ The assumption that examples in a dataset are Independent and Identically Distri
 
 For datasets with low non-IID score, you should consider why your data are not IID and act accordingly. For example, if the data distribution is drifting over time, consider employing a time-based train/test split instead of a random partition.  Note that shuffling the data ahead of time will ensure a good non-IID score, but this is not always a fix to the underlying problem (e.g. future deployment data may stem from a different distribution, or you may overlook the fact that examples influence each other). We thus recommend **not** shuffling your data to be able to diagnose this issue if it exists.
 
+Some metadata about non-IID issues is stored in the `issues` attribute of the Datalab object.
+Let's look at one way to access this information.
+
+.. testcode::
+
+    lab.get_issues("non_iid").sort_values("non_iid_score").head(5)
+
+The output will look something like this:
+
+.. testoutput::
+
+        is_non_iid_issue  non_iid_score
+    24             False       0.681458
+    37             False       0.804582
+    64             False       0.810646
+    80             False       0.815691
+    78             False       0.834293
+
 ``is_non_iid_issue``
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -446,6 +503,24 @@ Class imbalance is diagnosed just using the `labels` provided as part of the dat
 In a dataset identified as having class imbalance, the class imbalance quality score for each example is set equal to `q` if it is labeled as the rarest class, and is equal to 1 for all other examples.
 
 Class imbalance in a dataset can lead to subpar model performance for the under-represented class. Consider collecting more data from the under-represented class, or at least take special care while modeling via techniques like over/under-sampling, SMOTE, asymmetric class weighting, etc.
+
+Some metadata about class imbalance issues is stored in the `issues` attribute of the Datalab object.
+Let's look at one way to access this information.
+
+.. testcode::
+
+    lab.get_issues("class_imbalance").sort_values("class_imbalance_score").head(5)
+
+The output will look something like this:
+
+.. testoutput::
+
+        is_class_imbalance_issue  class_imbalance_score  given_label
+    27                     False                   0.28            2
+    72                     False                   0.28            2
+    75                     False                   0.28            2
+    33                     False                   0.28            2
+    68                     False                   0.28            2
 
 ``is_class_imbalance_issue``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -496,6 +571,24 @@ To find the underperforming group, Cleanlab clusters the data using the provided
 The underperforming group quality score is equal to `q/r` for examples belonging to the underperforming group, and is equal to 1 for all other examples.
 Advanced users:  If you have pre-computed cluster assignments for each example in the dataset, you can pass them explicitly to :py:meth:`Datalab.find_issues <cleanlab.datalab.datalab.Datalab.find_issues>` using the `cluster_ids` key in the `issue_types` dict argument.  This is useful for tabular datasets where you want to group/slice the data based on a categorical column. An integer encoding of the categorical column can be passed as cluster assignments for finding the underperforming group, based on the data slices you define.
 
+Some metadata about underperforming group issues is stored in the `issues` attribute of the Datalab object.
+Let's look at one way to access this information.
+
+.. testcode::
+
+    lab.get_issues("underperforming_group").sort_values("underperforming_group_score").head(5)
+
+The output will look something like this:
+
+.. testoutput::
+
+        is_underperforming_group_issue  underperforming_group_score
+    0                            False                          1.0
+    72                           False                          1.0
+    71                           False                          1.0
+    70                           False                          1.0
+    69                           False                          1.0
+
 ``is_underperforming_group_issue``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -527,6 +620,24 @@ equals the average of the individual examples' quality scores.
 Presence of null examples in the dataset can lead to errors when training ML models. It can also
 result in the model learning incorrect patterns due to the null values.
 
+Some metadata about null issues is stored in the `issues` attribute of the Datalab object.
+Let's look at one way to access this information.
+
+.. testcode::
+
+    lab.get_issues("null").sort_values("null_score").head(5)
+
+The output will look something like this:
+
+.. testoutput::
+
+        is_null_issue  null_score
+    0           False         1.0
+    72          False         1.0
+    71          False         1.0
+    70          False         1.0
+    69          False         1.0
+
 ``is_null_issue``
 ~~~~~~~~~~~~~~~~~
 
@@ -555,6 +666,24 @@ The examples in the dataset with lowest data valuation scores contribute least t
 Data valuation issues can be detected based on provided `features` or a provided `knn_graph` (or one pre-computed during the computation of other issue types).  If you do not provide one of these two arguments and there isn't a `knn_graph` already stored in the Datalab object, this type of issue will not be considered.
 
 The data valuation score is an approximate Data Shapley value, calculated based on the labels of the top k nearest neighbors of an example. The details of this KNN-Shapley value could be found in the papers: `Efficient Task-Specific Data Valuation for Nearest Neighbor Algorithms <https://arxiv.org/abs/1908.08619>`_ and `Scalability vs. Utility: Do We Have to Sacrifice One for the Other in Data Importance Quantification? <https://arxiv.org/abs/1911.07128>`_.
+
+Some metadata about data valuation issues is stored in the `issues` attribute of the Datalab object.
+Let's look at one way to access this information.
+
+.. testcode::
+
+    lab.get_issues("data_valuation").sort_values("data_valuation_score").head(5)
+
+The output will look something like this:
+
+.. testoutput::
+
+        is_data_valuation_issue  data_valuation_score
+    39                    False                   0.5
+    32                    False                   0.5
+    98                    False                   0.5
+    6                     False                   0.5
+    7                     False                   0.5
 
 ``is_data_valuation_issue``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
