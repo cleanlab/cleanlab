@@ -86,11 +86,11 @@ class LabelIssueManager(IssueManager):
     def _process_find_label_issues_kwargs(**kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """Searches for keyword arguments that are meant for the
         CleanLearning.find_label_issues method call
-
+    
         Examples
         --------
         >>> from cleanlab.datalab.internal.issue_manager.label import LabelIssueManager
-        >>> LabelIssueManager._process_find_label_issues_kwargs(thresholds=[0.1, 0.9])
+        >>> LabelIssueManager._process_find_label_issues_kwargs(**{'thresholds': [0.1, 0.9]})
         {'thresholds': [0.1, 0.9]}
         """
         accepted_kwargs = [
@@ -102,6 +102,7 @@ class LabelIssueManager(IssueManager):
             "validation_func",
         ]
         return {k: v for k, v in kwargs.items() if k in accepted_kwargs and v is not None}
+
 
     def _reset(self) -> None:
         """Reset the attributes of this manager based on the available datalab info
