@@ -83,7 +83,7 @@ class LabelIssueManager(IssueManager):
         self._reset()
 
     @staticmethod
-    def _process_find_label_issues_kwargs(**kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_find_label_issues_kwargs(**kwargs) -> Dict[str, Any]:
         """Searches for keyword arguments that are meant for the
         CleanLearning.find_label_issues method call
     
