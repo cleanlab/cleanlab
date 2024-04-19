@@ -122,6 +122,8 @@ Whether the dataset exhibits statistically significant violations of the IID ass
 
 The Non-IID issue is detected based on provided `features` or `knn_graph`. If you do not provide one of these arguments, this type of issue will not be considered.
 
+The Non-IID issue is a dataset-level check, not a per-datapoint level check. The per-datapoint aspect is just highlighting which datapoints most significantly contribute to this dataset-level issue - there is not necessarily something specifically wrong with these datapoints.
+
 Mathematically, the **overall** Non-IID score for the dataset is defined as the p-value of a statistical test for whether the distribution of *index-gap* values differs between group A vs. group B defined as follows. For a pair of examples in the dataset `x1, x2`, we define their *index-gap* as the distance between the indices of these examples in the ordering of the data (e.g. if `x1` is the 10th example and `x2` is the 100th example in the dataset, their index-gap is 90). We construct group A from pairs of examples which are amongst the K nearest neighbors of each other, where neighbors are defined based on the provided `knn_graph` or via distances in the space of the provided vector `features` . Group B is constructed from random pairs of examples in the dataset.
 
 The Non-IID quality score for each example `x` is defined via a similarly computed p-value but with Group A constructed from the K nearest neighbors of `x` and Group B constructed from  random examples from the dataset paired with `x`. Learn more about the math behind this method in our paper: `Detecting Dataset Drift and Non-IID Sampling via k-Nearest Neighbors <https://arxiv.org/abs/2305.15696>`_
