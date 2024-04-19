@@ -103,7 +103,6 @@ class LabelIssueManager(IssueManager):
         ]
         return {k: v for k, v in kwargs.items() if k in accepted_kwargs and v is not None}
 
-
     def _reset(self) -> None:
         """Reset the attributes of this manager based on the available datalab info
         and the keyword arguments stored as instance attributes.
