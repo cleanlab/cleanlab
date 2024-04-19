@@ -118,7 +118,7 @@ More generally, examples which happen to be duplicated can affect the final mod
 Non-IID Issue
 -------------
 
-Whether the dataset exhibits statistically significant violations of the IID assumption like:  changepoints or shift, drift, autocorrelation, etc. The specific form of violation considered is whether the examples are ordered such that almost adjacent examples tend to have more similar feature values. If you care about this check, do **not** first shuffle your dataset -- this check is entirely based on the sequential order of your data.
+Whether the overall dataset exhibits statistically significant violations of the IID assumption like:  changepoints or shift, drift, autocorrelation, etc. The specific form of violation considered is whether the examples are ordered within the dataset such that almost adjacent examples tend to have more similar feature values. If you care about this check, do **not** first shuffle your dataset -- this check is entirely based on the sequential order of your data. Learn more via our blog: `https://cleanlab.ai/blog/non-iid-detection/ <https://cleanlab.ai/blog/non-iid-detection/>`_
 
 The Non-IID issue is detected based on provided `features` or `knn_graph`. If you do not provide one of these arguments, this type of issue will not be considered.
 
