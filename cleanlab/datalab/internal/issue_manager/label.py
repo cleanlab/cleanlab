@@ -86,6 +86,7 @@ class LabelIssueManager(IssueManager):
     def _process_find_label_issues_kwargs(**kwargs) -> Dict[str, Any]:
         """Searches for keyword arguments that are meant for the
         CleanLearning.find_label_issues method call
+
         Examples
         --------
         >>> from cleanlab.datalab.internal.issue_manager.label import LabelIssueManager
