@@ -19,13 +19,14 @@ Ancillary helper methods used internally throughout this package; mostly related
 """
 
 import warnings
+from typing import Tuple, Union
+
 import numpy as np
 import pandas as pd
-from typing import Union, Tuple
 
-from cleanlab.typing import DatasetLike, LabelLike
-from cleanlab.internal.validation import labels_to_array
 from cleanlab.internal.constants import FLOATING_POINT_COMPARISON, TINY_VALUE
+from cleanlab.internal.validation import labels_to_array
+from cleanlab.typing import DatasetLike, LabelLike
 
 
 def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
@@ -63,7 +64,7 @@ def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
     return x
 
 
-def clip_noise_rates(noise_matrix) -> np.ndarray:
+def clip_noise_rates(noise_matrix: np.ndarray) -> np.ndarray:
     """Clip all noise rates to proper range [0,1), but
     do not modify the diagonal terms because they are not
     noise rates.
@@ -78,19 +79,11 @@ def clip_noise_rates(noise_matrix) -> np.ndarray:
         Diagonal terms are not noise rates, but are consistency P(label=k|true_label=k)
         Assumes columns of noise_matrix sum to 1"""
 
-    def clip_noise_rate_range(noise_rate) -> float:
-        """Clip noise rate P(label=k'|true_label=k) or P(true_label=k|label=k')
-        into proper range [0,1)"""
-        return min(max(noise_rate, 0.0), 0.9999)
-
-    # Vectorize clip_noise_rate_range for efficiency with np.ndarrays.
-    vectorized_clip = np.vectorize(clip_noise_rate_range)
-
     # Preserve because diagonal entries are not noise rates.
     diagonal = np.diagonal(noise_matrix)
 
     # Clip all noise rates (efficiently).
-    noise_matrix = vectorized_clip(noise_matrix)
+    noise_matrix = np.clip(noise_matrix, 0, 0.9999)
 
     # Put unmodified diagonal back.
     np.fill_diagonal(noise_matrix, diagonal)
@@ -580,9 +573,7 @@ def unshuffle_tensorflow_dataset(X) -> tuple:
         or ``len(pre_X)`` if buffer_size cannot be determined, or None if no ShuffleDataset found.
     """
     try:
-        from tensorflow.python.data.ops.dataset_ops import (
-            ShuffleDataset,
-        )
+        from tensorflow.python.data.ops.dataset_ops import ShuffleDataset
 
         X_inputs = [X]
         while len(X_inputs) == 1:
