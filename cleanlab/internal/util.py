@@ -29,7 +29,7 @@ from cleanlab.internal.validation import labels_to_array
 from cleanlab.typing import DatasetLike, LabelLike
 
 
-def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
+def remove_noise_from_class(noise_matrix: np.ndarray, class_without_noise: int) -> np.ndarray:
     """A helper function in the setting of PU learning.
     Sets all P(label=class_without_noise|true_label=any_other_class) = 0
     in noise_matrix for pulearning setting, where we have
@@ -54,13 +54,12 @@ def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
     x = np.copy(noise_matrix)
 
     # Set P( labels = cwn | y != cwn) = 0 (no noise)
-    x[cwn, [i for i in range(K) if i != cwn]] = 0.0
+    class_arange = np.arange(K)
+    x[cwn, class_arange[class_arange != cwn]] = 0.0
 
     # Normalize columns by increasing diagonal terms
     # Ensures noise_matrix is a valid probability matrix
-    for i in range(K):
-        x[i][i] = 1 - float(np.sum(x[:, i]) - x[i][i])
-
+    np.fill_diagonal(x, 1 - (np.sum(x, axis=0) - np.diag(x)))
     return x
 
 
