@@ -599,17 +599,10 @@ def multilabel_py(y: np.ndarray) -> np.ndarray:
            [0.8, 0.2]])
     """
 
-    def compute_class_py(y_slice: np.ndarray) -> np.ndarray:
-        # Should only consider a single class at a time
-        assert y_slice.ndim == 1
-        unique_values, counts = np.unique(y_slice, axis=0, return_counts=True)
-        N = y_slice.shape[0]
-        if len(unique_values) == 1:
-            # Should be 0 and 1, pad with 0 probability if either is missing.
-            counts = np.array([0, N] if unique_values[0] == 1 else [N, 0])
-        return counts / N
-
-    py = np.apply_along_axis(compute_class_py, axis=1, arr=y.T)
+    N, _ = y.shape
+    fraction_0 = np.sum(y == 0, axis=0) / N
+    fraction_1 = 1 - fraction_0
+    py = np.column_stack((fraction_0, fraction_1))
     return py
 
 
