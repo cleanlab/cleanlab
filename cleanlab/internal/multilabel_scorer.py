@@ -22,13 +22,14 @@ from typing import Callable, Dict, Optional, Union
 
 import numpy as np
 from sklearn.model_selection import cross_val_predict
-from cleanlab.internal.multilabel_utils import _is_multilabel, stack_complement
+
 from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
+from cleanlab.internal.multilabel_utils import _is_multilabel, stack_complement
 from cleanlab.internal.numerics import softmax
 from cleanlab.rank import (
-    get_self_confidence_for_each_label,
-    get_normalized_margin_for_each_label,
     get_confidence_weighted_entropy_for_each_label,
+    get_normalized_margin_for_each_label,
+    get_self_confidence_for_each_label,
 )
 
 
@@ -616,9 +617,7 @@ def multilabel_py(y: np.ndarray) -> np.ndarray:
 
 
 def _get_split_generator(labels, cv):
-    unique_labels = np.unique(labels, axis=0)
-    label_to_index = {tuple(label): i for i, label in enumerate(unique_labels)}
-    multilabel_ids = np.array([label_to_index[tuple(label)] for label in labels])
+    _, multilabel_ids = np.unique(labels, axis=0, return_inverse=True)
     split_generator = cv.split(X=multilabel_ids, y=multilabel_ids)
     return split_generator
 
