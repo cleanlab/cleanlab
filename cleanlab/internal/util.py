@@ -19,13 +19,14 @@ Ancillary helper methods used internally throughout this package; mostly related
 """
 
 import warnings
+from typing import Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
-from typing import Union, Tuple
 
-from cleanlab.typing import DatasetLike, LabelLike
-from cleanlab.internal.validation import labels_to_array
 from cleanlab.internal.constants import FLOATING_POINT_COMPARISON, TINY_VALUE
+from cleanlab.internal.validation import labels_to_array
+from cleanlab.typing import DatasetLike, LabelLike
 
 
 def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
@@ -100,7 +101,7 @@ def clip_noise_rates(noise_matrix) -> np.ndarray:
     return noise_matrix
 
 
-def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
+def clip_values(x, low=0.0, high=1.0, new_sum: Optional[float] = None) -> np.ndarray:
     """Clip all values in p to range [low,high].
     Preserves sum of x.
 
@@ -123,17 +124,14 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
     x : np.ndarray
         A list of clipped values, summing to the same sum as x."""
 
-    def clip_range(a, low=low, high=high):
-        """Clip a into range [low,high]"""
-        return min(max(a, low), high)
-
-    vectorized_clip = np.vectorize(
-        clip_range
-    )  # Vectorize clip_range for efficiency with np.ndarrays
-    prev_sum = sum(x) if new_sum is None else new_sum  # Store previous sum
-    x = vectorized_clip(x)  # Clip all values (efficiently)
+    if len(x.shape) > 1:
+        raise TypeError(
+            f"only size-1 arrays can be converted to Python scalars but 'x' had shape {x.shape}"
+        )
+    prev_sum = np.sum(x) if new_sum is None else new_sum  # Store previous sum
+    x = np.clip(x, low, high)  # Clip all values (efficiently)
     x = (
-        x * prev_sum / np.clip(float(sum(x)), a_min=TINY_VALUE, a_max=None)
+        x * prev_sum / np.clip(np.sum(x), a_min=TINY_VALUE, a_max=None)
     )  # Re-normalized values to sum to previous sum
     return x
 
@@ -580,9 +578,7 @@ def unshuffle_tensorflow_dataset(X) -> tuple:
         or ``len(pre_X)`` if buffer_size cannot be determined, or None if no ShuffleDataset found.
     """
     try:
-        from tensorflow.python.data.ops.dataset_ops import (
-            ShuffleDataset,
-        )
+        from tensorflow.python.data.ops.dataset_ops import ShuffleDataset
 
         X_inputs = [X]
         while len(X_inputs) == 1:
