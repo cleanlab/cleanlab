@@ -23,8 +23,8 @@ import pytest
 import sklearn
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from hypothesis.strategies import composite
 from hypothesis.extra.numpy import arrays
+from hypothesis.strategies import composite
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 
@@ -779,7 +779,7 @@ class TestMultiLabel:
         true_labels, noisy_labels, pred_probs = data
         noisy_labels_list = onehot2int(noisy_labels)
         is_issue = filter.find_label_issues(
-            labels=onehot2int(noisy_labels_list), pred_probs=np.array(pred_probs)
+            labels=noisy_labels_list, pred_probs=np.array(pred_probs)
         )
         threshold = 0.5
         predicted_labels = (pred_probs >= threshold).astype(int)
