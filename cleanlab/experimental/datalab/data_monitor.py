@@ -124,20 +124,40 @@ class DataMonitor:
         self.label_map = datalab._label_map
 
         self.info = datalab.get_info()
-        # lab.get_info() is an alias for lab.info, but some keys are handled differently via lab.get_info(key) method.
-        _missing_label_info_keys = set(datalab.get_info("label").keys()) - set(self.info.keys())
-        self.info["label"].update(
-            {k: v for (k, v) in datalab.get_info("label").items() if k in _missing_label_info_keys}
-        )
+        datalab_issue_summary = datalab.get_issue_summary()
+        issue_names_checked = datalab_issue_summary["issue_type"].tolist()
+        for issue_name in issue_names_checked:
+            # lab.get_info() is an alias for lab.info, but some keys are handled differently via lab.get_info(key) method.
+            _missing_keys = set(datalab.get_info(issue_name).keys()) - set(self.info.keys())
+            self.info[issue_name].update(
+                {k: v for (k, v) in datalab.get_info(issue_name).items() if k in _missing_keys}
+            )
 
         # TODO: Compare monitors and the issue types that Datalab managed to check. Print types that DataMonitor won't consider.
         # TODO: If label issues were checked by Datalab, but with features, then the monitor will skip the label issue check, explaining that it won't support that argument for now. Generalize this for all issue types.
         # TODO: Fail on issue types that DataMonitor is asked to check, but Datalab didn't check.
 
-        self.monitors: Dict[str, IssueMonitor] = {
-            "label": LabelIssueMonitor(self.info),
-        }
+        # Set up monitors
+        self.monitors: Dict[str, IssueMonitor] = {}
 
+        # Only consider label error detection if checked by Datalab, using pred_probs
+        if "label" in issue_names_checked and self.info["label"]["find_issues_inputs"].get(
+            "pred_probs", False
+        ):
+            self.monitors["label"] = LabelIssueMonitor(self.info)
+
+        if not self.monitors:
+            if issue_names_checked:
+                # No monitors were created, so we can't check for any issues.
+                raise ValueError("No issue types checked by Datalab are supported by DataMonitor.")
+            # Datalab didn't check any issues with the expected inputs, so we can't check for any issues.
+            error_msg = (
+                "No issue types checked by Datalab. DataMonitor requires at least one issue type to be checked."
+                " The following issue types are supported by DataMonitor: label, outlier."
+            )
+            raise ValueError(error_msg)
+
+        # Set up dictionary of lists for efficiently constructing the issues DataFrame
         issue_names = self.monitors.keys()
 
         # This issue dictionary will collect the issues for the entire stream of data.
