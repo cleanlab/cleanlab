@@ -252,14 +252,39 @@ class DataMonitor:
         )  # TODO: Abstract this into a method for checking how many examples have been processed/checked. E.g. __len__ or a property.
         end_index = start_index + len(next(iter(issues_dicts.values())))
         index = np.arange(start_index, end_index)
-        df_issues = pd.DataFrame(issues_dicts, index=index)
-        df_issues["given_label"] = kwargs["labels"]
-        df_issues["suggested_label"] = np.vectorize(self.label_map.get)(
-            np.argmax(kwargs["pred_probs"], axis=1)
-        )
+
+        issue_columns = [
+            col for col in issues_dicts.keys() if (col.startswith("is_") and col.endswith("_issue"))
+        ]
+        score_columns = [
+            col.replace("is_", "").replace("_issue", "_score") for col in issue_columns
+        ]
+        issue_score_pairs = zip(issue_columns, score_columns)
+
+        pairs_to_keep = [
+            (issue_col, score_col)
+            for issue_col, score_col in issue_score_pairs
+            if issues_dicts[issue_col].any()
+        ]
+        filtered_issues_dicts = {}
+        for issue_col, score_col in pairs_to_keep:
+            filtered_issues_dicts.update(
+                {issue_col: issues_dicts[issue_col], score_col: issues_dicts[score_col]}
+            )
+
+        df_issues = pd.DataFrame(filtered_issues_dicts, index=index)
+
         is_issue_columns = [
             col for col in df_issues.columns if (col.startswith("is_") and col.endswith("_issue"))
         ]
+        if "is_label_issue" in is_issue_columns:
+            df_issues["given_label"] = kwargs["labels"]
+            df_issues["suggested_label"] = np.vectorize(self.label_map.get)(
+                np.argmax(kwargs["pred_probs"], axis=1)
+            )
+
+        df_subset = df_issues.query(f"{' | '.join([f'{col} == True' for col in is_issue_columns])}")
+
         print(
             "Detected issues in the current batch:\n",
             (
