@@ -62,11 +62,11 @@ class FindIssuesKwargs:
 
     labels: np.ndarray
     pred_probs: np.ndarray
+    features: Optional[np.ndarray] = None
     _label_map: InitVar[Optional[Dict[int, str]]] = None
-    features: InitVar[Optional[np.ndarray]] = None
     knn_graph: InitVar[Optional[csr_matrix]] = None
 
-    def __post_init__(self, _label_map, features, knn_graph):
+    def __post_init__(self, _label_map, knn_graph):
         """
         Performs post-initialization operations.
 
@@ -74,19 +74,16 @@ class FindIssuesKwargs:
         ----------
         _label_map :
             An optional dictionary representing the label map.
-        features :
-            An optional numpy array representing the features.
-            If not None, then an UnimplementedFeatureError is raised, as the DataMonitor will only support labels and pred_probs for now.
         knn_graph :
             An optional scipy sparse matrix representing the k-nearest neighbors graph.
-            If not None, then an UnimplementedFeatureError is raised, as the DataMonitor will only support labels and pred_probs for now.
+            If not None, then an UnimplementedFeatureError is raised, as the DataMonitor will only support labels, pred_probs and features for now.
 
         Raises
         ------
         UnimplementedFeatureError :
             If any unimplemented keyword arguments are provided.
         """
-        self._check_unimplemented_kwargs(features, knn_graph)
+        self._check_unimplemented_kwargs(knn_graph)
         if self.labels is not None and _label_map is not None:
             self.labels = np.vectorize(_label_map.get, otypes=[int])(self.labels)
 
@@ -96,9 +93,8 @@ class FindIssuesKwargs:
             # and batches could be passed as lists or arrays.
             pass
 
-    def _check_unimplemented_kwargs(self, features, knn_graph):
+    def _check_unimplemented_kwargs(self, knn_graph):
         unimplemented_kwargs = {
-            "features": features,
             "knn_graph": knn_graph,
         }
         unimplemented_kwargs = {k: v for k, v in unimplemented_kwargs.items() if v is not None}
