@@ -87,6 +87,11 @@ class OutlierIssueManager(IssueManager):
         self.threshold = threshold
         self._embeddings: Optional[np.ndarray] = None
         self._metric: str = None  # type: ignore
+        self._find_issues_inputs: Dict[str, bool] = {
+            "features": False,
+            "pred_probs": False,
+            "knn_graph": False,
+        }
 
     def find_issues(
         self,
@@ -105,13 +110,16 @@ class OutlierIssueManager(IssueManager):
             assert isinstance(distances, np.ndarray)
             avg_distances = distances.mean(axis=1)
             median_avg_distance = np.median(avg_distances)
+            self._find_issues_inputs.update({"knn_graph": True})
             scores = transform_distances_to_scores(
                 avg_distances, t=t, scaling_factor=median_avg_distance
             )
         elif features is not None:
             scores = self._score_with_features(features, **kwargs)
+            self._find_issues_inputs.update({"features": True})
         elif pred_probs is not None:
             scores = self._score_with_pred_probs(pred_probs, **kwargs)
+            self._find_issues_inputs.update({"pred_probs": True})
         else:
             if kwargs.get("knn_graph", None) is not None:
                 raise ValueError(
@@ -264,6 +272,7 @@ class OutlierIssueManager(IssueManager):
             **ood_params_dict,  # type: ignore[arg-type]
             **knn_dict,
             **statistics_dict,
+            "find_issues_inputs": self._find_issues_inputs,
         }
         return info_dict
 
