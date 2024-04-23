@@ -22,13 +22,14 @@ from typing import Callable, Dict, Optional, Union
 
 import numpy as np
 from sklearn.model_selection import cross_val_predict
-from cleanlab.internal.multilabel_utils import _is_multilabel, stack_complement
+
 from cleanlab.internal.label_quality_utils import _subtract_confident_thresholds
+from cleanlab.internal.multilabel_utils import _is_multilabel, stack_complement
 from cleanlab.internal.numerics import softmax
 from cleanlab.rank import (
-    get_self_confidence_for_each_label,
-    get_normalized_margin_for_each_label,
     get_confidence_weighted_entropy_for_each_label,
+    get_normalized_margin_for_each_label,
+    get_self_confidence_for_each_label,
 )
 
 
@@ -598,17 +599,10 @@ def multilabel_py(y: np.ndarray) -> np.ndarray:
            [0.8, 0.2]])
     """
 
-    def compute_class_py(y_slice: np.ndarray) -> np.ndarray:
-        # Should only consider a single class at a time
-        assert y_slice.ndim == 1
-        unique_values, counts = np.unique(y_slice, axis=0, return_counts=True)
-        N = y_slice.shape[0]
-        if len(unique_values) == 1:
-            # Should be 0 and 1, pad with 0 probability if either is missing.
-            counts = np.array([0, N] if unique_values[0] == 1 else [N, 0])
-        return counts / N
-
-    py = np.apply_along_axis(compute_class_py, axis=1, arr=y.T)
+    N, _ = y.shape
+    fraction_0 = np.sum(y == 0, axis=0) / N
+    fraction_1 = 1 - fraction_0
+    py = np.column_stack((fraction_0, fraction_1))
     return py
 
 
@@ -616,9 +610,7 @@ def multilabel_py(y: np.ndarray) -> np.ndarray:
 
 
 def _get_split_generator(labels, cv):
-    unique_labels = np.unique(labels, axis=0)
-    label_to_index = {tuple(label): i for i, label in enumerate(unique_labels)}
-    multilabel_ids = np.array([label_to_index[tuple(label)] for label in labels])
+    _, multilabel_ids = np.unique(labels, axis=0, return_inverse=True)
     split_generator = cv.split(X=multilabel_ids, y=multilabel_ids)
     return split_generator
 
