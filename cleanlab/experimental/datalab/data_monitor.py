@@ -148,6 +148,14 @@ class DataMonitor:
         if label_issue_checked and pred_probs_checked_for_label:
             self.monitors["label"] = LabelIssueMonitor(self.info)
 
+        # Only consider outlier detection if checked by Datalab, using features
+        outliers_checked = "outlier" in issue_names_checked
+        outlier_find_issues_inputs = self.info["outlier"]["find_issues_inputs"]
+        features_checked_for_outlier = outlier_find_issues_inputs.get("features", False)
+
+        if outliers_checked and features_cheked_for_outlier:
+            self.monitors["outlier"] = OutlierIssueMonitor(self.info)
+
         if not self.monitors:
             if issue_names_checked:
                 # No monitors were created, so we can't check for any issues.
