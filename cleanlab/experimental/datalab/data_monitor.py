@@ -141,9 +141,11 @@ class DataMonitor:
         self.monitors: Dict[str, IssueMonitor] = {}
 
         # Only consider label error detection if checked by Datalab, using pred_probs
-        if "label" in issue_names_checked and self.info["label"]["find_issues_inputs"].get(
-            "pred_probs", False
-        ):
+        label_issue_checked = "label" in issue_names_checked
+        label_find_issues_inputs = self.info["label"]["find_issues_inputs"]
+        pred_probs_checked_for_label = label_find_issues_inputs.get("pred_probs", False)
+
+        if label_issue_checked and pred_probs_checked_for_label:
             self.monitors["label"] = LabelIssueMonitor(self.info)
 
         if not self.monitors:
