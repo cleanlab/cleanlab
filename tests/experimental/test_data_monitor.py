@@ -421,9 +421,36 @@ class TestDataMonitorInit(SetupClass):
         issues = monitor.issues
 
         # Only the "label" monitor is configured
-        assert "label" in monitor.monitors
+        assert set(["label"]) == set(monitor.monitors.keys())
 
         # Only label issues should have been checked
         assert set(issues.columns) == set(["is_label_issue", "label_score"])
+        # All the "test" examples should been checked
+        assert len(issues) == len(features)
+
+    def test_only_on_features(self, data):
+        train_dataset = {"X_train": data["X_train"]}
+        lab = Datalab(data=train_dataset, task="classification")
+
+        lab.find_issues(features=train_dataset["X_train"])
+
+        # Set up monitor
+        monitor = DataMonitor(datalab=lab)
+
+        # Set up stream of test data
+        features = data["X_test"][:20]
+
+        singleton_stream = ({"features": f[np.newaxis, :]} for f in features)
+
+        for eg in singleton_stream:
+            monitor.find_issues(**eg)
+
+        issues = monitor.issues
+
+        # Only the "outlier" monitor is configured
+        assert set(["outlier"]) == set(monitor.monitors.keys())
+
+        # Only outlier issues should have been checked
+        assert set(issues.columns) == set(["is_outlier_issue", "outlier_score"])
         # All the "test" examples should been checked
         assert len(issues) == len(features)
