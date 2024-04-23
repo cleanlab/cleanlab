@@ -406,9 +406,22 @@ class OutlierIssueMonitor(IssueMonitor):
         self.issue_threshold: float = outlier_info["issue_threshold"]
 
     def find_issues(self, fi_kwargs: FindIssuesKwargs) -> None:
+        """
+        Finds outlier issues in the provided batch of features.
 
+        Parameters
+        ----------
+        fi_kwargs :
+            An object containing the keyword arguments for finding issues.
+            It should contain features.
+
+        Raises
+        ------
+        ValueError :
+            If `features` are not provided.
+        """
         if fi_kwargs.features is None:
-            raise ValueError("Either features or pred_probs must be provided to find issues.")
+            raise ValueError("Features must be provided to find outlier issues.")
 
         # Reset the flag indicating issues found in the current batch
         self._found_issues_in_batch = False
