@@ -140,20 +140,23 @@ class DataMonitor:
         # Set up monitors
         self.monitors: Dict[str, IssueMonitor] = {}
 
+        # Helper lmabda to figure out what inputs where used for the issue checks in Datalab
+        _check_issue_input = (
+            lambda n, i: self.info.get(n, {}).get("find_issues_inputs", {}).get(i, False)
+        )
+
         # Only consider label error detection if checked by Datalab, using pred_probs
         label_issue_checked = "label" in issue_names_checked
-        label_find_issues_inputs = self.info["label"]["find_issues_inputs"]
-        pred_probs_checked_for_label = label_find_issues_inputs.get("pred_probs", False)
+        pred_probs_checked_for_label = _check_issue_input("label", "pred_probs")
 
         if label_issue_checked and pred_probs_checked_for_label:
             self.monitors["label"] = LabelIssueMonitor(self.info)
 
         # Only consider outlier detection if checked by Datalab, using features
         outliers_checked = "outlier" in issue_names_checked
-        outlier_find_issues_inputs = self.info["outlier"]["find_issues_inputs"]
-        features_checked_for_outlier = outlier_find_issues_inputs.get("features", False)
+        features_checked_for_outlier = _check_issue_input("outlier", "features")
 
-        if outliers_checked and features_cheked_for_outlier:
+        if outliers_checked and features_checked_for_outlier:
             self.monitors["outlier"] = OutlierIssueMonitor(self.info)
 
         if not self.monitors:
