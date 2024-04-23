@@ -108,9 +108,12 @@ class SetupClass:
 
     @pytest.fixture
     def datalab(self, pred_probs_train, data):
-        data = {"labels": data["noisy_labels_train"]}
-        lab = Datalab(data=data, label_name="labels")
-        lab.find_issues(pred_probs=pred_probs_train, issue_types={"label": {}})
+        dataset = {"labels": data["noisy_labels_train"]}
+        lab = Datalab(data=dataset, label_name="labels")
+        issue_types = {"label": {}, "outlier": {}}
+        lab.find_issues(
+            pred_probs=pred_probs_train, features=data["X_train"], issue_types=issue_types
+        )
         return lab
 
 
@@ -129,7 +132,9 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
         """Check the label-specific info is available in the DataMonitor instance for detecting label issues.
         The info should not be affected by the test data."""
         monitor = DataMonitor(datalab=datalab)
-        monitor.find_issues(labels=data["noisy_labels_test"], pred_probs=pred_probs_test)
+        monitor.find_issues(
+            labels=data["noisy_labels_test"], pred_probs=pred_probs_test, features=data["X_test"]
+        )
         trained_statistics = datalab.get_info("label")
         test_statistics = monitor.info["label"]
         for k, v in trained_statistics.items():
@@ -150,7 +155,9 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
         # Monitor test data only
         test_data = {"labels": data["noisy_labels_test"]}
         monitor = DataMonitor(datalab=datalab)
-        monitor.find_issues(labels=test_data["labels"], pred_probs=pred_probs_test)
+        monitor.find_issues(
+            labels=test_data["labels"], pred_probs=pred_probs_test, features=data["X_test"]
+        )
 
         # Compare results
         lab_results = lab_all.get_issues()[: int(self.num_examples * self.test_size)]
@@ -181,14 +188,13 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
         for i in range(1, len(batch_sizes)):
             start_positions[i] = start_positions[i - 1] + batch_sizes[i - 1]
         for batch_size, start_position in zip(batch_sizes, start_positions):
-            test_data = {
-                "labels": data["noisy_labels_test"][start_position : start_position + batch_size]
+            data_batch = {
+                "labels": data["noisy_labels_test"][start_position : start_position + batch_size],
+                "pred_probs": pred_probs_test[start_position : start_position + batch_size],
+                "features": data["X_test"][start_position : start_position + batch_size],
             }
             monitor = DataMonitor(datalab=datalab)
-            monitor.find_issues(
-                labels=test_data["labels"],
-                pred_probs=pred_probs_test[start_position : start_position + batch_size],
-            )
+            monitor.find_issues(**data_batch)
             monitor_results = pd.concat([monitor_results, monitor.issues], axis=0)
 
         # Compare results
@@ -203,9 +209,11 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
         # Check for issues on test data
         dataset = {"labels": data["noisy_labels_test"]}
         monitor = DataMonitor(datalab=datalab)
-        monitor.find_issues(labels=dataset["labels"], pred_probs=pred_probs_test)
+        monitor.find_issues(
+            labels=dataset["labels"], pred_probs=pred_probs_test, features=data["X_test"]
+        )
 
-        expected_issue_types_keys = ["label"]
+        expected_issue_types_keys = ["label", "outlier"]
 
         # Verify that the correct types of issues were checked for
         issue_summary = monitor.issue_summary
@@ -254,7 +262,7 @@ class TestDataMonitorInit(SetupClass):
 
         singleton_stream = (
             {
-                # "features": f[np.newaxis, :],  # TODO: Support features in the future
+                "features": f[np.newaxis, :],
                 "pred_probs": p[np.newaxis, :],
                 "labels": l[np.newaxis],
             }
@@ -263,7 +271,7 @@ class TestDataMonitorInit(SetupClass):
 
         batch_stream = (
             {
-                # "features": f,  # TODO: Support features in the future
+                "features": f,
                 "pred_probs": p,
                 "labels": l,
             }
