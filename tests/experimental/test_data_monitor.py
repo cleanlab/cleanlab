@@ -420,6 +420,9 @@ class TestDataMonitorInit(SetupClass):
 
         issues = monitor.issues
 
+        # Only the "label" monitor is configured
+        assert "label" in monitor.monitors
+
         # Only label issues should have been checked
         assert set(issues.columns) == set(["is_label_issue", "label_score"])
         # All the "test" examples should been checked
