@@ -403,7 +403,6 @@ class OutlierIssueMonitor(IssueMonitor):
         outlier_info = info.get("outlier")
         self.knn = outlier_info["knn"]
         self.ood = outlier_info["ood"]
-        self.knn
         self.issue_threshold: float = outlier_info["issue_threshold"]
 
     def find_issues(self, fi_kwargs: FindIssuesKwargs) -> None:
