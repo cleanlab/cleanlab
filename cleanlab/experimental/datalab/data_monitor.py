@@ -171,7 +171,13 @@ class DataMonitor:
         ]
         return pd.DataFrame.from_dict(issue_summary_dict)
 
-    def find_issues(self, *, labels: np.ndarray, pred_probs: np.ndarray) -> None:
+    def find_issues(
+        self,
+        *,
+        labels: Optional[np.ndarray] = None,
+        pred_probs: Optional[np.ndarray] = None,
+        features: Optional[np.ndarray] = None,
+    ) -> None:
         # TODO: Simplifying User Input: Ensure that users can pass input in the simplest form possible.
         # See FindIssuesKwargs._adapt_to_singletons TODO for more details.
 
@@ -179,6 +185,7 @@ class DataMonitor:
         find_issues_kwargs = FindIssuesKwargs(
             labels=labels,
             pred_probs=pred_probs,
+            features=features,
             _label_map=str_to_int_map,
         )
         issues_dict: Dict[str, Union[List[float], List[bool], np.ndarray]] = {
