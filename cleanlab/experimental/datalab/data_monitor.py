@@ -357,3 +357,41 @@ class LabelIssueMonitor(IssueMonitor):
             "is_issue": is_issue_array,
             "score": scores,
         }
+
+
+class OutlierIssueMonitor(IssueMonitor):
+    """Class that monitors a batch of data for outlier issues."""
+
+    def __init__(self, info: Info):
+        super().__init__(info)
+        outlier_info = info.get("outlier")
+        self.knn = outlier_info["knn"]
+        self.ood = outlier_info["ood"]
+        self.knn
+        self.issue_threshold: float = outlier_info["issue_threshold"]
+
+    def find_issues(self, fi_kwargs: FindIssuesKwargs) -> None:
+
+        if fi_kwargs.features is None:
+            raise ValueError("Either features or pred_probs must be provided to find issues.")
+
+        # Reset the flag indicating issues found in the current batch
+        self._found_issues_in_batch = False
+        scores = self.ood.score(features=fi_kwargs.features)
+
+        distances, _ = self.knn.kneighbors(fi_kwargs.features, return_distance=True)
+        avg_distances = np.mean(distances, axis=1)
+
+        # Determine which examples have outlier issues
+        is_issue_array = np.zeros(len(fi_kwargs.features), dtype=bool)
+        issue_indices = np.where(avg_distances > self.issue_threshold)[0]
+        num_issues_in_batch = len(issue_indices)
+        if num_issues_in_batch > 0:
+            self._found_issues_in_batch = True
+            is_issue_array[issue_indices] = True
+
+        # Update issues dictionary
+        self.issues_dict = {
+            "is_issue": is_issue_array,
+            "score": scores,
+        }
