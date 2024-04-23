@@ -60,8 +60,8 @@ class FindIssuesKwargs:
         An optional scipy sparse matrix representing the k-nearest neighbors graph.
     """
 
-    labels: np.ndarray
-    pred_probs: np.ndarray
+    labels: Optional[np.ndarray] = None
+    pred_probs: Optional[np.ndarray] = None
     features: Optional[np.ndarray] = None
     _label_map: InitVar[Optional[Dict[int, str]]] = None
     knn_graph: InitVar[Optional[csr_matrix]] = None
@@ -267,7 +267,7 @@ class DataMonitor:
         pairs_to_keep = [
             (issue_col, score_col)
             for issue_col, score_col in issue_score_pairs
-            if issues_dicts[issue_col].any()
+            if np.any(issues_dicts[issue_col])
         ]
         filtered_issues_dicts = {}
         for issue_col, score_col in pairs_to_keep:
@@ -401,6 +401,9 @@ class OutlierIssueMonitor(IssueMonitor):
     def __init__(self, info: Info):
         super().__init__(info)
         outlier_info = info.get("outlier")
+        if outlier_info is None:
+            raise ValueError("The outlier information is missing in the info dictionary.")
+
         self.knn = outlier_info["knn"]
         self.ood = outlier_info["ood"]
         self.issue_threshold: float = outlier_info["issue_threshold"]
