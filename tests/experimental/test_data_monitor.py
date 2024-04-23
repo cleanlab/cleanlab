@@ -324,3 +324,56 @@ class TestDataMonitorInit(SetupClass):
             expected_ids_sorted_by_label_score, list(issues.sort_values("label_score").index)
         )
         assert corr > 0.9
+
+    def test_outlier_detection(self, datalab, data):
+        monitor = DataMonitor(datalab=datalab)
+        assert isinstance(monitor, DataMonitor)
+
+        features = data["X_test"][:20]
+
+        # Make the first example an outlier
+        features[0] += 5
+
+        labels = data["noisy_labels_test"][:20]
+
+        # Correct the label of the outlier
+        labels[0] = np.where(features[0].sum() < 3.3, 0, np.where(features[0].sum() < 6.6, 1, 2))
+        from sklearn.linear_model import LogisticRegression
+
+        clf = LogisticRegression()
+        clf.fit(data["X_train"], data["noisy_labels_train"])
+        pred_probs = clf.predict_proba(features)
+
+        singleton_stream = (
+            {
+                "features": f[np.newaxis, :],
+                "pred_probs": p[np.newaxis, :],
+                "labels": l[np.newaxis],
+            }
+            for f, p, l in zip(features[:5], pred_probs[:5], labels[:5])
+        )
+
+        batch_stream = (
+            {
+                "features": f,
+                "pred_probs": p,
+                "labels": l,
+            }
+            for f, p, l in zip(
+                batch_slices(features[5:], 0, 5),
+                batch_slices(pred_probs[5:], 0, 5),
+                batch_slices(labels[5:], 0, 5),
+            )
+        )
+
+        for i, eg in enumerate(singleton_stream):
+            monitor.find_issues(**eg)
+
+        issues = monitor.issues
+        outlier_issue_mask = issues["is_outlier_issue"].to_numpy()
+        expected_mask = np.array([True, False, False, False, False])
+        np.testing.assert_array_equal(outlier_issue_mask, expected_mask)
+
+        outlier_scores = issues["outlier_score"].to_numpy()
+        expected_scores = np.array([6.4e-15, 0.38, 0.33, 0.42, 0.33])
+        np.testing.assert_allclose(outlier_scores, expected_scores, atol=1e-2)
