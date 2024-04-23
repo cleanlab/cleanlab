@@ -377,3 +377,50 @@ class TestDataMonitorInit(SetupClass):
         outlier_scores = issues["outlier_score"].to_numpy()
         expected_scores = np.array([6.4e-15, 0.38, 0.33, 0.42, 0.33])
         np.testing.assert_allclose(outlier_scores, expected_scores, atol=1e-2)
+
+    def test_only_on_pred_probs(self, data):
+        train_dataset = {"labels": data["noisy_labels_train"], "X_train": data["X_train"]}
+        lab = Datalab(data=train_dataset, label_name="labels", task="classification")
+
+        from sklearn.model_selection import cross_val_predict
+        from sklearn.linear_model import LogisticRegression
+
+        pred_probs = cross_val_predict(
+            LogisticRegression(),
+            train_dataset["X_train"],
+            train_dataset["labels"],
+            cv=5,
+            method="predict_proba",
+        )
+
+        lab.find_issues(pred_probs=pred_probs)
+
+        # Set up monitor
+        monitor = DataMonitor(datalab=lab)
+
+        # Set up stream of test data
+        features = data["X_test"][:20]
+        labels = data["noisy_labels_test"][:20]
+
+        clf = LogisticRegression()
+        clf.fit(train_dataset["X_train"], train_dataset["labels"])
+
+        pred_probs = clf.predict_proba(features)
+
+        singleton_stream = (
+            {
+                "pred_probs": clf.predict_proba(f[np.newaxis, :]),
+                "labels": l[np.newaxis],
+            }
+            for f, l in zip(features, labels)
+        )
+
+        for eg in singleton_stream:
+            monitor.find_issues(**eg)
+
+        issues = monitor.issues
+
+        # Only label issues should have been checked
+        assert set(issues.columns) == set(["is_label_issue", "label_score"])
+        # All the "test" examples should been checked
+        assert len(issues) == len(features)
