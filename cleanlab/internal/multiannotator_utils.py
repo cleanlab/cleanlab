@@ -92,7 +92,7 @@ def assert_valid_inputs_multiannotator(
         # Raise warning if no examples with 2 or more annotators agree
         # TODO: might shift this later in the code to avoid extra compute
         has_agreement = np.zeros(labels_multiannotator.shape[0], dtype=bool)
-        for i in range(labels_multiannotator.shape[1]):
+        for i in np.unique(labels_multiannotator):
             has_agreement |= (labels_multiannotator == i).sum(axis=1) > 1
         if not has_agreement.any():
             warnings.warn("Annotators do not agree on any example. Check input data.")
