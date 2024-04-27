@@ -960,31 +960,36 @@ def get_majority_vote_label(
     else:
         num_classes = int(np.nanmax(labels_multiannotator) + 1)
 
-    label_arange = np.arange(labels_multiannotator.shape[0])
+    array_idx = np.arange(labels_multiannotator.shape[0])
     label_count = np.zeros((labels_multiannotator.shape[0], num_classes))
     for i in range(labels_multiannotator.shape[1]):
         mask = ~np.isnan(labels_multiannotator[:, i])
+        # Get the indexes where the label is not missing for the annotator i as int.
         label_index = labels_multiannotator[mask, i].astype(int)
-        label_count[label_arange[mask], label_index] += 1
+        # Increase the counts of those labels by 1.
+        label_count[array_idx[mask], label_index] += 1
 
     mode_labels_multiannotator = np.full(label_count.shape, np.nan)
     modes_mask = label_count == np.max(label_count, axis=1).reshape(-1, 1)
-    index_i = np.zeros(modes_mask.shape[0], dtype=int)
+    insert_index = np.zeros(modes_mask.shape[0], dtype=int)
     for i in range(modes_mask.shape[1]):
-        mode_labels_multiannotator[modes_mask[:, i], index_i[modes_mask[:, i]]] = i
-        index_i += modes_mask[:, i]
+        mode_index = np.where(modes_mask[:, i])[0]
+        mode_labels_multiannotator[mode_index, insert_index[mode_index]] = i
+        insert_index[mode_index] += 1
 
     majority_vote_label = np.full(len(labels_multiannotator), np.nan)
     label_mode_count = (~np.isnan(mode_labels_multiannotator)).sum(axis=1)
 
     # obtaining consensus using annotator majority vote
-    mask = label_mode_count == 1
-    majority_vote_label[mask] = mode_labels_multiannotator[mask, 0]
-    nontied_idx = label_arange[mask]
+    mode_count_one = label_mode_count == 1
+    majority_vote_label[mode_count_one] = mode_labels_multiannotator[mode_count_one, 0]
+    nontied_idx = array_idx[mode_count_one]
     tied_idx = {
         i: label_mode[:count].astype(int)
         for i, label_mode, count in zip(
-            label_arange[~mask], mode_labels_multiannotator[~mask, :], label_mode_count[~mask]
+            array_idx[~mode_count_one],
+            mode_labels_multiannotator[~mode_count_one, :],
+            label_mode_count[~mode_count_one],
         )
     }
 
@@ -1387,15 +1392,16 @@ def _get_single_annotator_agreement(
     if np.sum(adjusted_num_annotations) == 0:
         return np.NaN
 
-    mask = num_annotations > 1
+    multi_annotations = num_annotations > 1
     annotator_agreement_per_example = np.zeros(len(labels_multiannotator))
     for i in range(labels_multiannotator.shape[1]):
-        annotator_agreement_per_example[mask] += (
-            labels_multiannotator[mask, annotator_idx] == labels_multiannotator[mask, i]
+        annotator_agreement_per_example[multi_annotations] += (
+            labels_multiannotator[multi_annotations, annotator_idx]
+            == labels_multiannotator[multi_annotations, i]
         )
-    annotator_agreement_per_example[mask] = (
-        annotator_agreement_per_example[mask] - 1
-    ) / adjusted_num_annotations[mask]
+    annotator_agreement_per_example[multi_annotations] = (
+        annotator_agreement_per_example[multi_annotations] - 1
+    ) / adjusted_num_annotations[multi_annotations]
 
     annotator_agreement = np.average(annotator_agreement_per_example, weights=num_annotations - 1)
     return annotator_agreement
