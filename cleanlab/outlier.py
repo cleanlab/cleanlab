@@ -24,6 +24,7 @@ import warnings
 from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
+from scipy.spatial.distance import euclidean
 from sklearn.exceptions import NotFittedError
 from sklearn.neighbors import NearestNeighbors
 
@@ -413,6 +414,7 @@ class OutOfDistribution:
         """
         DEFAULT_K = 10
         # fit skip over (if knn is not None) then skipping fit and suggest score else fit.
+        distance_metric = None
         if knn is None:  # setup default KNN estimator
             # Make sure both knn and features are not None
             if features is None:
@@ -421,15 +423,19 @@ class OutOfDistribution:
                 )
             if k is None:
                 k = DEFAULT_K  # use default when knn and k are both None
-            if k > len(features):  # Ensure number of neighbors less than number of examples
+            if k > (N := len(features)):  # Ensure number of neighbors less than number of examples
                 raise ValueError(
                     f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
                 )
 
             if features.shape[1] > 3:  # use euclidean distance for lower dimensional spaces
                 metric = "cosine"
-            else:
+            elif N > 100:  # Use efficient implementation (numerically unstable in edge cases)
                 metric = "euclidean"
+            else:  # Use scipy implementation for precise results
+                metric = euclidean
+
+            distance_metric = metric if isinstance(metric, str) else metric.__name__  #
 
             knn = NearestNeighbors(n_neighbors=k, metric=metric).fit(features)
             features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
@@ -472,12 +478,12 @@ class OutOfDistribution:
         ood_features_scores = transform_distances_to_scores(
             avg_knn_distances, t, scaling_factor=scaling_factor
         )
-        distance_metric = knn.metric
+        distance_metric = distance_metric or knn.metric
         p = None
         if distance_metric == "minkowski":
             p = knn.p
         ood_features_scores = correct_precision_errors(
-            ood_features_scores, avg_knn_distances, knn.metric, p=p
+            ood_features_scores, avg_knn_distances, distance_metric, p=p
         )
         return (ood_features_scores, knn)
 
