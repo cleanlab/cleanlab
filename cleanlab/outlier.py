@@ -430,14 +430,15 @@ class OutOfDistribution:
                 )
             if k is None:
                 k = DEFAULT_K  # use default when knn and k are both None
-            if k > (N := len(features)):  # Ensure number of neighbors less than number of examples
+            N, M = features.shape
+            if k > N:  # Ensure number of neighbors less than number of examples
                 raise ValueError(
                     f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
                 )
 
             # strings are used for sklearn metrics, callables are scipy pairwise distance functions
             metric: Union[str, Callable]
-            if features.shape[1] > 3:  # use euclidean distance for lower dimensional spaces
+            if M > 3:  # use euclidean distance for lower dimensional spaces
                 metric = "cosine"
             elif N > 100:  # Use efficient implementation (numerically unstable in edge cases)
                 metric = "euclidean"
