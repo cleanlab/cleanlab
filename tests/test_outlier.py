@@ -280,7 +280,8 @@ def test_class_public_func():
     X_small = np.random.rand(20, 3)
     OOD_euclidean = OutOfDistribution()
     OOD_euclidean.fit(features=X_small)
-    assert OOD_euclidean.params["knn"].metric == "euclidean"
+    # The metric attribute is the pairwise distance function implemented in scipy, use __name__ to get the name of the function
+    assert OOD_euclidean.params["knn"].metric.__name__ == "euclidean"
     X_small_with_ood = np.vstack([X_small, [999999.0] * 3])
     euclidean_score = OOD_euclidean.score(features=X_small_with_ood)
     assert (np.max(euclidean_score) <= 1) and (np.min(euclidean_score) >= 0)
