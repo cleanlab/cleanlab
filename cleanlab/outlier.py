@@ -61,9 +61,16 @@ class OutOfDistribution:
              You can also pass in a subclass of ``sklearn.neighbors.NearestNeighbors`` which allows you to use faster
              approximate neighbor libraries as long as you wrap them behind the same sklearn API.
              If you specify ``knn`` here, there is no need to later call ``fit()`` before calling ``score()``.
-             If ``knn = None``, then by default: ``knn = sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric=dist_metric).fit(features)``
-             where ``dist_metric == "cosine"`` if ``dim(features) > 3`` or ``dist_metric == "euclidean"`` otherwise.
+             If ``knn is None``, then by default:
+             The knn object is instantiated as ``sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric=dist_metric).fit(features)``.
+             - If ``dim(features) > 3``, the distance metric is set to "cosine".
+             - If ``dim(features) <= 3``, the distance metric is set to "euclidean".
+               The implementation of the euclidean distance metric depends on the number of examples in the features array:
+                - For more than 100 rows, it uses scikit-learn's "euclidean" metric. This is for efficiency reasons reasons.
+                - For 100 or fewer rows, it uses scipy's ``scipy.spatial.distance.euclidean`` metric. This is for numerical stability reasons.
              See: https://scikit-learn.org/stable/modules/neighbors.html
+             See: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.euclidean_distances.html
+             See: https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.euclidean.html
        *  k : int, default=None
              Optional number of neighbors to use when calculating outlier score (average distance to neighbors).
              If `k` is not provided, then by default ``k = knn.n_neighbors`` or ``k = 10`` if ``knn is None``.
