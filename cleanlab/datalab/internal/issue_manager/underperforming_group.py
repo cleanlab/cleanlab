@@ -15,13 +15,14 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, Tuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Union, Tuple
 import warnings
 import inspect
 
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
+from scipy.spatial.distance import euclidean
 from sklearn.neighbors import NearestNeighbors
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
@@ -79,7 +80,7 @@ class UnderperformingGroupIssueManager(IssueManager):
     def __init__(
         self,
         datalab: Datalab,
-        metric: Optional[str] = None,
+        metric: Optional[Union[str, Callable]] = None,
         threshold: float = 0.1,
         k: int = 10,
         clustering_kwargs: Dict[str, Any] = {},
@@ -157,7 +158,11 @@ class UnderperformingGroupIssueManager(IssueManager):
                     "If a knn_graph is not provided, features must be provided to fit a new knn."
                 )
             if self.metric is None:
-                self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
+                self.metric = (
+                    "cosine"
+                    if features.shape[1] > 3
+                    else "euclidean" if features.shape[0] > 100 else euclidean
+                )
             knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
 
             if self.metric and self.metric != knn.metric:

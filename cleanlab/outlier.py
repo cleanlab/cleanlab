@@ -21,7 +21,7 @@ The underlying algorithms are described in `this paper <https://arxiv.org/abs/22
 """
 
 import warnings
-from typing import Dict, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 from scipy.spatial.distance import euclidean
@@ -435,6 +435,8 @@ class OutOfDistribution:
                     f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
                 )
 
+            # strings are used for sklearn metrics, callables are scipy pairwise distance functions
+            metric: Union[str, Callable]
             if features.shape[1] > 3:  # use euclidean distance for lower dimensional spaces
                 metric = "cosine"
             elif N > 100:  # Use efficient implementation (numerically unstable in edge cases)
@@ -442,10 +444,9 @@ class OutOfDistribution:
             else:  # Use scipy implementation for precise results
                 metric = euclidean
 
-            distance_metric = metric if isinstance(metric, str) else metric.__name__  #
-
             knn = NearestNeighbors(n_neighbors=k, metric=metric).fit(features)
             features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
+            distance_metric = metric if isinstance(metric, str) else str(metric.__name__)
 
         elif k is None:
             k = knn.n_neighbors
@@ -485,7 +486,9 @@ class OutOfDistribution:
         ood_features_scores = transform_distances_to_scores(
             avg_knn_distances, t, scaling_factor=scaling_factor
         )
-        distance_metric = distance_metric or knn.metric
+        distance_metric = distance_metric or (
+            metric if isinstance((metric := knn.metric), str) else metric.__name__
+        )
         p = None
         if distance_metric == "minkowski":
             p = knn.p
