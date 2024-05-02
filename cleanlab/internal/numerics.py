@@ -3,6 +3,7 @@ import numpy as np
 
 from cleanlab.internal.constants import EPSILON
 
+
 def softmax(
     x: np.ndarray, temperature: float = 1.0, axis: Optional[int] = None, shift: bool = False
 ) -> np.ndarray:
