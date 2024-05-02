@@ -24,7 +24,9 @@ and which classes to merge (see `~cleanlab.dataset.find_overlapping_classes`).
 from typing import Optional, cast
 import numpy as np
 import pandas as pd
+
 from cleanlab.count import estimate_joint, num_label_issues
+from cleanlab.internal.constants import EPSILON
 
 
 def rank_classes_by_label_quality(
@@ -100,8 +102,8 @@ def rank_classes_by_label_quality(
         num_examples = _get_num_examples(labels=labels)
     given_label_noise = joint.sum(axis=1) - joint.diagonal()  # p(s=k) - p(s=k,y=k) = p(y!=k, s=k)
     true_label_noise = joint.sum(axis=0) - joint.diagonal()  # p(y=k) - p(s=k,y=k) = p(s!=k,y=k)
-    given_conditional_noise = given_label_noise / joint.sum(axis=1)  # p(y!=k, s=k) / p(s=k)
-    true_conditional_noise = true_label_noise / joint.sum(axis=0)  # p(s!=k, y=k) / p(y=k)
+    given_conditional_noise = given_label_noise / max(joint.sum(axis=1), EPSILON)  # p(y!=k, s=k) / p(s=k)
+    true_conditional_noise = true_label_noise / max(joint.sum(axis=0), EPSILON)  # p(s!=k, y=k) / p(y=k)
     df = pd.DataFrame(
         {
             "Class Index": np.arange(len(joint)),
