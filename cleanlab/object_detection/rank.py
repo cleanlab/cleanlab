@@ -377,7 +377,8 @@ def _get_iou(bb1: Dict[str, Any], bb2: Dict[str, Any]) -> float:
     # compute the intersection over union by taking the intersection
     # area and dividing it by the sum of prediction + ground-truth
     # areas - the interesection area
-    iou = intersection_area / np.clip(float(bb1_area + bb2_area - intersection_area), a_min=EPSILON, a_max=None)  # avoid division by 0
+    # avoid division by 0
+    iou = intersection_area / np.clip(float(bb1_area + bb2_area - intersection_area), a_min=EPSILON, a_max=None)
     # There are some hyper-parameters here like consider tile area/object area
     return iou
 
