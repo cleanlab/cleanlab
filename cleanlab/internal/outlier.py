@@ -19,8 +19,9 @@ Helper functions used internally for outlier detection tasks.
 """
 
 from typing import Optional
-
 import numpy as np
+
+from cleanlab.internal.constants import EPSILON
 
 
 def transform_distances_to_scores(
@@ -69,7 +70,7 @@ def transform_distances_to_scores(
     array([0.88988177, 0.80519832])
     """
     # Map ood_features_scores to range 0-1 with 0 = most concerning
-    return np.exp(-1 * avg_distances / scaling_factor * t)
+    return np.exp(-1 * avg_distances / max(scaling_factor * t, EPSILON))
 
 
 def correct_precision_errors(
