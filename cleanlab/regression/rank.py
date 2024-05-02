@@ -24,9 +24,10 @@ To obtain out-of-sample predictions for every datapoint in your dataset, you can
 If you have a sklearn-compatible regression model, consider using `cleanlab.regression.learn.CleanLearning` instead, which can more accurately identify noisy label values.
 """
 
-from typing import Dict, Callable
+from typing import Dict, Callable, Optional, Union
 import numpy as np
 from numpy.typing import ArrayLike
+from scipy.spatial.distance import euclidean
 from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.outlier import OutOfDistribution
@@ -141,7 +142,7 @@ def _get_outre_score_for_each_label(
     *,
     residual_scale: float = 5,
     frac_neighbors: float = 0.5,
-    neighbor_metric: str = "euclidean",
+    neighbor_metric: Optional[Union[str, Callable]] = "euclidean",
 ) -> np.ndarray:
     """Returns OUTRE based label-quality scores.
 
@@ -162,8 +163,9 @@ def _get_outre_score_for_each_label(
     frac_neighbors: float, default = 0.5
         Fraction of examples in dataset that should be considered as `n_neighbors` in the ``NearestNeighbors`` object used internally to assess outliers.
 
-    neighbor_metric: str, default = "euclidean"
+    neighbor_metric: Optional[str or callable], default = None
         The parameter is passed to sklearn NearestNeighbors. # TODO add reference to sklearn.NearestNeighbor?
+        If None, the metric is chosen based on the number of features in the dataset.
 
     Returns
     -------
@@ -179,6 +181,11 @@ def _get_outre_score_for_each_label(
     features = np.array([labels, residual]).T
 
     neighbors = int(np.ceil(frac_neighbors * labels.shape[0]))
+    if neighbor_metric is None:
+        if features.shape[0] > 100:
+            neighbor_metric = "euclidean"
+        else:
+            neighbor_metric = euclidean
     knn = NearestNeighbors(n_neighbors=neighbors, metric=neighbor_metric).fit(features)
     ood = OutOfDistribution(params={"knn": knn})
 

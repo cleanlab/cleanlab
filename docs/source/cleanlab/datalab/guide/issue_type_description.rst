@@ -296,7 +296,7 @@ Duplicate Issue Parameters
 .. code-block:: python
 
     near_duplicate_kwargs = {
-    	"metric": # string representing the distance metric used in nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary,
+    	"metric": # string or callable representing the distance metric used in nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary,
     	"k": # integer representing the number of nearest neighbors for nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary,
     	"threshold": # `threshold` argument to constructor of `NearDuplicateIssueManager()`. Non-negative floating value that determines the maximum distance between two examples to be considered outliers, relative to the median distance to the nearest neighbors,
     }
@@ -316,7 +316,7 @@ Non-IID Issue Parameters
 .. code-block:: python
 
     non_iid_kwargs = {
-    	"metric": # `metric` argument to constructor of `NonIIDIssueManager`. String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
+    	"metric": # `metric` argument to constructor of `NonIIDIssueManager`. String or callable for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
     	"k": # `k` argument to constructor of `NonIIDIssueManager`. Integer representing the number of nearest neighbors for nearest neighbors search if necessary. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
         "num_permutations": # `num_permutations` argument to constructor of `NonIIDIssueManager`,
         "seed": # seed for numpy's random number generator (used for permutation tests),
@@ -349,7 +349,7 @@ Underperforming Group Issue Parameters
     underperforming_group_kwargs = {
         # Constructor arguments for `UnderperformingGroupIssueManager`
         "threshold": # Non-negative floating value between 0 and 1 used for determinining group of points with low confidence.
-        "metric": # String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
+        "metric": # String or callable for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
         "k": # Integer representing the number of nearest neighbors for constructing the nearest neighbour graph. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
         "min_cluster_samples": # Non-negative integer value specifying the minimum number of examples required for a cluster to be considered as the underperforming group. Used in `UnderperformingGroupIssueManager.filter_cluster_ids`.
         "clustering_kwargs": # Key-value pairs representing arguments for the constructor of the clustering algorithm class (e.g. `sklearn.cluster.DBSCAN`).
