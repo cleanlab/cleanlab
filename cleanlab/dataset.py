@@ -102,8 +102,8 @@ def rank_classes_by_label_quality(
         num_examples = _get_num_examples(labels=labels)
     given_label_noise = joint.sum(axis=1) - joint.diagonal()  # p(s=k) - p(s=k,y=k) = p(y!=k, s=k)
     true_label_noise = joint.sum(axis=0) - joint.diagonal()  # p(y=k) - p(s=k,y=k) = p(s!=k,y=k)
-    given_conditional_noise = given_label_noise / max(joint.sum(axis=1), EPSILON)  # p(y!=k, s=k) / p(s=k)
-    true_conditional_noise = true_label_noise / max(joint.sum(axis=0), EPSILON)  # p(s!=k, y=k) / p(y=k)
+    given_conditional_noise = given_label_noise / np.clip(joint.sum(axis=1), a_min=EPSILON, a_max=None)  # p(y!=k, s=k) / p(s=k) , avoiding division by 0
+    true_conditional_noise = true_label_noise / np.clip(joint.sum(axis=0), a_min=EPSILON, a_max=None)  # p(s!=k, y=k) / p(y=k) , avoiding division by 0
     df = pd.DataFrame(
         {
             "Class Index": np.arange(len(joint)),
