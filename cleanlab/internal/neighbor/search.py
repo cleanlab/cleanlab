@@ -1,26 +1,15 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Protocol, Tuple, cast
+from typing import TYPE_CHECKING
 
 from sklearn.neighbors import NearestNeighbors
 
 
 if TYPE_CHECKING:
-    import numpy as np
-    from scipy.sparse import csr_matrix
 
     from cleanlab.internal.neighbor.types import Metric
-    from cleanlab.internal.neighbor.types import FeatureArray
 
 
-class NeighborSearch(Protocol):
-    def fit(self, X: FeatureArray) -> "NeighborSearch": ...
-
-    def kneighbors(self, X: FeatureArray) -> Tuple[np.ndarray, np.ndarray]: ...
-
-    def kneighbors_graph(self, X: FeatureArray) -> csr_matrix: ...
-
-
-def construct_knn(n_neighbors: int, metric: Metric, **knn_kwargs) -> NeighborSearch:
+def construct_knn(n_neighbors: int, metric: Metric, **knn_kwargs) -> NearestNeighbors:
     """
     Constructs a k-nearest neighbors search object.
 
@@ -36,7 +25,7 @@ def construct_knn(n_neighbors: int, metric: Metric, **knn_kwargs) -> NeighborSea
         See https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html for more details on the available options.
 
     Returns:
-        NeighborSearch: A k-nearest neighbors search object.
+        NearestNeighbors: A k-nearest neighbors search object.
 
     Note:
         The `metric` argument should be a callable that takes two arguments (the two points) and returns the distance between them.
@@ -44,6 +33,5 @@ def construct_knn(n_neighbors: int, metric: Metric, **knn_kwargs) -> NeighborSea
 
     """
     sklearn_knn = NearestNeighbors(n_neighbors=n_neighbors, metric=metric, **knn_kwargs)
-    # Trust me, I know sklearn_knn acts like a NeighborSearch.
-    # NearestNeighbors.fit(X, y) ignores y, but keeps it for API consistency by convention.
-    return cast(NeighborSearch, sklearn_knn)
+
+    return sklearn_knn
