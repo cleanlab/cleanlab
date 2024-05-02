@@ -1,9 +1,10 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
+from sklearn.neighbors import NearestNeighbors
+
 if TYPE_CHECKING:
     from cleanlab.internal.neighbor.types import FeatureArray, Metric
-    from cleanlab.internal.neighbor.search import NeighborSearch
 
 from cleanlab.internal.neighbor.metric import decide_metric
 from cleanlab.internal.neighbor.search import construct_knn
@@ -12,16 +13,20 @@ from cleanlab.internal.neighbor.search import construct_knn
 DEFAULT_K = 10
 """Default number of neighbors to consider in the k-nearest neighbors search,
 unless the size of the feature array is too small or the user specifies a different value.
+
+This should be the largest desired value of k for all desired issue types that require a KNN graph.
+
+E.g. if near duplicates wants k=1 but outliers wants 10, then DEFAULT_K should be 10.
 """
 
 
 def features_to_knn(
-    features: FeatureArray,
+    features: Optional[FeatureArray],
     *,
     n_neighbors: Optional[int] = None,
     metric: Optional[Metric] = None,
-    **knn_kwargs,
-) -> NeighborSearch:
+    **sklearn_knn_kwargs,
+) -> NearestNeighbors:
     """Build and fit a k-nearest neighbors search object from an array of numerical features.
 
     Parameters
@@ -32,7 +37,7 @@ def features_to_knn(
         The number of nearest neighbors to consider. If None, a default value is determined based on the feature array size.
     metric :
         The distance metric to use for computing distances between points. If None, the metric is determined based on the feature array shape.
-    **knn_kwargs :
+    **sklearn_knn_kwargs :
         Additional keyword arguments to be passed to the search index constructor.
 
     Returns
@@ -50,20 +55,22 @@ def features_to_knn(
     >>> knn
     NearestNeighbors(metric='cosine', n_neighbors=10)
     """
+    if features is None:
+        raise ValueError("Both knn and features arguments cannot be None at the same time.")
     # Use provided metric if available, otherwise decide based on the features.
     metric = metric or decide_metric(features)
 
     # Decide the number of neighbors to use in the KNN search.
     n_neighbors = _configure_num_neighbors(features, n_neighbors)
 
-    knn = construct_knn(n_neighbors, metric, **knn_kwargs)
+    knn = construct_knn(n_neighbors, metric, **sklearn_knn_kwargs)
     return knn.fit(features)
 
 
 def _configure_num_neighbors(features: FeatureArray, k: Optional[int]):
     if k is not None and k >= features.shape[0]:
         raise ValueError(
-            f"Number of neighbors k={k} must be less than the number of samples {features.shape[0]}."
+            f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
         )
 
     k = min(k or DEFAULT_K, features.shape[0] - 1)
