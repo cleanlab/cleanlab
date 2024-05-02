@@ -70,7 +70,7 @@ def transform_distances_to_scores(
     array([0.88988177, 0.80519832])
     """
     # Map ood_features_scores to range 0-1 with 0 = most concerning
-    return np.exp(-1 * avg_distances / max(scaling_factor * t, EPSILON))
+    return np.exp(-t * avg_distances / max(scaling_factor, EPSILON))
 
 
 def correct_precision_errors(
