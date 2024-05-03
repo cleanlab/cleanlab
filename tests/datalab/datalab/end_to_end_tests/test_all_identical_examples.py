@@ -5,6 +5,25 @@ from cleanlab import Datalab
 
 
 class TestAllIdenticalExamplesDataset:
+    """There are 4 types of datasets this class tests:
+
+    1. A dataset with all identical data points. They all have identical labels, EXCEPT THE LAST ONE.
+    2. A dataset with all identical data points, except for one extra/unique example. One of the identical examples has a noisy label. The unique example has the same label as the majority of the dataset.
+    3. A regression dataset with all identical data points. They all have identical targets, EXCEPT THE LAST ONE.
+    4. A regression dataset with all identical data points, except for one extra/unique example. One of the identical examples has a noisy target. The unique example has the same target as the majority of the dataset.
+
+    Each test goes through the same motions:
+
+    - Set up Datalab instance
+    - Find default issues from features and pred_probs/predictions
+    - Assert that the following issue dataframes look as expected for each dataset type.
+      - label issues
+      - outlier issues
+      - near-duplicate issues
+
+    These tests focus on the issue detection capabilities of Datalab, and not the quality of the predictions or the features.
+    """
+
     @pytest.fixture
     def dataset(self, request):
         N, K = request.param
