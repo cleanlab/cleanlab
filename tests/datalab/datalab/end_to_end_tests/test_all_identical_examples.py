@@ -26,9 +26,9 @@ class TestAllIdenticalExamplesDataset:
 
     @pytest.fixture
     def dataset(self, request):
-        N, K = request.param
+        N, M = request.param
         # Create the dataset with all identical examples
-        X = np.full((N, K), fill_value=np.random.rand(K))
+        X = np.full((N, M), fill_value=np.random.rand(M))
 
         # All labels for identical points should be the same
         y = ["a"] * N
@@ -39,12 +39,12 @@ class TestAllIdenticalExamplesDataset:
 
     @pytest.fixture
     def dataset_with_one_unique_example(self, request):
-        N, K = request.param
+        N, M = request.param
         # Create the dataset with all identical examples
-        X = np.full((N, K), fill_value=np.random.rand(K))
+        X = np.full((N, M), fill_value=np.random.rand(M))
 
         # Add one unique example to the dataset
-        X = np.vstack([X, np.random.rand(K)])
+        X = np.vstack([X, np.random.rand(M)])
 
         # All labels for identical points should be the same, let's make them all 0, along with the unique example
         y = ["a"] * (N + 1)
@@ -55,9 +55,9 @@ class TestAllIdenticalExamplesDataset:
 
     @pytest.fixture
     def regression_dataset(self, request):
-        N, K = request.param
+        N, M = request.param
         # Create the dataset with all identical examples
-        X = np.full((N, K), fill_value=np.random.rand(K))
+        X = np.full((N, M), fill_value=np.random.rand(M))
 
         # All labels for identical points should be the same
         y = np.full(N, fill_value=np.random.rand())
@@ -68,9 +68,9 @@ class TestAllIdenticalExamplesDataset:
 
     @pytest.fixture
     def regression_dataset_with_one_unique_example(self, request):
-        N, K = request.param
+        N, M = request.param
         # Create the dataset with all identical examples
-        X = np.full((N, K), fill_value=np.random.rand(K))
+        X = np.full((N, M), fill_value=np.random.rand(M))
 
         # All labels for identical points should be the same
         y = np.full(N, fill_value=np.random.rand())
@@ -78,16 +78,16 @@ class TestAllIdenticalExamplesDataset:
         y[-1] += 10
 
         # Add one unique example to the dataset, but it has the same target as the majority of the dataset
-        X = np.vstack([X, np.random.rand(K)])
+        X = np.vstack([X, np.random.rand(M)])
         y = np.append(y, [y[0]])
 
         return {"X": X, "y": y}
 
     @pytest.mark.parametrize(
         "dataset",
-        [((N, K)) for N in [11, 20, 50, 100, 150] for K in [2, 3, 5, 10, 20]],
+        [((N, M)) for N in [11, 20, 50, 100, 150] for M in [2, 3, 5, 10, 20]],
         indirect=["dataset"],
-        ids=lambda x: f"N={x[0]}, K={x[1]}",
+        ids=lambda x: f"N={x[0]}, M={x[1]}",
     )
     def test_issue_detection(self, dataset):
         lab = Datalab(data=dataset, label_name="y")
@@ -129,9 +129,9 @@ class TestAllIdenticalExamplesDataset:
 
     @pytest.mark.parametrize(
         "dataset_with_one_unique_example",
-        [((N, K)) for N in [11, 20, 50, 100, 150] for K in [2, 3, 5, 10, 20]],
+        [((N, M)) for N in [11, 20, 50, 100, 150] for M in [2, 3, 5, 10, 20]],
         indirect=["dataset_with_one_unique_example"],
-        ids=lambda x: f"N={x[0]}, K={x[1]}",
+        ids=lambda x: f"N={x[0]}, M={x[1]}",
     )
     def test_issue_detection_with_one_unique_example(self, dataset_with_one_unique_example):
         dataset = dataset_with_one_unique_example
@@ -182,9 +182,9 @@ class TestAllIdenticalExamplesDataset:
 
     @pytest.mark.parametrize(
         "regression_dataset",
-        [((N, K)) for N in [11, 20, 50, 100] for K in [3, 4, 6, 8, 10]],
+        [((N, M)) for N in [11, 20, 50, 100] for M in [3, 4, 6, 8, 10]],
         indirect=["regression_dataset"],
-        ids=lambda x: f"N={x[0]}, K={x[1]}",
+        ids=lambda x: f"N={x[0]}, M={x[1]}",
     )
     def test_regression_issue_detection(self, regression_dataset):
         lab = Datalab(data=regression_dataset, label_name="y", task="regression")
@@ -227,9 +227,9 @@ class TestAllIdenticalExamplesDataset:
 
     @pytest.mark.parametrize(
         "regression_dataset_with_one_unique_example",
-        [((N, K)) for N in [11, 20, 50, 100] for K in [3, 4, 6, 8, 10]],
+        [((N, M)) for N in [11, 20, 50, 100] for M in [3, 4, 6, 8, 10]],
         indirect=["regression_dataset_with_one_unique_example"],
-        ids=lambda x: f"N={x[0]}, K={x[1]}",
+        ids=lambda x: f"N={x[0]}, M={x[1]}",
     )
     def test_regression_issue_detection_with_one_unique_example(
         self, regression_dataset_with_one_unique_example
