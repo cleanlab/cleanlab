@@ -21,10 +21,9 @@ The underlying algorithms are described in `this paper <https://arxiv.org/abs/22
 """
 
 import warnings
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
-from scipy.spatial.distance import euclidean
 from sklearn.exceptions import NotFittedError
 from sklearn.neighbors import NearestNeighbors
 
