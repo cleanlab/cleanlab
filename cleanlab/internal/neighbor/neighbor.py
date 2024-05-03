@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
+import numpy as np
+from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 
 if TYPE_CHECKING:
@@ -65,6 +67,18 @@ def features_to_knn(
 
     knn = construct_knn(n_neighbors, metric, **sklearn_knn_kwargs)
     return knn.fit(features)
+
+
+def knn_to_knn_graph(knn: NearestNeighbors) -> csr_matrix:
+    distances, indices = knn.kneighbors(return_distance=True)
+
+    N, K = distances.shape
+
+    # Pointers to the row elements distances[indptr[i]:indptr[i+1]],
+    # and their corresponding column indices indices[indptr[i]:indptr[i+1]].
+    indptr = np.arange(0, N * K + 1, K)
+
+    return csr_matrix((distances.reshape(-1), indices.reshape(-1), indptr), shape=(N, N))
 
 
 def _configure_num_neighbors(features: FeatureArray, k: Optional[int]):

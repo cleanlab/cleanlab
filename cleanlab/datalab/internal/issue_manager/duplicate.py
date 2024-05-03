@@ -25,7 +25,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.internal.neighbor.neighbor import features_to_knn
+from cleanlab.internal.neighbor.neighbor import features_to_knn, knn_to_knn_graph
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -89,7 +89,7 @@ class NearDuplicateIssueManager(IssueManager):
             except NotFittedError:
                 knn.fit(features)
 
-            knn_graph = knn.kneighbors_graph(mode="distance")
+            knn_graph = knn_to_knn_graph(knn)
         N = knn_graph.shape[0]
         nn_distances = knn_graph.data.reshape(N, -1)[:, 0]
         median_nn_distance = max(
