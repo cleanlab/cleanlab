@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.internal.neighbor import features_to_knn
+from cleanlab.internal.neighbor.neighbor import knn_to_knn_graph
 
 
 @pytest.mark.parametrize(
@@ -50,3 +51,25 @@ def test_knn_kwargs():
     assert knn.metric == "seuclidean"
     assert knn._fit_X is features
     assert knn.metric_params == {"V": V}
+
+
+@pytest.mark.parametrize("metric", ["cosine", "euclidean"])
+def test_knn_to_knn_graph(metric):
+    N, k = 100, 10
+    knn = NearestNeighbors(n_neighbors=k, metric=metric)
+    X = np.random.rand(N, 10)
+    knn.fit(X)
+    knn_graph = knn_to_knn_graph(knn)
+
+    assert knn_graph.shape == (N, N)
+    assert knn_graph.nnz == N * k
+    assert knn_graph.dtype == np.float64
+    assert np.all(knn_graph.data >= 0)
+    assert np.all(knn_graph.indices >= 0)
+    assert np.all(knn_graph.indices < 100)
+
+    distances = knn_graph.data.reshape(N, k)
+    indices = knn_graph.indices.reshape(N, k)
+
+    # Assert all rows in distances are sorted
+    assert np.all(np.diff(distances, axis=1) >= 0)
