@@ -17,13 +17,17 @@
 """Methods to rank and score images in an object detection dataset (object detection data), based on how likely they
 are to contain label errors. """
 
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
 import warnings
+import copy
+import numpy as np
 
 from cleanlab.internal.constants import (
     ALPHA,
     CUSTOM_SCORE_WEIGHT_BADLOC,
     CUSTOM_SCORE_WEIGHT_OVERLOOKED,
     CUSTOM_SCORE_WEIGHT_SWAP,
+    EPSILON,
     EUC_FACTOR,
     HIGH_PROBABILITY_THRESHOLD,
     LOW_PROBABILITY_THRESHOLD,
@@ -32,17 +36,12 @@ from cleanlab.internal.constants import (
     TEMPERATURE,
     LABEL_OVERLAP_THRESHOLD,
 )
-
-
-import copy
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
-
-import numpy as np
 from cleanlab.internal.object_detection_utils import (
     softmin1d,
     assert_valid_aggregation_weights,
     assert_valid_inputs,
 )
+
 
 if TYPE_CHECKING:  # pragma: no cover
     from typing import TypedDict
@@ -378,7 +377,9 @@ def _get_iou(bb1: Dict[str, Any], bb2: Dict[str, Any]) -> float:
     # compute the intersection over union by taking the intersection
     # area and dividing it by the sum of prediction + ground-truth
     # areas - the interesection area
-    iou = intersection_area / float(bb1_area + bb2_area - intersection_area)
+    iou = intersection_area / np.clip(
+        float(bb1_area + bb2_area - intersection_area), a_min=EPSILON, a_max=None
+    )  # avoid division by 0
     # There are some hyper-parameters here like consider tile area/object area
     return iou
 

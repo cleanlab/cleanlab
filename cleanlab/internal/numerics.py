@@ -1,6 +1,8 @@
 from typing import Optional
 import numpy as np
 
+from cleanlab.internal.constants import EPSILON
+
 
 def softmax(
     x: np.ndarray, temperature: float = 1.0, axis: Optional[int] = None, shift: bool = False
@@ -30,7 +32,7 @@ def softmax(
     np.ndarray
         Softmax function applied to the input array.
     """
-    x = x / temperature
+    x = x / max(temperature, EPSILON)
     if shift:
         x = x - np.max(x, axis=axis, keepdims=True)
     exp_x = np.exp(x)
