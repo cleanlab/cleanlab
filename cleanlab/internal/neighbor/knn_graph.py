@@ -161,6 +161,57 @@ def construct_knn_graph_from_features(
     return construct_knn_graph_from_index(knn)
 
 
+def correct_knn_distances_and_indices(
+    features: FeatureArray, knn_graph: csr_matrix
+) -> tuple[np.ndarray, np.ndarray]:
+    N = features.shape[0]
+    distances, indicies = knn_graph.data.reshape(N, -1), knn_graph.indices.reshape(N, -1)
+
+    # Number of neighbors
+    k = distances.shape[1]
+
+    # Prepare the output arrays
+    corrected_distances = np.zeros_like(distances)
+    corrected_indices = np.zeros_like(indicies, dtype=int)
+
+    # Use np.unique to catch inverse indices of all unique feature sets
+    _, unique_inverse = np.unique(features, return_inverse=True, axis=0)
+
+    # Map each unique feature set to its indices across the dataset
+    feature_map = {u: np.where(unique_inverse == u)[0] for u in set(unique_inverse)}
+
+    for i, (dists, inds) in enumerate(zip(distances, indicies)):
+        # Find all indices where the points are the same as point i. This set is already sorted
+        same_point_indices = feature_map[unique_inverse[i]]
+
+        # Remove the current index i, 1D array of values in same_point_indices that are not in i.
+        # The result of np.setdiff1d can be sorted with the argument assume_unique=True,
+        # but that is always the case if same_point_indices is sorted.
+        same_point_indices = np.setdiff1d(same_point_indices, i)
+
+        # Determine the number of same points to include, respecting the limit of k
+        num_same = len(same_point_indices)
+        num_same_included = min(num_same, k)  # ensure we do not exceed k neighbors
+
+        # Include same points in the results
+        corrected_indices[i, :num_same_included] = same_point_indices[:num_same_included]
+        # Distances are already zero for these points
+
+        # Fill the rest of the slots with different points
+        num_remaining_slots = k - num_same_included
+        if num_remaining_slots > 0:
+            # Get indices and distances from knn that are not the same as i
+            different_point_mask = np.isin(inds, same_point_indices, invert=True)
+
+            corrected_distances[i, num_same_included:k] = dists[different_point_mask][
+                :num_remaining_slots
+            ]
+            corrected_indices[i, num_same_included:k] = inds[different_point_mask][
+                :num_remaining_slots
+            ]
+
+    return corrected_distances, corrected_indices
+
 def _configure_num_neighbors(features: FeatureArray, k: Optional[int]):
     # Error if the provided value is greater or equal to the number of examples.
     N = features.shape[0]

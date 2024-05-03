@@ -2,9 +2,10 @@ from typing import cast
 import pytest
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
+from scipy.sparse import csr_matrix
 
 from cleanlab.internal.neighbor import features_to_knn
-from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index
+from cleanlab.internal.neighbor.knn_graph import correct_knn_distances_and_indices, construct_knn_graph_from_index
 
 
 @pytest.mark.parametrize(
@@ -103,3 +104,97 @@ def test_construct_knn_graph_from_index(metric):
 
     # Assert all rows in distances are sorted
     assert np.all(np.diff(distances, axis=1) >= 0)
+
+
+class TestKNNCorrection:
+    def test_knn_graph_corrects_missing_duplicates(self):
+        """Test that the KNN graph correction identifies missing duplicates and places them correctly."""
+        X = np.array(
+            [
+                [0, 0],
+                [0, 0],
+                [0, 0],
+                [1, 1],
+            ]
+        )
+
+        # k = 2
+        retrieved_distances = np.array(
+            [
+                [0, np.sqrt(2)],
+                [0, 0],
+                [0, 0],
+                [np.sqrt(2)] * 2,
+            ]
+        )
+        retrieved_indices = np.array(
+            [
+                [1, 3],
+                [0, 2],
+                [0, 1],
+                [0, 1],
+            ]
+        )
+
+        # Most of the retrieved distances are correct, except for the first row that has two exact duplicates
+        expected_distances = np.copy(retrieved_distances)
+        expected_distances[0] = [0, 0]
+        expected_indices = np.copy(retrieved_indices)
+        expected_indices[0] = [1, 2]
+
+        # Simulate an properly ordered KNN graph, which missed an exact duplicate in row 0
+        knn_graph = csr_matrix(
+            (retrieved_distances.ravel(), retrieved_indices.ravel(), np.arange(0, 9, 2)),
+            shape=(4, 4),
+        )
+
+        corrected_distances, corrected_indices = correct_knn_distances_and_indices(X, knn_graph)
+
+        np.testing.assert_array_equal(corrected_distances, expected_distances)
+        np.testing.assert_array_equal(corrected_indices, expected_indices)
+
+    def test_knn_graph_corrects_order_of_duplicates(self):
+        """Ensure that KNN correction prioritizes duplicates correctly even when initial indices are out of order."""
+        X = np.array(
+            [
+                [0, 0],
+                [0, 0],
+                [0, 0],
+                [1, 1],
+            ]
+        )
+
+        retrieved_distances = np.array(
+            [
+                [np.sqrt(2), 0],  # Should be [0, 0]
+                [0, 0],
+                [0, 0],
+                [np.sqrt(2)] * 2,
+            ]
+        )
+        retrieved_indices = np.array(
+            [
+                [3, 1],  # Should be [1, 2]
+                [0, 2],
+                [1, 0],  # Should be [0, 1]
+                [0, 1],
+            ]
+        )
+
+        expected_distances = np.copy(retrieved_distances)
+        expected_distances[0] = [0, 0]
+
+        expected_indices = np.copy(retrieved_indices)
+        expected_indices[0] = [1, 2]
+        expected_indices[2] = [0, 1]
+
+        # Create sparse matrix
+        knn_graph = csr_matrix(
+            (retrieved_distances.ravel(), retrieved_indices.ravel(), np.arange(0, 9, 2)),
+            shape=(4, 4),
+        )
+
+        corrected_distances, corrected_indices = correct_knn_distances_and_indices(X, knn_graph)
+
+        np.testing.assert_array_equal(corrected_distances, expected_distances)
+        np.testing.assert_array_equal(corrected_indices, expected_indices)
