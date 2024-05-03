@@ -64,22 +64,6 @@ class TestAllIdenticalExamplesDataset:
 
         return {"X": X, "y": y}
 
-    @pytest.fixture
-    def lab(self, dataset):
-        return Datalab(data=dataset)
-
-    @pytest.fixture
-    def lab_with_one_unique_example(self, dataset_with_one_unique_example):
-        return Datalab(data=dataset_with_one_unique_example)
-
-    @pytest.fixture
-    def regression_lab(self, regression_dataset):
-        return Datalab(data=regression_dataset, task="regression")
-
-    @pytest.fixture
-    def regression_lab_with_one_unique_example(self, regression_dataset_with_one_unique_example):
-        return Datalab(data=regression_dataset_with_one_unique_example, task="regression")
-
     @pytest.mark.parametrize(
         "dataset",
         [((N, K)) for N in [11, 20, 50, 100, 150] for K in [2, 3, 5, 10, 20]],
