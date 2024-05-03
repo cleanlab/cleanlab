@@ -141,7 +141,7 @@ def _get_outre_score_for_each_label(
     *,
     residual_scale: float = 5,
     frac_neighbors: float = 0.5,
-    neighbor_metric: Optional[Union[str, Callable]] = "euclidean",
+    neighbor_metric: Optional[Union[str, Callable]] = None,
 ) -> np.ndarray:
     """Returns OUTRE based label-quality scores.
 
