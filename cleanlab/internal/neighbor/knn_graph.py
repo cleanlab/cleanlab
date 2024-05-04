@@ -95,7 +95,7 @@ def correct_knn_distances_and_indices(
     corrected_indices = np.zeros_like(indicies, dtype=int)
 
     # Use np.unique to catch inverse indices of all unique feature sets
-    _, unique_inverse = np.unique(features, return_inverse=True, axis=0)
+    unique_inverse = np.unique(features, return_inverse=True, axis=0)[1]
 
     # Map each unique feature set to its indices across the dataset
     feature_map = {u: np.where(unique_inverse == u)[0] for u in set(unique_inverse)}
