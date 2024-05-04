@@ -5,8 +5,11 @@ from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import csr_matrix
 
 from cleanlab.internal.neighbor import features_to_knn
-from cleanlab.internal.neighbor.knn_graph import correct_knn_distances_and_indices, construct_knn_graph_from_index
-
+from cleanlab.internal.neighbor.knn_graph import (
+    correct_knn_distances_and_indices,
+    correct_knn_graph,
+    construct_knn_graph_from_index,
+)
 
 @pytest.mark.parametrize(
     "N",
@@ -147,11 +150,21 @@ class TestKNNCorrection:
             (retrieved_distances.ravel(), retrieved_indices.ravel(), np.arange(0, 9, 2)),
             shape=(4, 4),
         )
+        expected_knn_graph = csr_matrix(
+            (expected_distances.ravel(), expected_indices.ravel(), np.arange(0, 9, 2)),
+            shape=(4, 4),
+        )
 
-        corrected_distances, corrected_indices = correct_knn_distances_and_indices(X, knn_graph)
-
+        # Test that the distances and indices are corrected
+        corrected_distances, corrected_indices = correct_knn_distances_and_indices(
+            X, retrieved_distances, retrieved_indices
+        )
         np.testing.assert_array_equal(corrected_distances, expected_distances)
         np.testing.assert_array_equal(corrected_indices, expected_indices)
+
+        # Test that the knn graph can be corrected as well
+        corrected_knn_graph = correct_knn_graph(X, knn_graph)
+        np.testing.assert_array_equal(corrected_knn_graph.toarray(), expected_knn_graph.toarray())
 
     def test_knn_graph_corrects_order_of_duplicates(self):
         """Ensure that KNN correction prioritizes duplicates correctly even when initial indices are out of order."""
@@ -188,13 +201,23 @@ class TestKNNCorrection:
         expected_indices[0] = [1, 2]
         expected_indices[2] = [0, 1]
 
-        # Create sparse matrix
+        # Simulate an IMPROPERLY ordered KNN graph
         knn_graph = csr_matrix(
             (retrieved_distances.ravel(), retrieved_indices.ravel(), np.arange(0, 9, 2)),
             shape=(4, 4),
         )
+        expected_knn_graph = csr_matrix(
+            (expected_distances.ravel(), expected_indices.ravel(), np.arange(0, 9, 2)),
+            shape=(4, 4),
+        )
 
-        corrected_distances, corrected_indices = correct_knn_distances_and_indices(X, knn_graph)
-
+        # Test that the distances and indices are corrected
+        corrected_distances, corrected_indices = correct_knn_distances_and_indices(
+            X, retrieved_distances, retrieved_indices
+        )
         np.testing.assert_array_equal(corrected_distances, expected_distances)
         np.testing.assert_array_equal(corrected_indices, expected_indices)
+
+        # Test that the knn graph can be corrected as well
+        corrected_knn_graph = correct_knn_graph(X, knn_graph)
+        np.testing.assert_array_equal(corrected_knn_graph.toarray(), expected_knn_graph.toarray())
