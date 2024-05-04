@@ -21,6 +21,10 @@ class TestAllIdenticalExamplesDataset:
       - outlier issues
       - near-duplicate issues
 
+    There are a few more issue types that are tested in some cases, but they are less prone to be affected by future changes in the codebase.
+    - underperforming group issues (for classification)
+    - class imbalance issues (for classification)
+
     These tests focus on the issue detection capabilities of Datalab, and not the quality of the predictions or the features.
     """
 
