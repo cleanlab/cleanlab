@@ -119,14 +119,14 @@ class TestAllIdenticalExamplesDataset:
             atol=5e-16,
         )
 
-        lab_issues = lab.get_issues("label")[["is_label_issue", "label_score"]]
-        expected_lab_issues = pd.DataFrame(
+        label_issues = lab.get_issues("label")[["is_label_issue", "label_score"]]
+        expected_label_issues = pd.DataFrame(
             [{"is_label_issue": False, "label_score": 1.0}] * (N - 1)
             + [
                 {"is_label_issue": False, "label_score": 0.0}
             ]  # The confident threshold for this examble is extremely low, but won't flag it as a label issue
         )
-        pd.testing.assert_frame_equal(lab_issues, expected_lab_issues)
+        pd.testing.assert_frame_equal(label_issues, expected_label_issues)
 
         underperforming_group_issues = lab.get_issues("underperforming_group")
         expected_underperforming_group_issues = pd.DataFrame(
