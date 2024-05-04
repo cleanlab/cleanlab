@@ -91,12 +91,13 @@ class TestAllIdenticalExamplesDataset:
     )
     def test_issue_detection(self, dataset):
         lab = Datalab(data=dataset, label_name="y")
-        pred_probs = np.full((len(dataset["y"]), 2), fill_value=[1.0, 0.0])
+        N = len(dataset["y"])
+        pred_probs = np.full((N, 2), fill_value=[1.0, 0.0])
         lab.find_issues(features=dataset["X"], pred_probs=pred_probs)
 
         outlier_issues = lab.get_issues("outlier")
         expected_outlier_issues = pd.DataFrame(
-            [{"is_outlier_issue": False, "outlier_score": 1.0}] * len(outlier_issues)
+            [{"is_outlier_issue": False, "outlier_score": 1.0}] * N
         )
         pd.testing.assert_frame_equal(outlier_issues, expected_outlier_issues)
 
@@ -108,7 +109,7 @@ class TestAllIdenticalExamplesDataset:
                     "near_duplicate_score": 0.0,
                     "distance_to_nearest_neighbor": np.finfo(np.float64).epsneg,
                 }
-                for i in range(len(near_duplicate_issues))
+                for i in range(N)
             ]
         )
         pd.testing.assert_frame_equal(
@@ -120,12 +121,49 @@ class TestAllIdenticalExamplesDataset:
 
         lab_issues = lab.get_issues("label")[["is_label_issue", "label_score"]]
         expected_lab_issues = pd.DataFrame(
-            [{"is_label_issue": False, "label_score": 1.0}] * (len(lab_issues) - 1)
+            [{"is_label_issue": False, "label_score": 1.0}] * (N - 1)
             + [
                 {"is_label_issue": False, "label_score": 0.0}
             ]  # The confident threshold for this examble is extremely low, but won't flag it as a label issue
         )
         pd.testing.assert_frame_equal(lab_issues, expected_lab_issues)
+
+        underperforming_group_issues = lab.get_issues("underperforming_group")
+        expected_underperforming_group_issues = pd.DataFrame(
+            [
+                {
+                    "is_underperforming_group_issue": False,
+                    "underperforming_group_score": 1.0,
+                }
+            ]
+            * N  # Only a single data point performs poorly, so it's not in any group
+        )
+        pd.testing.assert_frame_equal(
+            underperforming_group_issues, expected_underperforming_group_issues
+        )
+
+        if N > 20:
+            # Default threshold for class imbalance is 0.1*1/K, where K is the number of classes. So for 20 examples and 2 classes,
+            # the threshold is 5% (so 1 example out of 20 is NOT considered class imbalance)
+            class_imbalance_issues = lab.get_issues("class_imbalance")[
+                ["is_class_imbalance_issue", "class_imbalance_score"]
+            ]
+            expected_class_imbalance_issues = pd.DataFrame(
+                [
+                    {
+                        "is_class_imbalance_issue": False,
+                        "class_imbalance_score": 1.0,
+                    }
+                ]
+                * (N - 1)
+                + [
+                    {
+                        "is_class_imbalance_issue": True,
+                        "class_imbalance_score": 1 / N,
+                    }
+                ]
+            )
+            pd.testing.assert_frame_equal(class_imbalance_issues, expected_class_imbalance_issues)
 
     @pytest.mark.parametrize(
         "dataset_with_one_unique_example",
@@ -135,13 +173,14 @@ class TestAllIdenticalExamplesDataset:
     )
     def test_issue_detection_with_one_unique_example(self, dataset_with_one_unique_example):
         dataset = dataset_with_one_unique_example
+        N = len(dataset["y"])
         lab = Datalab(data=dataset, label_name="y")
-        pred_probs = np.full((len(dataset["y"]), 2), fill_value=[1.0, 0.0])
+        pred_probs = np.full((N, 2), fill_value=[1.0, 0.0])
         lab.find_issues(features=dataset["X"], pred_probs=pred_probs)
 
         outlier_issues = lab.get_issues("outlier")
         expected_outlier_issues = pd.DataFrame(
-            [{"is_outlier_issue": False, "outlier_score": 1.0}] * (len(outlier_issues) - 1)
+            [{"is_outlier_issue": False, "outlier_score": 1.0}] * (N - 1)
             + [{"is_outlier_issue": True, "outlier_score": 0.0}]
         )
 
@@ -154,7 +193,7 @@ class TestAllIdenticalExamplesDataset:
                     "is_near_duplicate_issue": True,
                     "near_duplicate_score": 0.0,
                 }
-                for i in range(len(near_duplicate_issues) - 1)
+                for i in range(N - 1)
             ]
             + [
                 {
@@ -170,15 +209,58 @@ class TestAllIdenticalExamplesDataset:
             expected_near_duplicate_issues,
         )
 
-        lab_issues = lab.get_issues("label")[["is_label_issue", "label_score"]]
-        expected_lab_issues = pd.DataFrame(
-            [{"is_label_issue": False, "label_score": 1.0}] * (len(lab_issues) - 2)
+        label_issues = lab.get_issues("label")[["is_label_issue", "label_score"]]
+        expected_label_issues = pd.DataFrame(
+            [{"is_label_issue": False, "label_score": 1.0}] * (N - 2)
             + [
                 {"is_label_issue": False, "label_score": 0.0}
             ]  # The confident threshold for this examble is extremely low, but won't flag it as a label issue
             + [{"is_label_issue": False, "label_score": 1.0}]
         )
-        pd.testing.assert_frame_equal(lab_issues, expected_lab_issues)
+        pd.testing.assert_frame_equal(label_issues, expected_label_issues)
+
+        underperforming_group_issues = lab.get_issues("underperforming_group")
+        expected_underperforming_group_issues = pd.DataFrame(
+            [
+                {
+                    "is_underperforming_group_issue": False,
+                    "underperforming_group_score": 1.0,
+                }
+            ]
+            * N  # Only a single data point performs poorly, so it's not in any group
+        )
+        pd.testing.assert_frame_equal(
+            underperforming_group_issues, expected_underperforming_group_issues
+        )
+
+        if N > 20:
+            # Default threshold for class imbalance is 0.1*1/K, where K is the number of classes. So for 20 examples and 2 classes,
+            # the threshold is 5% (so 1 example out of 20 is NOT considered class imbalance)
+            class_imbalance_issues = lab.get_issues("class_imbalance")[
+                ["is_class_imbalance_issue", "class_imbalance_score"]
+            ]
+            expected_class_imbalance_issues = pd.DataFrame(
+                [
+                    {
+                        "is_class_imbalance_issue": False,
+                        "class_imbalance_score": 1.0,
+                    }
+                ]
+                * (N - 2)
+                + [
+                    {
+                        "is_class_imbalance_issue": True,
+                        "class_imbalance_score": 1 / N,
+                    }
+                ]
+                + [
+                    {
+                        "is_class_imbalance_issue": False,
+                        "class_imbalance_score": 1.0,
+                    }
+                ]
+            )
+            pd.testing.assert_frame_equal(class_imbalance_issues, expected_class_imbalance_issues)
 
     @pytest.mark.parametrize(
         "regression_dataset",
