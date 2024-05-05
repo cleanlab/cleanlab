@@ -243,3 +243,25 @@ def test_save_space():
 
     cl.save_space()
     assert cl.get_label_issues() is None
+
+
+@pytest.mark.parametrize("N", [10, 100, 1000])
+@pytest.mark.parametrize("method", ["residual", "outre"])
+def test_all_identical_examples(N, method):
+
+    # All examples have predictions identical to the given labels/targets
+    labels = np.zeros(N)
+    predictions = np.copy(labels)
+
+    # Except the last ~quarter of examples have labels that are further away from the predictions
+    cutoff_index = N // 4
+    predictions[-cutoff_index:] += 1
+
+    scores = get_label_quality_scores(labels=labels, predictions=predictions, method=method)
+    np.testing.assert_allclose(scores[:-cutoff_index], 1, atol=1e-04)
+    if method == "outre":
+        # Assert that the scores for the last (bad) ~quarter of examples are close to 0
+        np.testing.assert_allclose(scores[-cutoff_index:], 0, atol=1e-04)
+    else:
+        # Residual method should give "imperfect" scores for the last ~quarter of examples, but not necessarily near 0
+        assert np.all(scores[-cutoff_index:] < 1)
