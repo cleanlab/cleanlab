@@ -5,26 +5,26 @@ from cleanlab.internal.neighbor.types import Metric
 
 HIGH_DIMENSION_CUTOFF: int = 3
 """
-The cutoff value for the number of columns in the feature array.
+If the number of columns (M) in the `features` array is greater than this cutoff value,
+then by default, K-nearest-neighbors will use the "cosine" metric.
+The cosine metric is more suitable for high-dimensional data.
+Otherwise the "euclidean" distance will be used.
 
-If the number of columns (M) in the feature array is greater than this cutoff value,
-the "cosine" metric is used. This is because the cosine metric is more suitable for
-high-dimensional data.
 """
 ROW_COUNT_CUTOFF: int = 100
 """
-The cutoff value for the number of rows in the feature array. 
-
-If the number of rows (N) in the feature array is greater than this cutoff value,
-the "euclidean" metric is used (implemented in scikit-learn for efficiency reasons).
-Otherwise, the implementation of the euclidean metric from scipy is used, which is much slower but
-more accurate in general.
+Only affects settings where Euclidean metrics would be used by default.
+If the number of rows (N) in the `features` array is greater than this cutoff value,
+then by default, Euclidean distances are computed via the "euclidean" metric
+(implemented in sklearn for efficiency reasons).
+Otherwise, Euclidean distances are by default computed via
+the ``euclidean`` metric from scipy (slower but numerically more precise/accurate).
 """
 
 
 def decide_metric(features: np.ndarray) -> Metric:
     """
-    Decide the metric to be used based on the shape of the feature array.
+    Decide the KNN metric to be used based on the shape of the feature array.
 
     Parameters
     ----------
