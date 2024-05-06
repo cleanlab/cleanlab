@@ -1,7 +1,6 @@
-import numpy as np
 from scipy.spatial.distance import euclidean
 
-from cleanlab.typing import Metric
+from cleanlab.typing import FeatureArray, Metric
 
 HIGH_DIMENSION_CUTOFF: int = 3
 """
@@ -22,7 +21,57 @@ the ``euclidean`` metric from scipy (slower but numerically more precise/accurat
 """
 
 
-def decide_metric(features: np.ndarray) -> Metric:
+# Metric decision functions
+def _euclidean_large_dataset(features: FeatureArray):
+    return "euclidean"
+
+
+def _euclidean_small_dataset(features: FeatureArray):
+    return euclidean
+
+
+def _cosine_metric(features: FeatureArray):
+    return "cosine"
+
+
+def decide_euclidean_metric(features: FeatureArray) -> Metric:
+    """
+    Decide the appropriate Euclidean metric implementation based on the size of the dataset.
+
+    Parameters
+    ----------
+    features :
+        The input features array.
+
+    Returns
+    -------
+    metric :
+        A string or a callable representing a specific implementation of computing the euclidean distance.
+
+    Note
+    ----
+    A choice is made between two implementations
+    of the euclidean metric based on the number of rows in the feature array.
+    If the number of rows (N) in the feature array is greater than another predefined
+    cutoff value (ROW_COUNT_CUTOFF), the ``"euclidean"`` metric is used. This
+    is because the euclidean metric performs better on larger datasets.
+    If neither condition is met, the ``euclidean`` metric function from scipy is returned.
+
+    See also
+    --------
+    ROW_COUNT_CUTOFF: The cutoff value for the number of rows in the feature array.
+    sklearn.metrics.pairwise.euclidean_distances: The euclidean metric function from scikit-learn.
+    scipy.spatial.distance.euclidean: The euclidean metric function from scipy.
+    """
+    num_rows = features.shape[0]
+    if num_rows > ROW_COUNT_CUTOFF:
+        return _euclidean_large_dataset(features)
+    else:
+        return _euclidean_small_dataset(features)
+
+
+# Main function to decide the metric
+def decide_default_metric(features: FeatureArray) -> Metric:
     """
     Decide the KNN metric to be used based on the shape of the feature array.
 
@@ -38,31 +87,21 @@ def decide_metric(features: np.ndarray) -> Metric:
         representing the metric name ("cosine" or "euclidean") or a callable
         representing the metric function from scipy (euclidean).
 
-    Notes
-    -----
+    Note
+    ----
     The decision of which metric to use is based on the shape of the feature array.
     If the number of columns (M) in the feature array is greater than a predefined
     cutoff value (HIGH_DIMENSION_CUTOFF), the "cosine" metric is used. This is because the cosine
     metric is more suitable for high-dimensional data.
-    Otherwise, a euclidean metric is used. However, a choice is made between two implementations
-    of the euclidean metric based on the number of rows in the feature array.
-    If the number of rows (N) in the feature array is greater than another predefined
-    cutoff value (ROW_COUNT_CUTOFF), the "euclidean" metric is used. This
-    is because the euclidean metric performs better on larger datasets.
-    If neither condition is met, the euclidean metric function from scipy is returned.
+
+    Otherwise, a euclidean metric is used.
+    That is handled by the :py:meth:`~cleanlab.internal.neighbor.metric.decide_euclidean_metric` function.
 
     See Also
     --------
     HIGH_DIMENSION_CUTOFF: The cutoff value for the number of columns in the feature array.
-    ROW_COUNT_CUTOFF: The cutoff value for the number of rows in the feature array.
     sklearn.metrics.pairwise.cosine_distances: The cosine metric function from scikit-learn
-    sklearn.metrics.pairwise.euclidean_distances: The euclidean metric function from scikit-learn.
-    scipy.spatial.distance.euclidean: The euclidean metric function from scipy.
     """
-    num_rows, num_columns = features.shape
-    if num_columns > HIGH_DIMENSION_CUTOFF:
-        return "cosine"
-    elif num_rows > ROW_COUNT_CUTOFF:
-        return "euclidean"
-    else:
-        return euclidean
+    if features.shape[1] > HIGH_DIMENSION_CUTOFF:
+        return _cosine_metric(features)
+    return decide_euclidean_metric(features)
