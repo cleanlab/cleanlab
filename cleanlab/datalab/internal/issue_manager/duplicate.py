@@ -26,6 +26,7 @@ from scipy.sparse import csr_matrix
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_features
 from cleanlab.internal.neighbor.metric import decide_default_metric
+from cleanlab.internal.constants import EPSILON
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -81,9 +82,7 @@ class NearDuplicateIssueManager(IssueManager):
             )
         N = knn_graph.shape[0]
         nn_distances = knn_graph.data.reshape(N, -1)[:, 0]
-        median_nn_distance = max(
-            np.median(nn_distances), 100 * np.finfo(np.float_).eps
-        )  # avoid threshold = 0
+        median_nn_distance = max(np.median(nn_distances), EPSILON)  # avoid threshold = 0
         self.near_duplicate_sets = self._neighbors_within_radius(
             knn_graph, self.threshold, median_nn_distance
         )
