@@ -8,7 +8,7 @@ from sklearn.neighbors import NearestNeighbors
 if TYPE_CHECKING:
     from cleanlab.typing import FeatureArray, Metric
 
-from cleanlab.internal.neighbor.metric import decide_metric
+from cleanlab.internal.neighbor.metric import decide_default_metric
 from cleanlab.internal.neighbor.search import construct_knn
 
 
@@ -60,7 +60,7 @@ def features_to_knn(
     if features is None:
         raise ValueError("Both knn and features arguments cannot be None at the same time.")
     # Use provided metric if available, otherwise decide based on the features.
-    metric = metric or decide_metric(features)
+    metric = metric or decide_default_metric(features)
 
     # Decide the number of neighbors to use in the KNN search.
     n_neighbors = _configure_num_neighbors(features, n_neighbors)
