@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.internal.neighbor import features_to_knn
-from cleanlab.internal.neighbor.neighbor import knn_to_knn_graph
+from cleanlab.internal.neighbor.neighbor import construct_knn_graph_from_index
 
 
 @pytest.mark.parametrize(
@@ -54,12 +54,12 @@ def test_knn_kwargs():
 
 
 @pytest.mark.parametrize("metric", ["cosine", "euclidean"])
-def test_knn_to_knn_graph(metric):
+def test_construct_knn_graph_from_index(metric):
     N, k = 100, 10
     knn = NearestNeighbors(n_neighbors=k, metric=metric)
     X = np.random.rand(N, 10)
     knn.fit(X)
-    knn_graph = knn_to_knn_graph(knn)
+    knn_graph = construct_knn_graph_from_index(knn)
 
     assert knn_graph.shape == (N, N)
     assert knn_graph.nnz == N * k

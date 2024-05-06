@@ -69,7 +69,41 @@ def features_to_knn(
     return knn.fit(features)
 
 
-def knn_to_knn_graph(knn: NearestNeighbors) -> csr_matrix:
+def construct_knn_graph_from_index(knn: NearestNeighbors) -> csr_matrix:
+    """Construct a KNN graph from a fitted NearestNeighbors search object.
+
+    Parameters
+    ----------
+    knn :
+        A NearestNeighbors object that has been fitted to a feature array.
+        The knn graph is constructed based on the distances and indices of each feature row's nearest neighbors.
+
+    Returns
+    -------
+    knn_graph :
+        A sparse, weighted adjacency matrix representing the KNN graph of the feature array.
+
+    Note
+    ----
+    This is *not* intended to construct a KNN graph of test data. It is only used to construct a KNN graph of the data used to fit the NearestNeighbors object.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from cleanlab.internal.neighbor.neighbor import features_to_knn, construct_knn_graph_from_index
+    >>> features = np.array([
+        [0.701, 0.701],
+        [0.900, 0.436],
+        [0.000, 1.000],
+    ])
+    >>> knn = features_to_knn(features, n_neighbors=1)
+    >>> knn_graph = construct_knn_graph_from_index(knn)
+    >>> knn_graph.toarray()  # For demonstration purposes only. It is generally a bad idea to transform to dense matrix for large graphs.
+    array([[0.        , 0.33140006, 0.        ],
+           [0.33140006, 0.        , 0.        ],
+           [0.76210367, 0.        , 0.        ]])
+    """
+
     distances, indices = knn.kneighbors(return_distance=True)
 
     N, K = distances.shape
