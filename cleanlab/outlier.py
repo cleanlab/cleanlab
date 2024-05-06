@@ -426,6 +426,7 @@ class OutOfDistribution:
             # Make sure both knn and features are not None
             knn = features_to_knn(features, n_neighbors=k)
             features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
+            # Log knn metric as string to ensure compatibility for score correction
             distance_metric = (
                 metric if isinstance((metric := knn.metric), str) else str(metric.__name__)
             )
