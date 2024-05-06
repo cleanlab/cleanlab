@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Union, cast
-import warnings
 import itertools
 
 from scipy.stats import gaussian_kde
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
-from scipy.spatial.distance import euclidean
 from sklearn.neighbors import NearestNeighbors
-from sklearn.exceptions import NotFittedError
-from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index, features_to_knn
