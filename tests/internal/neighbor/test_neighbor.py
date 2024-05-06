@@ -11,6 +11,7 @@ from cleanlab.internal.neighbor.knn_graph import (
     construct_knn_graph_from_index,
 )
 
+
 @pytest.mark.parametrize(
     "N",
     [2, 10, 100, 101],
