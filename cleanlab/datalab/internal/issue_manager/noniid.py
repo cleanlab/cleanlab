@@ -14,6 +14,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -305,7 +306,7 @@ class NonIIDIssueManager(IssueManager):
         }
         if knn_graph is None:
             assert knn is not None, "If knn_graph is None, knn must be provided."
-            knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
+            knn_graph = construct_knn_graph_from_index(knn)
 
         assert knn_graph is not None, "knn_graph must be provided or computed."
         statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)

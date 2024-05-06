@@ -38,6 +38,7 @@ from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.data_valuation import data_shapley_knn
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -164,7 +165,7 @@ class DataValuationIssueManager(IssueManager):
             except NotFittedError:
                 knn.fit(features)
 
-            knn_graph = knn.kneighbors_graph(mode="distance")
+            knn_graph = construct_knn_graph_from_index(knn)
 
         scores = data_shapley_knn(labels, knn_graph=knn_graph, k=self.k)
 
