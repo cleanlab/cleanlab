@@ -82,10 +82,13 @@ def knn_to_knn_graph(knn: NearestNeighbors) -> csr_matrix:
 
 
 def _configure_num_neighbors(features: FeatureArray, k: Optional[int]):
-    if k is not None and k >= features.shape[0]:
+    # Error if the provided value is greater or equal to the number of examples.
+    N = features.shape[0]
+    if k is not None and k >= N:
         raise ValueError(
             f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
         )
 
-    k = min(k or DEFAULT_K, features.shape[0] - 1)
+    # Either use the provided value or select a default value based on the feature array size.
+    k = k or min(DEFAULT_K, N - 1)
     return k
