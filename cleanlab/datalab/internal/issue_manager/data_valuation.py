@@ -26,16 +26,11 @@ from typing import (
     Union,
     cast,
 )
-import warnings
 
 
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
-from scipy.spatial.distance import euclidean
-from sklearn.exceptions import NotFittedError
-from sklearn.neighbors import NearestNeighbors
-from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.data_valuation import data_shapley_knn
 from cleanlab.datalab.internal.issue_manager import IssueManager

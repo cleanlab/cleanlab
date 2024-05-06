@@ -22,10 +22,6 @@ import inspect
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
-from scipy.spatial.distance import euclidean
-from sklearn.neighbors import NearestNeighbors
-from sklearn.exceptions import NotFittedError
-from sklearn.utils.validation import check_is_fitted
 from sklearn.cluster import DBSCAN
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
