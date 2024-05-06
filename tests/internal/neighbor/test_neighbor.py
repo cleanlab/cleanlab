@@ -20,6 +20,8 @@ from cleanlab.internal.neighbor.neighbor import construct_knn_graph_from_index
 def test_features_to_knn(N, M):
 
     features = np.random.rand(N, M)
+    if N >= 100:
+        features[-10:] = features[-11]  # Make the last 11 entries all identical, as an edge-case.
     knn = features_to_knn(features)
 
     assert isinstance(knn, NearestNeighbors)
@@ -34,6 +36,15 @@ def test_features_to_knn(N, M):
             assert hasattr(metric, "__name__")
             metric = metric.__name__
         assert metric == "euclidean"
+
+    if N >= 100:
+        distances, indices = knn.kneighbors(n_neighbors=10)
+        # Assert that the last 10 rows are identical to the 11th last row.
+        assert np.allclose(features[-10:], features[-11])
+        np.testing.assert_allclose(distances[-11:], 0, atol=1e-15)
+        # All the indices belong to the same example, so the set of indices should be the same.
+        # No guarantees about the order of the indices, but each point is not considered its own neighbor.
+        np.testing.assert_allclose(np.unique(indices[-11:]), np.arange(start=N - 11, stop=N))
 
     # The knn object should be fitted to the features.
     # TODO: This is not a good test, but it's the best we can do without exposing the internal state of the knn object.
