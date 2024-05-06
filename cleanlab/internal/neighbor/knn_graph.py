@@ -115,6 +115,52 @@ def construct_knn_graph_from_index(knn: NearestNeighbors) -> csr_matrix:
     return csr_matrix((distances.reshape(-1), indices.reshape(-1), indptr), shape=(N, N))
 
 
+def construct_knn_graph_from_features(
+    features: Optional[FeatureArray],
+    *,
+    n_neighbors: Optional[int] = None,
+    metric: Optional[Metric] = None,
+    **sklearn_knn_kwargs,
+) -> csr_matrix:
+    """Calculate the KNN graph from the features if it is not provided in the kwargs.
+
+    Parameters
+    ----------
+    features :
+        The input feature array, with shape (N, M), where N is the number of samples and M is the number of features.
+    n_neighbors :
+        The number of nearest neighbors to consider. If None, a default value is determined based on the feature array size.
+    metric :
+        The distance metric to use for computing distances between points. If None, the metric is determined based on the feature array shape.
+    **sklearn_knn_kwargs :
+        Additional keyword arguments to be passed to the search index constructor.
+
+    Returns
+    -------
+    knn_graph :
+        A sparse, weighted adjacency matrix representing the KNN graph of the feature array.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from cleanlab.internal.neighbor.neighbor import construct_knn_graph_from_features
+    >>> features = np.array([
+        [0.701, 0.701],
+        [0.900, 0.436],
+        [0.000, 1.000],
+    ])
+    >>> knn_graph = construct_knn_graph_from_features(features, n_neighbors=1)
+    >>> knn_graph.toarray()  # For demonstration purposes only. It is generally a bad idea to transform to dense matrix for large graphs.
+    array([[0.        , 0.33140006, 0.        ],
+           [0.33140006, 0.        , 0.        ],
+           [0.76210367, 0.        , 0.        ]])
+    """
+    # Construct NearestNeighbors object
+    knn = features_to_knn(features, n_neighbors=n_neighbors, metric=metric, **sklearn_knn_kwargs)
+    # Build graph from NearestNeighbors object
+    return construct_knn_graph_from_index(knn)
+
+
 def _configure_num_neighbors(features: FeatureArray, k: Optional[int]):
     # Error if the provided value is greater or equal to the number of examples.
     N = features.shape[0]

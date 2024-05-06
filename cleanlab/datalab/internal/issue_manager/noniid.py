@@ -14,7 +14,8 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index
+from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index, features_to_knn
+from cleanlab.internal.neighbor.metric import decide_default_metric
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -204,28 +205,8 @@ class NonIIDIssueManager(IssueManager):
             return None
         features_to_use = self._determine_features(features, pred_probs)
 
-        if self.metric is None:
-            self.metric = (
-                "cosine"
-                if features_to_use.shape[1] > 3
-                else "euclidean" if features_to_use.shape[0] > 100 else euclidean
-            )
-
-        knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
-
-        if self.metric != knn.metric:
-            warnings.warn(
-                f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                "Most likely an existing NearestNeighbors object was passed in, but a different "
-                "metric was specified."
-            )
-        self.metric = knn.metric
-
-        try:
-            check_is_fitted(knn)
-        except NotFittedError:
-            knn.fit(features_to_use)
-
+        self.metric = self.metric or decide_default_metric(features_to_use)
+        knn = features_to_knn(features_to_use, n_neighbors=self.k, metric=self.metric)
         return knn
 
     def find_issues(
