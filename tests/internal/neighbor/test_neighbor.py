@@ -54,14 +54,33 @@ def test_features_to_knn(N, M):
 
 def test_knn_kwargs():
     """Check that features_to_knn passes additional keyword arguments to the NearestNeighbors constructor correctly."""
-    features = np.random.rand(100, 10)
+    N, M = 100, 10
+    features = np.random.rand(N, M)
     V = features.var(axis=0)
-    knn = features_to_knn(features, n_neighbors=6, metric="seuclidean", metric_params={"V": V})
+    knn = features_to_knn(
+        features,
+        n_neighbors=6,
+        metric="seuclidean",
+        metric_params={"V": V},
+    )
 
     assert knn.n_neighbors == 6
+    assert knn.radius == 1.0
+    assert (alg := knn.algorithm) == "auto"
+    assert knn.leaf_size == 30
     assert knn.metric == "seuclidean"
-    assert knn._fit_X is features
     assert knn.metric_params == {"V": V}
+    assert knn.p == 2
+    assert knn._fit_X is features  # Not a public attribute, bad idea to rely on this attribute.
+
+    # Attributes estimated from fitted data
+    assert knn.n_features_in_ == M
+    assert knn.effective_metric_params_ == {"V": V}
+    assert knn.effective_metric_ == "seuclidean"
+    assert knn.n_samples_fit_ == N
+    assert (
+        knn._fit_method == "ball_tree" if alg == "auto" else alg
+    )  # Should be one of ["kd_tree", "ball_tree" and "brute"], set with "algorithm"
 
 
 @pytest.mark.parametrize("metric", ["cosine", "euclidean"])
