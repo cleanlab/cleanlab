@@ -1,7 +1,7 @@
-neighbor
-========
+knn_graph
+=========
 
-.. automodule:: cleanlab.internal.neighbor.neighbor
+.. automodule:: cleanlab.internal.neighbor.knn_graph
     :autosummary:
     :members:
     :undoc-members:
