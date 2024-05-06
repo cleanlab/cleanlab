@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
+import warnings
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -120,6 +121,7 @@ def construct_knn_graph_from_features(
     *,
     n_neighbors: Optional[int] = None,
     metric: Optional[Metric] = None,
+    correct_exact_duplicates: bool = True,
     **sklearn_knn_kwargs,
 ) -> csr_matrix:
     """Calculate the KNN graph from the features if it is not provided in the kwargs.
@@ -132,6 +134,8 @@ def construct_knn_graph_from_features(
         The number of nearest neighbors to consider. If None, a default value is determined based on the feature array size.
     metric :
         The distance metric to use for computing distances between points. If None, the metric is determined based on the feature array shape.
+    correct_exact_duplicates :
+        Whether to correct the KNN graph to ensure that exact duplicates have zero mutual distance, and they are correctly included in the KNN graph.
     **sklearn_knn_kwargs :
         Additional keyword arguments to be passed to the search index constructor.
 
@@ -158,29 +162,116 @@ def construct_knn_graph_from_features(
     # Construct NearestNeighbors object
     knn = features_to_knn(features, n_neighbors=n_neighbors, metric=metric, **sklearn_knn_kwargs)
     # Build graph from NearestNeighbors object
-    return construct_knn_graph_from_index(knn)
+    knn_graph = construct_knn_graph_from_index(knn)
+
+    # Ensure that exact duplicates found with np.unique aren't accidentally missed in the KNN graph
+    if correct_exact_duplicates:
+        assert features is not None
+        knn_graph = correct_knn_graph(features, knn_graph)
+    return knn_graph
+
+
+def correct_knn_graph(features: FeatureArray, knn_graph: csr_matrix) -> csr_matrix:
+    N = features.shape[0]
+    distances, indices = knn_graph.data.reshape(N, -1), knn_graph.indices.reshape(N, -1)
+
+    corrected_distances, corrected_indices = correct_knn_distances_and_indices(
+        features, distances, indices
+    )
+    N = features.shape[0]
+    return csr_matrix(
+        (corrected_distances.reshape(-1), corrected_indices.reshape(-1), knn_graph.indptr),
+        shape=(N, N),
+    )
 
 
 def correct_knn_distances_and_indices(
-    features: FeatureArray, knn_graph: csr_matrix
+    features: FeatureArray, distances: np.ndarray, indices: np.ndarray, enable_warning: bool = False
 ) -> tuple[np.ndarray, np.ndarray]:
-    N = features.shape[0]
-    distances, indicies = knn_graph.data.reshape(N, -1), knn_graph.indices.reshape(N, -1)
+    """
+    Corrects the distances and indices of a k-nearest neighbors (knn) graph
+    based on all exact duplicates detected in the feature array.
+
+    Parameters
+    ----------
+    features :
+        The feature array used to construct the knn graph.
+    distances :
+        The distances between each point and its k nearest neighbors.
+    indices :
+        The indices of the k nearest neighbors for each point.
+    enable_warning :
+        Whether to enable warning messages if any row underestimates the number of exact duplicates.
+
+    Returns
+    -------
+    corrected_distances :
+        The corrected distances between each point and its k nearest neighbors. Exact duplicates (based on the feature array) are ensured to have zero mutual distance.
+    corrected_indices :
+        The corrected indices of the k nearest neighbors for each point. Exact duplicates are ensured to be included in the k nearest neighbors, unless the number of exact duplicates exceeds k.
+
+    Raises
+    ------
+    UserWarning :
+        A warning may be raised if there were some slots available for an exact duplicate that were missed.
+        This may happen if the number of exact duplicates in the existing knn graph is lower than k,
+        but the set of exact duplicates is larger than what was included in the knn graph.
+        This warning may be disabled by setting enable_warning=False.
+
+
+    Example
+    -------
+    >>> import numpy as np
+    >>> X = np.array(
+    ...     [
+    ...         [0, 0],
+    ...         [0, 0], # Exact duplicate of the previous point
+    ...         [1, 1], # The distances between this point and the others is sqrt(2) (equally distant from both)
+    ...     ]
+    ... )
+    >>> distances = np.array(  # Distance to the 1-NN of each point
+    ...     [
+    ...         [np.sqrt(2)],  # Should be [0]
+    ...         [1e-16],       # Should be [0]
+    ...         [np.sqrt(2)],
+    ...     ]
+    ... )
+    >>> indices = np.array(  # Index of the 1-NN of each point
+    ...     [
+    ...         [2],  # Should be [1]
+    ...         [0],
+    ...         [1],  # Might be [0] or [1]
+    ...     ]
+    ... )
+    >>> corrected_distances, corrected_indices = correct_knn_distances_and_indices(X, distances, indices)
+    >>> corrected_distances
+    array([[0.], [0.], [1.41421356]])
+    >>> corrected_indices
+    array([[1], [0], [0]])
+
+
+    Clearly, the first point misses its exact duplicate in the knn graph. To raise a warning for such cases, set enable_warning=True.
+
+    >>> corrected_distances, corrected_indices = correct_knn_distances_and_indices(X, distances, indices, enable_warning=True)
+    UserWarning: There were some slots available for an exact duplicate that were missed.
+    """
 
     # Number of neighbors
     k = distances.shape[1]
 
     # Prepare the output arrays
     corrected_distances = np.zeros_like(distances)
-    corrected_indices = np.zeros_like(indicies, dtype=int)
+    corrected_indices = np.zeros_like(indices, dtype=int)
 
     # Use np.unique to catch inverse indices of all unique feature sets
-    _, unique_inverse = np.unique(features, return_inverse=True, axis=0)
+    unique_inverse = np.unique(features, return_inverse=True, axis=0)[1]
 
     # Map each unique feature set to its indices across the dataset
     feature_map = {u: np.where(unique_inverse == u)[0] for u in set(unique_inverse)}
 
-    for i, (dists, inds) in enumerate(zip(distances, indicies)):
+    points_missing_exact_duplicates = []
+
+    for i, (dists, inds) in enumerate(zip(distances, indices)):
         # Find all indices where the points are the same as point i. This set is already sorted
         same_point_indices = feature_map[unique_inverse[i]]
 
@@ -188,6 +279,17 @@ def correct_knn_distances_and_indices(
         # The result of np.setdiff1d can be sorted with the argument assume_unique=True,
         # but that is always the case if same_point_indices is sorted.
         same_point_indices = np.setdiff1d(same_point_indices, i)
+
+        # Figure out how many were already included in the original knn graph
+        pre_existing_same_point_indices = np.intersect1d(same_point_indices, inds)
+
+        # Optionally warn the user if there are more identical points than slots available in the existing knn graph
+        same_point_indices_set_is_larger = len(pre_existing_same_point_indices) < len(
+            same_point_indices
+        )
+        slots_larger = len(pre_existing_same_point_indices) < k
+        if enable_warning and same_point_indices_set_is_larger and slots_larger:
+            points_missing_exact_duplicates.append(i)
 
         # Determine the number of same points to include, respecting the limit of k
         num_same = len(same_point_indices)
@@ -210,7 +312,15 @@ def correct_knn_distances_and_indices(
                 :num_remaining_slots
             ]
 
+    if enable_warning and points_missing_exact_duplicates:
+        # If the set of same points is larger than the number of slots available in the knn graph
+        # and the number of same points already included in the knn graph is less than k,
+        # there were some slots available for an exact duplicate that were missed. This should
+        # not happen in practice, so the user should be warned.
+        warnings.warn("There were some slots available for an exact duplicate that were missed.")
+
     return corrected_distances, corrected_indices
+
 
 def _configure_num_neighbors(features: FeatureArray, k: Optional[int]):
     # Error if the provided value is greater or equal to the number of examples.
