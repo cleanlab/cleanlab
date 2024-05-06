@@ -15,17 +15,17 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Union, cast
 import warnings
 
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
-from sklearn.exceptions import NotFittedError
-from sklearn.utils.validation import check_is_fitted
+
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.internal.neighbor.knn_graph import features_to_knn, construct_knn_graph_from_index
+from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_features
+from cleanlab.internal.neighbor.metric import decide_default_metric
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -74,22 +74,11 @@ class NearDuplicateIssueManager(IssueManager):
         metric_changes = self.metric and self.metric != old_knn_metric
 
         if knn_graph is None or metric_changes:
-            knn = features_to_knn(features, n_neighbors=self.k, metric=self.metric)
-
-            if self.metric and self.metric != knn.metric:
-                warnings.warn(
-                    f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                    "Most likely an existing NearestNeighbors object was passed in, but a different "
-                    "metric was specified."
-                )
-            self.metric = knn.metric
-
-            try:
-                check_is_fitted(knn)
-            except NotFittedError:
-                knn.fit(features)
-
-            knn_graph = construct_knn_graph_from_index(knn)
+            _features = cast(np.ndarray, features)
+            self.metric = self.metric or decide_default_metric(_features)
+            knn_graph = construct_knn_graph_from_features(
+                _features, n_neighbors=self.k, metric=self.metric
+            )
         N = knn_graph.shape[0]
         nn_distances = knn_graph.data.reshape(N, -1)[:, 0]
         median_nn_distance = max(
