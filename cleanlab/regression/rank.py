@@ -28,6 +28,7 @@ from typing import Dict, Callable, Optional, Union
 import numpy as np
 from numpy.typing import ArrayLike
 
+from cleanlab.internal.neighbor.metric import decide_euclidean_metric
 from cleanlab.internal.neighbor.neighbor import features_to_knn
 from cleanlab.outlier import OutOfDistribution
 from cleanlab.internal.regression_utils import assert_valid_prediction_inputs
@@ -180,6 +181,8 @@ def _get_outre_score_for_each_label(
     features = np.array([labels, residual]).T
 
     neighbors = int(np.ceil(frac_neighbors * labels.shape[0]))
+    # Use provided metric or select a decent implementation of the euclidean metric for knn search
+    neighbor_metric = neighbor_metric or decide_euclidean_metric(features)
     knn = features_to_knn(features, n_neighbors=neighbors, metric=neighbor_metric)
     ood = OutOfDistribution(params={"knn": knn})
 
