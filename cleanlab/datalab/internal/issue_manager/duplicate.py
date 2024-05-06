@@ -25,7 +25,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.internal.neighbor.neighbor import features_to_knn, construct_knn_graph_from_index
+from cleanlab.internal.neighbor.knn_graph import features_to_knn, construct_knn_graph_from_index
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt

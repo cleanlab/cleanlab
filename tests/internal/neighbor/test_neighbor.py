@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.internal.neighbor import features_to_knn
-from cleanlab.internal.neighbor.neighbor import construct_knn_graph_from_index
+from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index
 
 
 @pytest.mark.parametrize(

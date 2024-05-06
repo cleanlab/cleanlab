@@ -32,7 +32,7 @@ from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
-from cleanlab.internal.neighbor.neighbor import features_to_knn
+from cleanlab.internal.neighbor.knn_graph import features_to_knn
 from cleanlab.internal.numerics import softmax
 from cleanlab.internal.outlier import correct_precision_errors, transform_distances_to_scores
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array

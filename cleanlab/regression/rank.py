@@ -29,7 +29,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from cleanlab.internal.neighbor.metric import decide_euclidean_metric
-from cleanlab.internal.neighbor.neighbor import features_to_knn
+from cleanlab.internal.neighbor.knn_graph import features_to_knn
 from cleanlab.outlier import OutOfDistribution
 from cleanlab.internal.regression_utils import assert_valid_prediction_inputs
 
