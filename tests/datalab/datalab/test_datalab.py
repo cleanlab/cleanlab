@@ -938,6 +938,16 @@ class TestDatalabFindNonIIDIssues:
         issues_2 = lab_2.get_issues("non_iid")
         pd.testing.assert_frame_equal(issues_1, issues_2)
 
+    def test_all_identical_dataset(self):
+        """Test that the non-IID issue finder correctly identifies an all-identical dataset."""
+        N, M = 200, 10
+        data = {"labels": [0] * N}
+        features = np.full((N, M), fill_value=np.random.rand(M))
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=features, issue_types={"non_iid": {}})
+        assert lab.get_issues()["is_non_iid_issue"].sum() == 1
+        assert lab.get_issue_summary()["score"].values[0] < 0.05
+
 
 class TestDatalabFindLabelIssues:
     @pytest.fixture
@@ -1035,6 +1045,17 @@ class TestDatalabFindOutlierIssues:
         assert "outlier" in summary["issue_type"].values
         outlier_summary = lab.get_issue_summary("outlier")
         assert outlier_summary["num_issues"].values[0] > 0
+
+    def test_all_identical_dataset(self):
+        """Test that the non-IID issue finder correctly identifies an all-identical dataset."""
+        N, M = 200, 10
+        data = {"labels": [0] * N}
+        features = np.full((N, M), fill_value=np.random.rand(M))
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=features, issue_types={"outlier": {}})
+        outlier_issues = lab.get_issues("outlier")
+        assert outlier_issues["is_outlier_issue"].sum() == 0
+        np.testing.assert_allclose(outlier_issues["outlier_score"].to_numpy(), 1)
 
 
 class TestDatalabFindNearDuplicateIssues:
@@ -1147,6 +1168,17 @@ class TestDatalabFindNearDuplicateIssues:
         # Assert near duplicate sets are unique, ignoring empty sets
         unique_non_empty_sets = [tuple(s) for s in near_duplicate_sets if len(s) > 0]
         assert len(set(unique_non_empty_sets)) == 18
+
+    def test_all_identical_dataset(self):
+        """Test that the non-IID issue finder correctly identifies an all-identical dataset."""
+        N, M = 200, 10
+        data = {"labels": [0] * N}
+        features = np.full((N, M), fill_value=np.random.rand(M))
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=features, issue_types={"near_duplicate": {}})
+        near_duplicate_issues = lab.get_issues("near_duplicate")
+        assert near_duplicate_issues["is_near_duplicate_issue"].sum() == N
+        np.testing.assert_allclose(near_duplicate_issues["near_duplicate_score"].to_numpy(), 0)
 
 
 class TestDatalabWithoutLabels:
@@ -1402,6 +1434,22 @@ class TestDataLabUnderperformingIssue:
         )
         assert len(lab.issue_summary["issue_type"].values) == 0
 
+    def test_all_identical_dataset(self):
+        """Test that the non-IID issue finder correctly handles an all-identical dataset."""
+        N, M = 200, 10
+        data = {"labels": [0] * N}
+        features = np.full((N, M), fill_value=np.random.rand(M))
+        pred_probs = np.full((N, 2), fill_value=[1, 0])
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(
+            features=features, pred_probs=pred_probs, issue_types={"underperforming_group": {}}
+        )
+        underperforming_issues = lab.get_issues("underperforming_group")
+        assert underperforming_issues["is_underperforming_group_issue"].sum() == 0
+        np.testing.assert_allclose(
+            underperforming_issues["underperforming_group_score"].to_numpy(), 1
+        )
+
 
 class TestDataLabNullIssues:
     K = 3
@@ -1609,6 +1657,23 @@ class TestDatalabDataValuation:
                 expected_knn_graph.toarray(),
                 lab.get_info("statistics")["weighted_knn_graph"].toarray(),
             )
+
+    def test_all_identical_dataset(self):
+        """Test that the data_valuation issue finder correctly handles an all-identical dataset."""
+        N, M = 11, 10
+        data = {"labels": [0] * N}
+        features = np.full((N, M), fill_value=np.random.rand(M))
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=features, issue_types={"data_valuation": {}})
+        data_valuation_issues = lab.get_issues("data_valuation")
+        assert data_valuation_issues["is_data_valuation_issue"].sum() == 0
+
+        # For a full knn-graph, all data points have the same value. Here, they all contribute the same value.
+        # The score of 54/99 is a value that works for 11 identical data points.
+        # TODO: Find a reasonable test for larger dataset, with k much smaller than N. Hard to guarantee a score of 0.5.
+        np.testing.assert_allclose(
+            data_valuation_issues["data_valuation_score"].to_numpy(), 54 / 99
+        )
 
 
 class TestIssueManagersReuseKnnGraph:
