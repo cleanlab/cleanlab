@@ -12,7 +12,7 @@ from cleanlab.internal.neighbor.metric import decide_metric
 from cleanlab.internal.neighbor.search import construct_knn
 
 
-DEFAULT_K = 10
+DEFAULT_K = 10  # Value is set for issue type that requires the largest number of neighbors. Currently, that's outliers that need 10 neighbors.
 """Default number of neighbors to consider in the k-nearest neighbors search,
 unless the size of the feature array is too small or the user specifies a different value.
 
