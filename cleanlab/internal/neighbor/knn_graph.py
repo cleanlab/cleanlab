@@ -6,13 +6,13 @@ from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 
 if TYPE_CHECKING:
-    from cleanlab.internal.neighbor.types import FeatureArray, Metric
+    from cleanlab.typing import FeatureArray, Metric
 
-from cleanlab.internal.neighbor.metric import decide_metric
+from cleanlab.internal.neighbor.metric import decide_default_metric
 from cleanlab.internal.neighbor.search import construct_knn
 
 
-DEFAULT_K = 10
+DEFAULT_K = 10  # Value is set for issue type that requires the largest number of neighbors. Most of the issue types require 10 neighbors by default.
 """Default number of neighbors to consider in the k-nearest neighbors search,
 unless the size of the feature array is too small or the user specifies a different value.
 
@@ -60,7 +60,7 @@ def features_to_knn(
     if features is None:
         raise ValueError("Both knn and features arguments cannot be None at the same time.")
     # Use provided metric if available, otherwise decide based on the features.
-    metric = metric or decide_metric(features)
+    metric = metric or decide_default_metric(features)
 
     # Decide the number of neighbors to use in the KNN search.
     n_neighbors = _configure_num_neighbors(features, n_neighbors)
@@ -69,7 +69,41 @@ def features_to_knn(
     return knn.fit(features)
 
 
-def knn_to_knn_graph(knn: NearestNeighbors) -> csr_matrix:
+def construct_knn_graph_from_index(knn: NearestNeighbors) -> csr_matrix:
+    """Construct a KNN graph from a fitted NearestNeighbors search object.
+
+    Parameters
+    ----------
+    knn :
+        A NearestNeighbors object that has been fitted to a feature array.
+        The knn graph is constructed based on the distances and indices of each feature row's nearest neighbors.
+
+    Returns
+    -------
+    knn_graph :
+        A sparse, weighted adjacency matrix representing the KNN graph of the feature array.
+
+    Note
+    ----
+    This is *not* intended to construct a KNN graph of test data. It is only used to construct a KNN graph of the data used to fit the NearestNeighbors object.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from cleanlab.internal.neighbor.neighbor import features_to_knn, construct_knn_graph_from_index
+    >>> features = np.array([
+        [0.701, 0.701],
+        [0.900, 0.436],
+        [0.000, 1.000],
+    ])
+    >>> knn = features_to_knn(features, n_neighbors=1)
+    >>> knn_graph = construct_knn_graph_from_index(knn)
+    >>> knn_graph.toarray()  # For demonstration purposes only. It is generally a bad idea to transform to dense matrix for large graphs.
+    array([[0.        , 0.33140006, 0.        ],
+           [0.33140006, 0.        , 0.        ],
+           [0.76210367, 0.        , 0.        ]])
+    """
+
     distances, indices = knn.kneighbors(return_distance=True)
 
     N, K = distances.shape
@@ -79,6 +113,52 @@ def knn_to_knn_graph(knn: NearestNeighbors) -> csr_matrix:
     indptr = np.arange(0, N * K + 1, K)
 
     return csr_matrix((distances.reshape(-1), indices.reshape(-1), indptr), shape=(N, N))
+
+
+def construct_knn_graph_from_features(
+    features: Optional[FeatureArray],
+    *,
+    n_neighbors: Optional[int] = None,
+    metric: Optional[Metric] = None,
+    **sklearn_knn_kwargs,
+) -> csr_matrix:
+    """Calculate the KNN graph from the features if it is not provided in the kwargs.
+
+    Parameters
+    ----------
+    features :
+        The input feature array, with shape (N, M), where N is the number of samples and M is the number of features.
+    n_neighbors :
+        The number of nearest neighbors to consider. If None, a default value is determined based on the feature array size.
+    metric :
+        The distance metric to use for computing distances between points. If None, the metric is determined based on the feature array shape.
+    **sklearn_knn_kwargs :
+        Additional keyword arguments to be passed to the search index constructor.
+
+    Returns
+    -------
+    knn_graph :
+        A sparse, weighted adjacency matrix representing the KNN graph of the feature array.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from cleanlab.internal.neighbor.neighbor import construct_knn_graph_from_features
+    >>> features = np.array([
+        [0.701, 0.701],
+        [0.900, 0.436],
+        [0.000, 1.000],
+    ])
+    >>> knn_graph = construct_knn_graph_from_features(features, n_neighbors=1)
+    >>> knn_graph.toarray()  # For demonstration purposes only. It is generally a bad idea to transform to dense matrix for large graphs.
+    array([[0.        , 0.33140006, 0.        ],
+           [0.33140006, 0.        , 0.        ],
+           [0.76210367, 0.        , 0.        ]])
+    """
+    # Construct NearestNeighbors object
+    knn = features_to_knn(features, n_neighbors=n_neighbors, metric=metric, **sklearn_knn_kwargs)
+    # Build graph from NearestNeighbors object
+    return construct_knn_graph_from_index(knn)
 
 
 def correct_knn_distances_and_indices(
@@ -95,7 +175,7 @@ def correct_knn_distances_and_indices(
     corrected_indices = np.zeros_like(indicies, dtype=int)
 
     # Use np.unique to catch inverse indices of all unique feature sets
-    unique_inverse = np.unique(features, return_inverse=True, axis=0)[1]
+    _, unique_inverse = np.unique(features, return_inverse=True, axis=0)
 
     # Map each unique feature set to its indices across the dataset
     feature_map = {u: np.where(unique_inverse == u)[0] for u in set(unique_inverse)}
@@ -132,12 +212,14 @@ def correct_knn_distances_and_indices(
 
     return corrected_distances, corrected_indices
 
-
 def _configure_num_neighbors(features: FeatureArray, k: Optional[int]):
-    if k is not None and k >= features.shape[0]:
+    # Error if the provided value is greater or equal to the number of examples.
+    N = features.shape[0]
+    if k is not None and k >= N:
         raise ValueError(
             f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
         )
 
-    k = min(k or DEFAULT_K, features.shape[0] - 1)
+    # Either use the provided value or select a default value based on the feature array size.
+    k = k or min(DEFAULT_K, N - 1)
     return k
