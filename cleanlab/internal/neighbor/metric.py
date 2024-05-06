@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import euclidean
 
-from cleanlab.internal.neighbor.types import Metric
+from cleanlab.typing import Metric
 
 HIGH_DIMENSION_CUTOFF: int = 3
 """

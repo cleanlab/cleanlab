@@ -6,7 +6,7 @@ from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 
 if TYPE_CHECKING:
-    from cleanlab.internal.neighbor.types import FeatureArray, Metric
+    from cleanlab.typing import FeatureArray, Metric
 
 from cleanlab.internal.neighbor.metric import decide_metric
 from cleanlab.internal.neighbor.search import construct_knn

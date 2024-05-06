@@ -6,7 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 
 if TYPE_CHECKING:
 
-    from cleanlab.internal.neighbor.types import Metric
+    from cleanlab.typing import Metric
 
 
 def construct_knn(n_neighbors: int, metric: Metric, **knn_kwargs) -> NearestNeighbors:
