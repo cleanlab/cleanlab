@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 def construct_knn(n_neighbors: int, metric: Metric, **knn_kwargs) -> NearestNeighbors:
     """
-    Constructs a k-nearest neighbors search object.
+    Constructs a k-nearest neighbors search object. You can implement a similar method to run cleanlab with your own approximate-KNN library.
 
     Parameters
     ----------
