@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Union
 import warnings
 
 import numpy as np
