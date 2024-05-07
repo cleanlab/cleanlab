@@ -12,13 +12,13 @@ from cleanlab.internal.neighbor.metric import decide_default_metric
 from cleanlab.internal.neighbor.search import construct_knn
 
 
-DEFAULT_K = 10  # Value is set for issue type that requires the largest number of neighbors. Most of the issue types require 10 neighbors by default.
+DEFAULT_K = 10
 """Default number of neighbors to consider in the k-nearest neighbors search,
 unless the size of the feature array is too small or the user specifies a different value.
 
 This should be the largest desired value of k for all desired issue types that require a KNN graph.
 
-E.g. if near duplicates wants k=1 but outliers wants 10, then DEFAULT_K should be 10.
+E.g. if near duplicates wants k=1 but outliers wants 10, then DEFAULT_K should be 10. This way, all issue types can rely on the same KNN graph.
 """
 
 
