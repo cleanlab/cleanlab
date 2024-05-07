@@ -169,7 +169,8 @@ def construct_knn_graph_from_features(
 def _configure_num_neighbors(features: FeatureArray, k: Optional[int]):
     # Error if the provided value is greater or equal to the number of examples.
     N = features.shape[0]
-    if k is not None and k >= N:
+    k_larger_than_dataset = k is not None and k >= N
+    if k_larger_than_dataset:
         raise ValueError(
             f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
         )
