@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Tuple
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -90,12 +90,12 @@ def construct_knn_graph_from_index(knn: NearestNeighbors) -> csr_matrix:
     Examples
     --------
     >>> import numpy as np
-    >>> from cleanlab.internal.neighbor.neighbor import features_to_knn, construct_knn_graph_from_index
+    >>> from cleanlab.internal.neighbor.knn_graph import features_to_knn, construct_knn_graph_from_index
     >>> features = np.array([
-        [0.701, 0.701],
-        [0.900, 0.436],
-        [0.000, 1.000],
-    ])
+    ...    [0.701, 0.701],
+    ...    [0.900, 0.436],
+    ...    [0.000, 1.000],
+    ... ])
     >>> knn = features_to_knn(features, n_neighbors=1)
     >>> knn_graph = construct_knn_graph_from_index(knn)
     >>> knn_graph.toarray()  # For demonstration purposes only. It is generally a bad idea to transform to dense matrix for large graphs.
@@ -121,7 +121,7 @@ def construct_knn_graph_from_features(
     n_neighbors: Optional[int] = None,
     metric: Optional[Metric] = None,
     **sklearn_knn_kwargs,
-) -> csr_matrix:
+) -> Tuple[csr_matrix, NearestNeighbors]:
     """Calculate the KNN graph from the features if it is not provided in the kwargs.
 
     Parameters
@@ -139,26 +139,31 @@ def construct_knn_graph_from_features(
     -------
     knn_graph :
         A sparse, weighted adjacency matrix representing the KNN graph of the feature array.
+    knn :
+        A k-nearest neighbors search object fitted to the input feature array. This object can be used to query the nearest neighbors of new data points.
 
     Examples
     --------
     >>> import numpy as np
-    >>> from cleanlab.internal.neighbor.neighbor import construct_knn_graph_from_features
+    >>> from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_features
     >>> features = np.array([
-        [0.701, 0.701],
-        [0.900, 0.436],
-        [0.000, 1.000],
-    ])
-    >>> knn_graph = construct_knn_graph_from_features(features, n_neighbors=1)
+    ...    [0.701, 0.701],
+    ...    [0.900, 0.436],
+    ...    [0.000, 1.000],
+    ... ])
+    >>> knn_graph, knn = construct_knn_graph_from_features(features, n_neighbors=1)
     >>> knn_graph.toarray()  # For demonstration purposes only. It is generally a bad idea to transform to dense matrix for large graphs.
     array([[0.        , 0.33140006, 0.        ],
            [0.33140006, 0.        , 0.        ],
            [0.76210367, 0.        , 0.        ]])
+    >>> knn
+    NearestNeighbors(metric=<function euclidean at ...>, n_neighbors=1)  # For demonstration purposes only. The actual metric may vary.
     """
     # Construct NearestNeighbors object
     knn = features_to_knn(features, n_neighbors=n_neighbors, metric=metric, **sklearn_knn_kwargs)
     # Build graph from NearestNeighbors object
-    return construct_knn_graph_from_index(knn)
+    knn_graph = construct_knn_graph_from_index(knn)
+    return knn_graph, knn
 
 
 def _configure_num_neighbors(features: FeatureArray, k: Optional[int]):

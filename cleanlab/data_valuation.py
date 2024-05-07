@@ -112,5 +112,5 @@ def data_shapley_knn(
 
     # Use provided knn_graph or compute it from features
     if knn_graph is None:
-        knn_graph = construct_knn_graph_from_features(features, n_neighbors=k, metric=metric)
+        knn_graph, _ = construct_knn_graph_from_features(features, n_neighbors=k, metric=metric)
     return _knn_shapley_score(knn_graph, labels, k)
