@@ -25,7 +25,7 @@ from scipy.sparse import csr_matrix
 from sklearn.cluster import DBSCAN
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_features
+from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 from cleanlab.rank import get_self_confidence_for_each_label
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -150,7 +150,7 @@ class UnderperformingGroupIssueManager(IssueManager):
         metric_changes = self.metric and self.metric != old_knn_metric
 
         if knn_graph is None or metric_changes:
-            knn_graph, knn = construct_knn_graph_from_features(
+            knn_graph, knn = create_knn_graph_and_index(
                 features, n_neighbors=self.k, metric=self.metric
             )
             self.metric = knn.metric

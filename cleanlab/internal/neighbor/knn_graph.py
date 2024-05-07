@@ -115,7 +115,7 @@ def construct_knn_graph_from_index(knn: NearestNeighbors) -> csr_matrix:
     return csr_matrix((distances.reshape(-1), indices.reshape(-1), indptr), shape=(N, N))
 
 
-def construct_knn_graph_from_features(
+def create_knn_graph_and_index(
     features: Optional[FeatureArray],
     *,
     n_neighbors: Optional[int] = None,
@@ -145,13 +145,13 @@ def construct_knn_graph_from_features(
     Examples
     --------
     >>> import numpy as np
-    >>> from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_features
+    >>> from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
     >>> features = np.array([
     ...    [0.701, 0.701],
     ...    [0.900, 0.436],
     ...    [0.000, 1.000],
     ... ])
-    >>> knn_graph, knn = construct_knn_graph_from_features(features, n_neighbors=1)
+    >>> knn_graph, knn = create_knn_graph_and_index(features, n_neighbors=1)
     >>> knn_graph.toarray()  # For demonstration purposes only. It is generally a bad idea to transform to dense matrix for large graphs.
     array([[0.        , 0.33140006, 0.        ],
            [0.33140006, 0.        , 0.        ],

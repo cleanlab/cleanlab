@@ -34,7 +34,7 @@ from scipy.sparse import csr_matrix
 
 from cleanlab.data_valuation import data_shapley_knn
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_features
+from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -136,7 +136,7 @@ class DataValuationIssueManager(IssueManager):
             )
             raise TypeError(error_msg)
         if knn_graph is None or metric_changes:
-            knn_graph, knn = construct_knn_graph_from_features(
+            knn_graph, knn = create_knn_graph_and_index(
                 features, n_neighbors=self.k, metric=self.metric
             )
             self.metric = knn.metric
