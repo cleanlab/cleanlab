@@ -70,7 +70,7 @@ def features_to_knn(
 
 
 def construct_knn_graph_from_index(knn: NearestNeighbors) -> csr_matrix:
-    """Construct a KNN graph from a fitted NearestNeighbors search object.
+    """Construct a sparse distance matrix representation of KNN graph out of a fitted NearestNeighbors search object.
 
     Parameters
     ----------
