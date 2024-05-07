@@ -24,7 +24,7 @@ from typing import Callable, Optional, Union
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_features
+from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 
 
 def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray, k: int) -> np.ndarray:
@@ -112,5 +112,5 @@ def data_shapley_knn(
 
     # Use provided knn_graph or compute it from features
     if knn_graph is None:
-        knn_graph = construct_knn_graph_from_features(features, n_neighbors=k, metric=metric)
+        knn_graph, _ = create_knn_graph_and_index(features, n_neighbors=k, metric=metric)
     return _knn_shapley_score(knn_graph, labels, k)

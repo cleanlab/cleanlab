@@ -11,7 +11,6 @@ from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index, features_to_knn
-from cleanlab.internal.neighbor.metric import decide_default_metric
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -201,8 +200,8 @@ class NonIIDIssueManager(IssueManager):
             return None
         features_to_use = self._determine_features(features, pred_probs)
 
-        self.metric = self.metric or decide_default_metric(features_to_use)
         knn = features_to_knn(features_to_use, n_neighbors=self.k, metric=self.metric)
+        self.metric = knn.metric  # Update the metric to the one used in the KNN object.
         return knn
 
     def find_issues(
