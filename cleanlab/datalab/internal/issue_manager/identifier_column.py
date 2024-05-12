@@ -1,4 +1,4 @@
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -48,7 +48,7 @@ class IdentifierColumnIssueManager(IssueManager):
             return expected_set == unique_sorted
 
     def _prepare_features(
-        self, features: Optional[npt.NDArray | pd.DataFrame | list | dict]
+        self, features: Optional[Union[npt.NDArray, pd.DataFrame, list, dict]]
     ) -> npt.NDArray:
         """
         Prepare the features for issue check.
@@ -78,7 +78,7 @@ class IdentifierColumnIssueManager(IssueManager):
             )
 
     def find_issues(
-        self, features: Optional[npt.NDArray | pd.DataFrame | list | dict], **kwargs
+        self, features: Optional[Union[npt.NDArray, pd.DataFrame, list, dict]], **kwargs
     ) -> None:
         """
         Find identifier columns in the given dataset.
