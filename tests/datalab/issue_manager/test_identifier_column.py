@@ -19,6 +19,8 @@ from cleanlab.datalab.internal.issue_manager.identifier_column import (
         (np.array([1, 3, 4, 4, 5, 6, 7, -1]), False),
         (np.array([2, 1, 3, 5, 6, 4]), True),
         (np.array([-1, -3, -2, -4, 0]), True),
+        (np.array([]), False),
+        (np.array([0, 0, 0]), False),
     ],
 )
 def test_is_sequential(arr, expected_output):

@@ -35,14 +35,14 @@ class IdentifierColumnIssueManager(IssueManager):
         Returns:
             A boolean indicating whether the elements in the array are sequential.
         """
+        if arr.size == 0:
+            return False
         min_val, max_val = arr.min(), arr.max()
         unique_sorted = set(np.unique(np.sort(arr)).tolist())
 
         expected_set = set(range(min_val, max_val + 1))
-        # check for special cases (all same and none values in col)
+        # check for special cases (all same )
         if len(expected_set) == 1:
-            return False
-        elif len(expected_set) == 0:
             return False
         else:
             return expected_set == unique_sorted
