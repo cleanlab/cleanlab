@@ -39,7 +39,13 @@ class IdentifierColumnIssueManager(IssueManager):
         unique_sorted = set(np.unique(np.sort(arr)).tolist())
 
         expected_set = set(range(min_val, max_val + 1))
-        return expected_set == unique_sorted
+        # check for special cases (all same and none values in col)
+        if len(expected_set) == 1:
+            return False
+        elif len(expected_set) == 0:
+            return False
+        else:
+            return expected_set == unique_sorted
 
     def _prepare_features(
         self, features: Optional[npt.NDArray | pd.DataFrame | list | dict]
@@ -84,14 +90,10 @@ class IdentifierColumnIssueManager(IssueManager):
             None
         """
         if features is None:
-            raise ValueError(
-                "features must be provided to check for identifier columns."
-            )
+            raise ValueError("features must be provided to check for identifier columns.")
 
         features = self._prepare_features(features)
-        score = np.array(
-            [self._is_sequential(features[:, i]) for i in range(features.shape[1])]
-        )
+        score = np.array([self._is_sequential(features[:, i]) for i in range(features.shape[1])])
         indices = [i for i in range(features.shape[1])]
         issue_indices = [i for i in indices if score[i]]
         self.issues = pd.DataFrame(
@@ -106,7 +108,4 @@ class IdentifierColumnIssueManager(IssueManager):
         self.info = {
             "identifier_columns": issue_indices,
             "num_identifier_columns": sum(score),
-            "message": f"""There are probably {sum(score)} identifier columns in your dataset. An identifier column is a
-            column i in features such that set(features[:,i]) = set(c, c+1, ..., c+n) for some
-            integer c, where n = num-rows of features.""",
         }
