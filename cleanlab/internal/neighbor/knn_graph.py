@@ -267,54 +267,61 @@ def correct_knn_distances_and_indices(
     corrected_distances = np.zeros_like(distances)
     corrected_indices = np.zeros_like(indices, dtype=int)
 
-    # Use np.unique to catch inverse indices of all unique feature sets
-    unique_inverse = np.unique(features, return_inverse=True, axis=0)[1]
+    corrected_distances = np.copy(distances)
+    corrected_indices = np.copy(indices)
 
-    # Map each unique feature set to its indices across the dataset
-    feature_map = {u: np.where(unique_inverse == u)[0] for u in set(unique_inverse)}
+    # Use np.unique to catch inverse indices of all unique feature sets
+    _, unique_inverse, unique_counts = np.unique(
+        features, return_inverse=True, return_counts=True, axis=0
+    )
+
+    # Collect different sets of exact duplicates in the dataset
+    exact_duplicate_sets = [
+        np.where(unique_inverse == u)[0] for u in set(unique_inverse) if unique_counts[u] > 1
+    ]
 
     points_missing_exact_duplicates = []
 
-    for i, (dists, inds) in enumerate(zip(distances, indices)):
-        # Find all indices where the points are the same as point i. This set is already sorted
-        same_point_indices = feature_map[unique_inverse[i]]
+    for duplicate_inds in exact_duplicate_sets:
+        for i in duplicate_inds:
+            dists = distances[i]
+            inds = indices[i]
 
-        # Remove the current index i, 1D array of values in same_point_indices that are not in i.
-        # The result of np.setdiff1d can be sorted with the argument assume_unique=True,
-        # but that is always the case if same_point_indices is sorted.
-        same_point_indices = np.setdiff1d(same_point_indices, i)
+            same_point_indices = np.setdiff1d(duplicate_inds, i)
 
-        # Figure out how many were already included in the original knn graph
-        pre_existing_same_point_indices = np.intersect1d(same_point_indices, inds)
+            # Figure out how many were already included in the original knn graph
+            pre_existing_same_point_indices = np.intersect1d(same_point_indices, inds)
 
-        # Optionally warn the user if there are more identical points than slots available in the existing knn graph
-        same_point_indices_set_is_larger = len(pre_existing_same_point_indices) < len(
-            same_point_indices
-        )
-        slots_larger = len(pre_existing_same_point_indices) < k
-        if enable_warning and same_point_indices_set_is_larger and slots_larger:
-            points_missing_exact_duplicates.append(i)
+            # Optionally warn the user if there are more identical points than slots available in the existing knn graph
+            same_point_indices_set_is_larger = len(pre_existing_same_point_indices) < len(
+                same_point_indices
+            )
+            slots_larger = len(pre_existing_same_point_indices) < k
+            if enable_warning and same_point_indices_set_is_larger and slots_larger:
+                points_missing_exact_duplicates.append(i)
 
-        # Determine the number of same points to include, respecting the limit of k
-        num_same = len(same_point_indices)
-        num_same_included = min(num_same, k)  # ensure we do not exceed k neighbors
+            # Determine the number of same points to include, respecting the limit of k
+            num_same = len(same_point_indices)
+            num_same_included = min(num_same, k)  # ensure we do not exceed k neighbors
 
-        # Include same points in the results
-        corrected_indices[i, :num_same_included] = same_point_indices[:num_same_included]
-        # Distances are already zero for these points
+            # Include same points in the results
+            corrected_indices[i, :num_same_included] = same_point_indices[:num_same_included]
 
-        # Fill the rest of the slots with different points
-        num_remaining_slots = k - num_same_included
-        if num_remaining_slots > 0:
-            # Get indices and distances from knn that are not the same as i
-            different_point_mask = np.isin(inds, same_point_indices, invert=True)
+            # Fill the rest of the slots with different points
+            num_remaining_slots = k - num_same_included
+            if num_remaining_slots > 0:
+                # Get indices and distances from knn that are not the same as i
+                different_point_mask = np.isin(inds, same_point_indices, invert=True)
 
-            corrected_distances[i, num_same_included:k] = dists[different_point_mask][
-                :num_remaining_slots
-            ]
-            corrected_indices[i, num_same_included:k] = inds[different_point_mask][
-                :num_remaining_slots
-            ]
+                corrected_distances[i, num_same_included:k] = dists[different_point_mask][
+                    :num_remaining_slots
+                ]
+                corrected_indices[i, num_same_included:k] = inds[different_point_mask][
+                    :num_remaining_slots
+                ]
+
+            # Finally, set the distances between exact duplicates to zero
+            corrected_distances[i, :num_same_included] = 0
 
     if enable_warning and points_missing_exact_duplicates:
         # If the set of same points is larger than the number of slots available in the knn graph
