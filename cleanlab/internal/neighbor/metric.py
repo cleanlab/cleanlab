@@ -22,15 +22,13 @@ the ``euclidean`` metric from scipy (slower but numerically more precise/accurat
 
 
 # Metric decision functions
-def _euclidean_large_dataset(features: FeatureArray):
+def _euclidean_large_dataset() -> str:
     return "euclidean"
 
-
-def _euclidean_small_dataset(features: FeatureArray):
+def _euclidean_small_dataset() -> Metric:
     return euclidean
 
-
-def _cosine_metric(features: FeatureArray):
+def _cosine_metric() -> str:
     return "cosine"
 
 
@@ -65,9 +63,9 @@ def decide_euclidean_metric(features: FeatureArray) -> Metric:
     """
     num_rows = features.shape[0]
     if num_rows > ROW_COUNT_CUTOFF:
-        return _euclidean_large_dataset(features)
+        return _euclidean_large_dataset()
     else:
-        return _euclidean_small_dataset(features)
+        return _euclidean_small_dataset()
 
 
 # Main function to decide the metric
