@@ -101,5 +101,5 @@ def decide_default_metric(features: FeatureArray) -> Metric:
     sklearn.metrics.pairwise.cosine_distances: The cosine metric function from scikit-learn
     """
     if features.shape[1] > HIGH_DIMENSION_CUTOFF:
-        return _cosine_metric(features)
+        return _cosine_metric()
     return decide_euclidean_metric(features)
