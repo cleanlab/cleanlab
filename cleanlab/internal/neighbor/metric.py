@@ -22,15 +22,15 @@ the ``euclidean`` metric from scipy (slower but numerically more precise/accurat
 
 
 # Metric decision functions
-def _euclidean_large_dataset(features: FeatureArray):
+def _euclidean_large_dataset() -> str:
     return "euclidean"
 
 
-def _euclidean_small_dataset(features: FeatureArray):
+def _euclidean_small_dataset() -> Metric:
     return euclidean
 
 
-def _cosine_metric(features: FeatureArray):
+def _cosine_metric() -> str:
     return "cosine"
 
 
@@ -65,9 +65,9 @@ def decide_euclidean_metric(features: FeatureArray) -> Metric:
     """
     num_rows = features.shape[0]
     if num_rows > ROW_COUNT_CUTOFF:
-        return _euclidean_large_dataset(features)
+        return _euclidean_large_dataset()
     else:
-        return _euclidean_small_dataset(features)
+        return _euclidean_small_dataset()
 
 
 # Main function to decide the metric
@@ -103,5 +103,5 @@ def decide_default_metric(features: FeatureArray) -> Metric:
     sklearn.metrics.pairwise.cosine_distances: The cosine metric function from scikit-learn
     """
     if features.shape[1] > HIGH_DIMENSION_CUTOFF:
-        return _cosine_metric(features)
+        return _cosine_metric()
     return decide_euclidean_metric(features)
