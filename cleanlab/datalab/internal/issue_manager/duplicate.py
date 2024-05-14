@@ -21,12 +21,10 @@ import warnings
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
-from scipy.spatial.distance import euclidean
-from sklearn.neighbors import NearestNeighbors
-from sklearn.exceptions import NotFittedError
-from sklearn.utils.validation import check_is_fitted
+
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 from cleanlab.internal.constants import EPSILON
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -76,32 +74,10 @@ class NearDuplicateIssueManager(IssueManager):
         metric_changes = self.metric and self.metric != old_knn_metric
 
         if knn_graph is None or metric_changes:
-            if features is None:
-                raise ValueError(
-                    "If a knn_graph is not provided, features must be provided to fit a new knn."
-                )
-            if self.metric is None:
-                self.metric = (
-                    "cosine"
-                    if features.shape[1] > 3
-                    else "euclidean" if features.shape[0] > 100 else euclidean
-                )
-            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
-
-            if self.metric and self.metric != knn.metric:
-                warnings.warn(
-                    f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                    "Most likely an existing NearestNeighbors object was passed in, but a different "
-                    "metric was specified."
-                )
+            knn_graph, knn = create_knn_graph_and_index(
+                features, n_neighbors=self.k, metric=self.metric
+            )
             self.metric = knn.metric
-
-            try:
-                check_is_fitted(knn)
-            except NotFittedError:
-                knn.fit(features)
-
-            knn_graph = knn.kneighbors_graph(mode="distance")
         N = knn_graph.shape[0]
         nn_distances = knn_graph.data.reshape(N, -1)[:, 0]
         median_nn_distance = max(np.median(nn_distances), EPSILON)  # avoid threshold = 0

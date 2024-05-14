@@ -19,14 +19,12 @@ Data Valuation helps us assess individual training data points' contributions to
 """
 
 
-from typing import Callable, Optional, Union, cast
+from typing import Callable, Optional, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix
-from scipy.spatial.distance import euclidean
-from sklearn.neighbors import NearestNeighbors
-from sklearn.exceptions import NotFittedError
-from sklearn.utils.validation import check_is_fitted
+
+from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 
 
 def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray, k: int) -> np.ndarray:
@@ -43,29 +41,6 @@ def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray, k: int) -> np.
         for j in range(k - 2, -1, -1):
             s[idx[j]] = s[idx[j + 1]] + float(int(ans_matches[j]) - int(ans_matches[j + 1]))
     return 0.5 * (np.mean(scores / k, axis=0) + 1)
-
-
-def _process_knn_graph_from_features(
-    features: np.ndarray, metric: Optional[Union[str, Callable]], k: int = 10
-) -> csr_matrix:
-    """Calculate the knn graph from the features if it is not provided in the kwargs."""
-    if k > len(features):  # Ensure number of neighbors less than number of examples
-        raise ValueError(
-            f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
-        )
-    if metric == None:
-        metric = (
-            "cosine"
-            if features.shape[1] > 3
-            else "euclidean" if features.shape[0] > 100 else euclidean
-        )
-    knn = NearestNeighbors(n_neighbors=k, metric=metric).fit(features)
-    knn_graph = knn.kneighbors_graph(mode="distance")
-    try:
-        check_is_fitted(knn)
-    except NotFittedError:
-        knn.fit(features)
-    return knn_graph
 
 
 def data_shapley_knn(
@@ -135,6 +110,7 @@ def data_shapley_knn(
     if knn_graph is None and features is None:
         raise ValueError("Either knn_graph or features must be provided.")
 
+    # Use provided knn_graph or compute it from features
     if knn_graph is None:
-        knn_graph = _process_knn_graph_from_features(cast(np.ndarray, features), metric, k)
+        knn_graph, _ = create_knn_graph_and_index(features, n_neighbors=k, metric=metric)
     return _knn_shapley_score(knn_graph, labels, k)

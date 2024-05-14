@@ -21,10 +21,9 @@ The underlying algorithms are described in `this paper <https://arxiv.org/abs/22
 """
 
 import warnings
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
-from scipy.spatial.distance import euclidean
 from sklearn.exceptions import NotFittedError
 from sklearn.neighbors import NearestNeighbors
 
@@ -33,6 +32,7 @@ from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
+from cleanlab.internal.neighbor.knn_graph import features_to_knn
 from cleanlab.internal.numerics import softmax
 from cleanlab.internal.outlier import correct_precision_errors, transform_distances_to_scores
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
@@ -424,30 +424,13 @@ class OutOfDistribution:
         distance_metric = None
         if knn is None:  # setup default KNN estimator
             # Make sure both knn and features are not None
-            if features is None:
-                raise ValueError(
-                    "Both knn and features arguments cannot be None at the same time. Not enough information to compute outlier scores."
-                )
-            if k is None:
-                k = DEFAULT_K  # use default when knn and k are both None
-            N, M = features.shape
-            if k > N:  # Ensure number of neighbors less than number of examples
-                raise ValueError(
-                    f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
-                )
-
-            # strings are used for sklearn metrics, callables are scipy pairwise distance functions
-            metric: Union[str, Callable]
-            if M > 3:  # use euclidean distance for lower dimensional spaces
-                metric = "cosine"
-            elif N > 100:  # Use efficient implementation (numerically unstable in edge cases)
-                metric = "euclidean"
-            else:  # Use scipy implementation for precise results
-                metric = euclidean
-
-            knn = NearestNeighbors(n_neighbors=k, metric=metric).fit(features)
+            knn = features_to_knn(features, n_neighbors=k)
             features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
-            distance_metric = metric if isinstance(metric, str) else str(metric.__name__)
+            # Log knn metric as string to ensure compatibility for score correction
+            distance_metric = (
+                metric if isinstance((metric := knn.metric), str) else str(metric.__name__)
+            )
+            k = knn.n_neighbors
 
         elif k is None:
             k = knn.n_neighbors
