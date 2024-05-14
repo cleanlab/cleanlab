@@ -25,8 +25,10 @@ the ``euclidean`` metric from scipy (slower but numerically more precise/accurat
 def _euclidean_large_dataset() -> str:
     return "euclidean"
 
+
 def _euclidean_small_dataset() -> Metric:
     return euclidean
+
 
 def _cosine_metric() -> str:
     return "cosine"
