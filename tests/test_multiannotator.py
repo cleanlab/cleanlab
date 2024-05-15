@@ -1,20 +1,27 @@
-import numpy as np
-import pytest
 from copy import deepcopy
-from cleanlab.benchmarking.noise_generation import generate_noise_matrix_from_trace
-from cleanlab.benchmarking.noise_generation import generate_noisy_labels
+
+import numpy as np
+import pandas as pd
+import pytest
+from sklearn.linear_model import LogisticRegression
+
 from cleanlab import count
+from cleanlab.benchmarking.noise_generation import (
+    generate_noise_matrix_from_trace,
+    generate_noisy_labels,
+)
+from cleanlab.internal.multiannotator_utils import (
+    assert_valid_inputs_multiannotator,
+    format_multiannotator_labels,
+)
 from cleanlab.multiannotator import (
-    get_label_quality_multiannotator,
-    get_label_quality_multiannotator_ensemble,
+    convert_long_to_wide_dataset,
     get_active_learning_scores,
     get_active_learning_scores_ensemble,
+    get_label_quality_multiannotator,
+    get_label_quality_multiannotator_ensemble,
     get_majority_vote_label,
-    convert_long_to_wide_dataset,
 )
-from cleanlab.internal.multiannotator_utils import format_multiannotator_labels
-import pandas as pd
-from sklearn.linear_model import LogisticRegression
 
 
 def make_data(
@@ -794,3 +801,14 @@ def test_format_multiannotator_labels():
         ]
     )
     labels, label_map = format_multiannotator_labels(num_labels)
+
+
+def test_assert_valid_inputs_multiannotator_warnings(recwarn):
+    not_agree_labels = np.array([[2, 1, np.nan, 0], [1, 0, 2, np.nan]])
+    with pytest.warns(UserWarning, match="do not agree"):
+        assert_valid_inputs_multiannotator(not_agree_labels)
+
+    agree_labels = np.array([[1, 3, 3], [1, 4, 2]])
+    assert_valid_inputs_multiannotator(agree_labels)
+    # Assert no new warning were raised
+    assert len(recwarn) == 0
