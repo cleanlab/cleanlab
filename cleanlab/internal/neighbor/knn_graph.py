@@ -157,6 +157,11 @@ def create_knn_graph_and_index(
     **sklearn_knn_kwargs :
         Additional keyword arguments to be passed to the search index constructor.
 
+    Raises
+    ------
+    ValueError :
+        If `features` is None, as it's required to construct a knn graph from scratch.
+
     Returns
     -------
     knn_graph :
