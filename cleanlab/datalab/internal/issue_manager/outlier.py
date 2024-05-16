@@ -227,8 +227,7 @@ class OutlierIssueManager(IssueManager):
             # If the pre-existing knn graph has fewer neighbors than the knn object,
             # then we need to recompute the knn graph
             assert knn == self.ood.params["knn"]  # type: ignore[union-attr]
-            knn_graph = construct_knn_graph_from_index(knn)
-            self._knn_graph_needs_correction = True
+            knn_graph = construct_knn_graph_from_index(knn, correct_exact_duplicates=True)
             self._metric = knn.metric  # type: ignore[union-attr]
 
         return knn_graph

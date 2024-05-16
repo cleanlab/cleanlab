@@ -70,7 +70,9 @@ def features_to_knn(
     return knn.fit(features)
 
 
-def construct_knn_graph_from_index(knn: NearestNeighbors) -> csr_matrix:
+def construct_knn_graph_from_index(
+    knn: NearestNeighbors, correct_exact_duplicates: bool = False
+) -> csr_matrix:
     """Construct a sparse distance matrix representation of KNN graph out of a fitted NearestNeighbors search object.
 
     Parameters
@@ -78,6 +80,16 @@ def construct_knn_graph_from_index(knn: NearestNeighbors) -> csr_matrix:
     knn :
         A NearestNeighbors object that has been fitted to a feature array.
         The knn graph is constructed based on the distances and indices of each feature row's nearest neighbors.
+    correct_exact_duplicates :
+        Whether to adjust the KNN graph to ensure that exact duplicate points have zero mutual distance and are correctly included in the KNN graph.
+        This involves accessing the private attribute `_fit_X` of the NearestNeighbors object,
+        which could lead to unexpected behavior across different versions of sklearn.
+
+        Warning
+        -------
+        Using `correct_exact_duplicates` may lead to unexpected behavior due to reliance on the private attribute `_fit_X`.
+        It is recommended to keep this option as False.
+        For constructing a corrected KNN graph, consider using the `create_knn_graph_and_index` function, which accepts a feature array directly.
 
     Returns
     -------
@@ -106,6 +118,12 @@ def construct_knn_graph_from_index(knn: NearestNeighbors) -> csr_matrix:
     """
 
     distances, indices = knn.kneighbors(return_distance=True)
+
+    if correct_exact_duplicates:
+        # NOTE: Accessing the features used to fit the knn object is a short-term solution.
+        # WARNING: Accessing an object's private attribute from a third-party library is
+        _features = knn._fit_X
+        distances, indices = correct_knn_distances_and_indices(_features, distances, indices)
 
     N, K = distances.shape
 

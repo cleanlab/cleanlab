@@ -449,3 +449,27 @@ def test_warnings():
         assert ("There were some slots available for an exact duplicate that were missed.") in str(
             w[-1].message
         )
+
+
+def test_construct_knn_then_correct_knn_graph_does_the_same_work():
+    features = np.random.rand(1000, 2)
+    features[10:20] = features[10]  # Make the 10th to 20th rows identical
+    metric = noisy_euclidean_distance
+    n_neighbors = 50
+
+    # Construct the index and knn_graph separately, the correction should happen during the knn_graph construction
+    knn = features_to_knn(features, n_neighbors=n_neighbors, metric=metric)
+    knn_graph_from_index = construct_knn_graph_from_index(knn)  # Without correction
+    knn_graph_from_index_with_correction = construct_knn_graph_from_index(
+        knn, correct_exact_duplicates=True
+    )
+    knn_graph, _ = create_knn_graph_and_index(
+        features=features, n_neighbors=n_neighbors, metric=metric
+    )
+
+    # knn_graph has correction
+    np.testing.assert_array_equal(
+        knn_graph_from_index_with_correction.toarray(), knn_graph.toarray()
+    )
+    # knn_graph_from_index does not have correction
+    assert not np.all(knn_graph_from_index.toarray() == knn_graph.toarray())
