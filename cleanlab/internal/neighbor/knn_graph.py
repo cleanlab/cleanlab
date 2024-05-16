@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING, Tuple
+from typing import List, Optional, TYPE_CHECKING, Tuple
 import warnings
 
 import numpy as np
@@ -207,8 +207,26 @@ def correct_knn_graph(features: FeatureArray, knn_graph: csr_matrix) -> csr_matr
     )
 
 
+def _compute_exact_duplicate_sets(features: FeatureArray) -> List[np.ndarray]:
+    # Use np.unique to catch inverse indices of all unique feature sets
+    _, unique_inverse, unique_counts = np.unique(
+        features, return_inverse=True, return_counts=True, axis=0
+    )
+
+    # Collect different sets of exact duplicates in the dataset
+    exact_duplicate_sets = [
+        np.where(unique_inverse == u)[0] for u in set(unique_inverse) if unique_counts[u] > 1
+    ]
+
+    return exact_duplicate_sets
+
+
 def correct_knn_distances_and_indices(
-    features: FeatureArray, distances: np.ndarray, indices: np.ndarray, enable_warning: bool = False
+    features: FeatureArray,
+    distances: np.ndarray,
+    indices: np.ndarray,
+    exact_duplicate_sets: Optional[List[np.ndarray]] = None,
+    enable_warning: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Corrects the distances and indices of a k-nearest neighbors (knn) graph
@@ -222,6 +240,8 @@ def correct_knn_distances_and_indices(
         The distances between each point and its k nearest neighbors.
     indices :
         The indices of the k nearest neighbors for each point.
+    exact_duplicate_sets:
+        A list of numpy arrays, where each array contains the indices of exact duplicates in the feature array. If not provided, it will be computed from the feature array.
     enable_warning :
         Whether to enable warning messages if any row underestimates the number of exact duplicates.
 
@@ -288,15 +308,8 @@ def correct_knn_distances_and_indices(
     corrected_distances = np.copy(distances)
     corrected_indices = np.copy(indices)
 
-    # Use np.unique to catch inverse indices of all unique feature sets
-    _, unique_inverse, unique_counts = np.unique(
-        features, return_inverse=True, return_counts=True, axis=0
-    )
-
-    # Collect different sets of exact duplicates in the dataset
-    exact_duplicate_sets = [
-        np.where(unique_inverse == u)[0] for u in set(unique_inverse) if unique_counts[u] > 1
-    ]
+    if exact_duplicate_sets is None:
+        exact_duplicate_sets = _compute_exact_duplicate_sets(features)
 
     points_missing_exact_duplicates = []
 
