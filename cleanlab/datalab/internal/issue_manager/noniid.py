@@ -178,7 +178,6 @@ class NonIIDIssueManager(IssueManager):
                 self._skip_storing_knn_graph_for_pred_probs = True
 
             features_to_use = self._determine_features(features, pred_probs)
-            # knn = features_to_knn(features_to_use, n_neighbors=self.k, metric=self.metric)
             knn_graph, knn = create_knn_graph_and_index(
                 features=features_to_use, n_neighbors=self.k, metric=self.metric
             )
