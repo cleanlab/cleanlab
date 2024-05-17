@@ -340,9 +340,6 @@ def correct_knn_distances_and_indices(
             num_same = len(same_point_indices)
             num_same_included = min(num_same, k)  # ensure we do not exceed k neighbors
 
-            # Include same points in the results
-            corrected_indices[i, :num_same_included] = same_point_indices[:num_same_included]
-
             # Fill the rest of the slots with different points
             num_remaining_slots = k - num_same_included
             if num_remaining_slots > 0:
@@ -355,6 +352,9 @@ def correct_knn_distances_and_indices(
                 corrected_indices[i, num_same_included:k] = inds[different_point_mask][
                     :num_remaining_slots
                 ]
+
+            # Include same points in the results
+            corrected_indices[i, :num_same_included] = same_point_indices[:num_same_included]
 
             # Finally, set the distances between exact duplicates to zero
             corrected_distances[i, :num_same_included] = 0
