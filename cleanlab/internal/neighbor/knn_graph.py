@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 from scipy.sparse import csr_matrix
+from scipy.linalg import circulant
 from sklearn.neighbors import NearestNeighbors
 
 if TYPE_CHECKING:
@@ -224,6 +225,94 @@ def _compute_exact_duplicate_sets(features: FeatureArray) -> List[np.ndarray]:
     ]
 
     return exact_duplicate_sets
+
+
+def correct_knn_distances_and_indices_with_exact_duplicate_sets_inplace(
+    distances: np.ndarray,
+    indices: np.ndarray,
+    exact_duplicate_sets: List[np.ndarray],
+) -> None:
+    # Number of neighbors
+    k = distances.shape[1]
+
+    for duplicate_inds in exact_duplicate_sets:
+        # Determine the number of same points to include, respecting the limit of k
+        num_same = len(duplicate_inds)
+        num_same_included = min(num_same - 1, k)  # ensure we do not exceed k neighbors
+
+        circulant_base = duplicate_inds[: num_same_included + 1]
+        circulant_matrix = circulant(circulant_base)
+        flipped_circulant_matrix = np.fliplr(circulant_matrix)
+        sliced_circulant_matrix = flipped_circulant_matrix[:-1, :-1]
+        # This ensures that in duplicate-set ABCDE: [A: BC, B: AC, C: AB, D: AB, E: AB] (if k=2 only needs 2 top neighbors.)
+        sorted_first_k_duplicate_inds = np.sort(sliced_circulant_matrix, axis=1)
+        dists = distances[duplicate_inds]
+        inds = indices[duplicate_inds]
+
+        if num_same == k + 1:
+            # We only pass in the ciruclant matrix of nearest neighbors
+            inds = sorted_first_k_duplicate_inds
+
+            # Finally, set the distances between exact duplicates to zero
+            dists = 0
+        elif num_same > k + 1:
+            # Pass the circulant matrix to the first k+1 neighbors
+            inds[:k] = sorted_first_k_duplicate_inds
+            # But the rest will just take the k first duplicate ids
+            inds[k:] = duplicate_inds[:k]
+
+            # Finally, set the distances between exact duplicates to zero
+            dists = 0
+        else:
+            # Get indices and distances from knn that are not the same as i
+            different_point_mask = np.isin(inds, duplicate_inds, invert=True)
+
+            # dists[:, num_same_included:k] = dists[different_point_mask][:(num_same_included-k)]
+            # We can pass the circulant matrix to a slice
+            inds[:num_same_included] = sorted_first_k_duplicate_inds
+
+            # Get the shape of the mask
+            n_rows, n_cols = different_point_mask.shape
+
+            # Get the indices of the first m True values in each row of the mask
+            true_indices = np.argsort(~different_point_mask, axis=1)[:, : (num_same_included - k)]
+
+            # Create an array of row indices
+            row_indices = np.arange(n_rows)[:, None]
+
+            # Copy the values to the last m columns in dists
+            dists[:, -(num_same_included - k) :] = dists[true_indices]
+            inds[:, -(num_same_included - k) :] = inds[true_indices]
+
+            # Finally, set the distances between exact duplicates to zero
+            dists[:, :num_same_included] = 0
+
+        # for i in duplicate_inds:
+        #     dists = distances[i]
+        #     inds = indices[i]
+
+        #     duplicate_inds = np.roll(duplicate_inds, 1)
+
+        #     # Fill the rest of the slots with different points
+        #     num_remaining_slots = k - num_same_included
+        #     if num_remaining_slots > 0:
+        #         # Get indices and distances from knn that are not the same as i
+        #         different_point_mask = np.isin(inds, duplicate_inds, invert=True)
+
+        #         dists[num_same_included:k] = dists[different_point_mask][
+        #             :num_remaining_slots
+        #         ]
+        #         inds[num_same_included:k] = inds[different_point_mask][
+        #             :num_remaining_slots
+        #         ]
+
+        #     # Include same points in the results
+        #     inds[:num_same_included] = duplicate_inds[:num_same_included]
+
+        # # Finally, set the distances between exact duplicates to zero
+        # dists[:num_same_included] = 0
+
+    return None
 
 
 def correct_knn_distances_and_indices(
