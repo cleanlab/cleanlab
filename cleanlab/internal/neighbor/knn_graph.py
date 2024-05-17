@@ -307,9 +307,6 @@ def correct_knn_distances_and_indices(
     k = distances.shape[1]
 
     # Prepare the output arrays
-    corrected_distances = np.zeros_like(distances)
-    corrected_indices = np.zeros_like(indices, dtype=int)
-
     corrected_distances = np.copy(distances)
     corrected_indices = np.copy(indices)
 
