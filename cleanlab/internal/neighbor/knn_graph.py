@@ -80,7 +80,7 @@ def construct_knn_graph_from_index(
     ----------
     knn :
         A NearestNeighbors object that has been fitted to a feature array.
-        The knn graph is constructed based on the distances and indices of each feature row's nearest neighbors.
+        The KNN graph is constructed based on the distances and indices of each feature row's nearest neighbors.
     correct_exact_duplicates :
         Whether to adjust the KNN graph to ensure that exact duplicate points have zero mutual distance and are correctly included in the KNN graph.
         This involves accessing the private attribute `_fit_X` of the NearestNeighbors object,
@@ -161,7 +161,7 @@ def create_knn_graph_and_index(
     Raises
     ------
     ValueError :
-        If `features` is None, as it's required to construct a knn graph from scratch.
+        If `features` is None, as it's required to construct a KNN graph from scratch.
 
     Returns
     -------
@@ -200,6 +200,36 @@ def create_knn_graph_and_index(
 
 
 def correct_knn_graph(features: FeatureArray, knn_graph: csr_matrix) -> csr_matrix:
+    """
+    Corrects a k-nearest neighbors (KNN) graph by handling exact duplicates in the feature array.
+
+    This utility function takes a precomputed KNN graph and the corresponding feature array,
+    identifies sets of exact duplicate feature vectors, and corrects the KNN graph to properly
+    reflect these duplicates. The corrected KNN graph is returned as a sparse CSR matrix.
+
+    Parameters
+    ----------
+    features : np.ndarray
+        The input feature array, with shape (N, M), where N is the number of samples and M is the number of features.
+    knn_graph : csr_matrix
+        A sparse matrix of shape (N, N) representing the k-nearest neighbors graph.
+        The graph is expected to be in CSR (Compressed Sparse Row) format.
+
+    Returns
+    -------
+    csr_matrix
+        A corrected KNN graph in CSR format with adjusted distances and indices to properly handle
+        exact duplicates in the feature array.
+
+    Notes
+    -----
+    - This function assumes that the input `knn_graph` is already computed and provided in CSR format.
+    - The function modifies the KNN graph to ensure that exact duplicates are represented with zero distance
+      and correctly updated neighbor indices.
+    - This function is useful for post-processing a KNN graph when exact duplicates were not handled during
+      the initial KNN computation.
+
+    """
     N = features.shape[0]
     distances, indices = knn_graph.data.reshape(N, -1), knn_graph.indices.reshape(N, -1)
 
@@ -224,7 +254,7 @@ def _compute_exact_duplicate_sets(features: FeatureArray) -> List[np.ndarray]:
     Parameters
     ----------
     features : np.ndarray
-        A 2D array of shape (N, M) representing the N feature vectors of the dataset, each with M features.
+        The input feature array, with shape (N, M), where N is the number of samples and M is the number of features.
 
     Returns
     -------
@@ -262,10 +292,10 @@ def correct_knn_distances_and_indices_with_exact_duplicate_sets_inplace(
     exact_duplicate_sets: List[np.ndarray],
 ) -> None:
     """
-    Corrects the distances and indices arrays of k-nearest neighbors (knn) graphs by handling sets
+    Corrects the distances and indices arrays of k-nearest neighbors (KNN) graphs by handling sets
     of exact duplicates explicitly. This function modifies the input arrays in-place.
 
-    This function ensures that exact duplicates are correctly represented in the knn graph.
+    This function ensures that exact duplicates are correctly represented in the KNN graph.
     It modifies the `distances` and `indices` arrays so that each set of exact duplicates
     points to itself with zero distance, and adjusts the nearest neighbors accordingly.
 
@@ -279,7 +309,7 @@ def correct_knn_distances_and_indices_with_exact_duplicate_sets_inplace(
         This array will be modified in-place to reflect the corrections for exact duplicates.
     exact_duplicate_sets :
         A list of 1D arrays, each containing the indices of points that are exact duplicates of each other.
-        These sets will be used to correct the knn graph by ensuring that duplicates are reflected as nearest neighbors
+        These sets will be used to correct the KNN graph by ensuring that duplicates are reflected as nearest neighbors
         with zero distance.
 
     High-Level Overview
@@ -299,20 +329,20 @@ def correct_knn_distances_and_indices_with_exact_duplicate_sets_inplace(
 
     User Considerations
     -------------------
-    - **Input Validity**: Ensure that the `distances` and `indices` arrays have the correct shape and correspond to the same knn graph.
+    - **Input Validity**: Ensure that the `distances` and `indices` arrays have the correct shape and correspond to the same KNN graph.
     - **In-Place Modifications**: The function modifies the input arrays directly. If the original data is needed, make a copy before calling the function.
     - **Duplicate Set Size**: The function is optimized for cases where the number of exact duplicates can be larger than k. Ensure the duplicate sets are accurately identified.
     - **Performance**: The function uses efficient NumPy operations, but performance can be affected by the size of the input arrays and the number of duplicate sets.
 
     Capabilities
     ------------
-    - Handles exact duplicate sets efficiently, ensuring correct knn graph representation.
+    - Handles exact duplicate sets efficiently, ensuring correct KNN graph representation.
     - Maintains zero distances for exact duplicates.
     - Adjusts neighbor indices to reflect the presence of duplicates.
 
     Limitations
     -----------
-    - Assumes that the input arrays (`distances` and `indices`) come from a precomputed knn graph.
+    - Assumes that the input arrays (`distances` and `indices`) come from a precomputed KNN graph.
     - Does not handle near-duplicates or merge non-duplicate neighbors.
     - Requires careful construction of `exact_duplicate_sets` to avoid misidentification.
     """
@@ -462,8 +492,8 @@ def _warn_missing_exact_duplicates(indices: np.ndarray, exact_duplicate_sets: li
     ------
     UserWarning :
         A warning may be raised if there were some slots available for an exact duplicate that were missed.
-        This may happen if the number of exact duplicates in the existing knn graph is lower than k,
-        but the set of exact duplicates is larger than what was included in the knn graph.
+        This may happen if the number of exact duplicates in the existing KNN graph is lower than k,
+        but the set of exact duplicates is larger than what was included in the KNN graph.
     """
     # The number of neighbors to consider
     k = indices.shape[0]
@@ -498,13 +528,13 @@ def correct_knn_distances_and_indices(
     enable_warning: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Corrects the distances and indices of a k-nearest neighbors (knn) graph
+    Corrects the distances and indices of a k-nearest neighbors (KNN) graph
     based on all exact duplicates detected in the feature array.
 
     Parameters
     ----------
     features :
-        The feature array used to construct the knn graph.
+        The feature array used to construct the KNN graph.
     distances :
         The distances between each point and its k nearest neighbors.
     indices :
@@ -525,8 +555,8 @@ def correct_knn_distances_and_indices(
     ------
     UserWarning :
         A warning may be raised if there were some slots available for an exact duplicate that were missed.
-        This may happen if the number of exact duplicates in the existing knn graph is lower than k,
-        but the set of exact duplicates is larger than what was included in the knn graph.
+        This may happen if the number of exact duplicates in the existing KNN graph is lower than k,
+        but the set of exact duplicates is larger than what was included in the KNN graph.
         This warning may be disabled by setting enable_warning=False.
 
 
@@ -561,7 +591,7 @@ def correct_knn_distances_and_indices(
     array([[1], [0], [0]])
 
 
-    Clearly, the first point misses its exact duplicate in the knn graph. To raise a warning for such cases, set enable_warning=True.
+    Clearly, the first point misses its exact duplicate in the KNN graph. To raise a warning for such cases, set enable_warning=True.
 
     >>> corrected_distances, corrected_indices = correct_knn_distances_and_indices(X, distances, indices, enable_warning=True)
     UserWarning: There were some slots available for an exact duplicate that were missed.
