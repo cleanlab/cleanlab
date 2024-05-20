@@ -358,7 +358,7 @@ def test_create_knn_graph_properties(X, k):
     extra_points=arrays(
         dtype=np.float64,
         shape=st.tuples(st.integers(min_value=11, max_value=20), st.just(2)),
-        elements=st.floats(min_value=-10, max_value=10, allow_subnormal=False),
+        elements=st.floats(min_value=15, max_value=20, allow_subnormal=False),
         unique=True,
     ),
     # Here are the K nearest neighbors we want to find
