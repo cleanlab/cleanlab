@@ -7,7 +7,6 @@ from scipy.stats import gaussian_kde
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
-from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
