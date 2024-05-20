@@ -370,6 +370,41 @@ def _prepare_neighborhood_of_first_k_duplicates(duplicate_inds, num_same_include
     return sorted_first_k_duplicate_inds
 
 
+def _warn_missing_exact_duplicates(indices: np.ndarray, exact_duplicate_sets: list) -> None:
+    """Go through all sets of points in the sets of exact duplicates, and ensure that none are missing in the indices array.
+
+    Raises
+    ------
+    UserWarning :
+        A warning may be raised if there were some slots available for an exact duplicate that were missed.
+        This may happen if the number of exact duplicates in the existing knn graph is lower than k,
+        but the set of exact duplicates is larger than what was included in the knn graph.
+    """
+    # The number of neighbors to consider
+    k = indices.shape[0]
+
+    points_missing_exact_duplicates = []
+    for duplicate_inds in exact_duplicate_sets:
+        for i in duplicate_inds:
+            inds = indices[i]
+
+            same_point_indices = np.setdiff1d(duplicate_inds, i)
+
+            # Figure out how many were already included in the original knn graph
+            pre_existing_same_point_indices = np.intersect1d(same_point_indices, inds)
+
+            # Optionally warn the user if there are more identical points than slots available in the existing knn graph
+            same_point_indices_set_is_larger = len(pre_existing_same_point_indices) < len(
+                same_point_indices
+            )
+            slots_larger = len(pre_existing_same_point_indices) < k
+            if same_point_indices_set_is_larger and slots_larger:
+                points_missing_exact_duplicates.append(i)
+
+    if points_missing_exact_duplicates:
+        warnings.warn("There were some slots available for an exact duplicate that were missed.")
+
+
 def correct_knn_distances_and_indices(
     features: FeatureArray,
     distances: np.ndarray,
@@ -447,65 +482,21 @@ def correct_knn_distances_and_indices(
     UserWarning: There were some slots available for an exact duplicate that were missed.
     """
 
-    # Number of neighbors
-    k = distances.shape[1]
+    if exact_duplicate_sets is None:
+        exact_duplicate_sets = _compute_exact_duplicate_sets(features)
+
+    if enable_warning:
+        _warn_missing_exact_duplicates(indices, exact_duplicate_sets)
 
     # Prepare the output arrays
     corrected_distances = np.copy(distances)
     corrected_indices = np.copy(indices)
 
-    if exact_duplicate_sets is None:
-        exact_duplicate_sets = _compute_exact_duplicate_sets(features)
-
-    points_missing_exact_duplicates = []
-
-    for duplicate_inds in exact_duplicate_sets:
-        for i in duplicate_inds:
-            dists = distances[i]
-            inds = indices[i]
-
-            same_point_indices = np.setdiff1d(duplicate_inds, i)
-
-            # Figure out how many were already included in the original knn graph
-            pre_existing_same_point_indices = np.intersect1d(same_point_indices, inds)
-
-            # Optionally warn the user if there are more identical points than slots available in the existing knn graph
-            same_point_indices_set_is_larger = len(pre_existing_same_point_indices) < len(
-                same_point_indices
-            )
-            slots_larger = len(pre_existing_same_point_indices) < k
-            if enable_warning and same_point_indices_set_is_larger and slots_larger:
-                points_missing_exact_duplicates.append(i)
-
-            # Determine the number of same points to include, respecting the limit of k
-            num_same = len(same_point_indices)
-            num_same_included = min(num_same, k)  # ensure we do not exceed k neighbors
-
-            # Fill the rest of the slots with different points
-            num_remaining_slots = k - num_same_included
-            if num_remaining_slots > 0:
-                # Get indices and distances from knn that are not the same as i
-                different_point_mask = np.isin(inds, same_point_indices, invert=True)
-
-                corrected_distances[i, num_same_included:k] = dists[different_point_mask][
-                    :num_remaining_slots
-                ]
-                corrected_indices[i, num_same_included:k] = inds[different_point_mask][
-                    :num_remaining_slots
-                ]
-
-            # Include same points in the results
-            corrected_indices[i, :num_same_included] = same_point_indices[:num_same_included]
-
-            # Finally, set the distances between exact duplicates to zero
-            corrected_distances[i, :num_same_included] = 0
-
-    if enable_warning and points_missing_exact_duplicates:
-        # If the set of same points is larger than the number of slots available in the knn graph
-        # and the number of same points already included in the knn graph is less than k,
-        # there were some slots available for an exact duplicate that were missed. This should
-        # not happen in practice, so the user should be warned.
-        warnings.warn("There were some slots available for an exact duplicate that were missed.")
+    correct_knn_distances_and_indices_with_exact_duplicate_sets_inplace(
+        distances=corrected_distances,
+        indices=corrected_indices,
+        exact_duplicate_sets=exact_duplicate_sets,
+    )
 
     return corrected_distances, corrected_indices
 
