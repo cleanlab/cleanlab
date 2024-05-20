@@ -214,6 +214,35 @@ def correct_knn_graph(features: FeatureArray, knn_graph: csr_matrix) -> csr_matr
 
 
 def _compute_exact_duplicate_sets(features: FeatureArray) -> List[np.ndarray]:
+    """
+    Computes the sets of exact duplicate points in the feature array.
+
+    This function groups indices of points that have identical feature vectors.
+    It returns a list of arrays, where each array contains the indices of points that are exact duplicates
+    of each other.
+
+    Parameters
+    ----------
+    features : np.ndarray
+        A 2D array of shape (N, M) representing the N feature vectors of the dataset, each with M features.
+
+    Returns
+    -------
+    exact_duplicate_sets
+        A list of 1D arrays, where each array contains the indices of exact duplicate points in the dataset.
+        Only sets with two or more duplicates are included in the list. If no exact duplicates are found, an empty list is returned.
+
+    Examples
+    --------
+    >>> features = np.array([[1, 2], [3, 4], [1, 2], [5, 6], [3, 4]])
+    >>> _compute_exact_duplicate_sets(features)
+    [array([0, 2]), array([1, 4])]  # The row value [1, 2] appears in rows 0 and 2, and [3, 4] appears in rows 1 and 4.
+
+    Notes
+    -----
+    - This function uses `np.unique` to find unique feature vectors and their inverse indices.
+    - This function is intended to be used internally within this module.
+    """
     # Use np.unique to catch inverse indices of all unique feature sets
     _, unique_inverse, unique_counts = np.unique(
         features, return_inverse=True, return_counts=True, axis=0
