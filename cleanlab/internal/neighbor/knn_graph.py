@@ -240,79 +240,134 @@ def correct_knn_distances_and_indices_with_exact_duplicate_sets_inplace(
         num_same = len(duplicate_inds)
         num_same_included = min(num_same - 1, k)  # ensure we do not exceed k neighbors
 
-        circulant_base = duplicate_inds[: num_same_included + 1]
-        circulant_matrix = circulant(circulant_base)
-        flipped_circulant_matrix = np.fliplr(circulant_matrix)
-        sliced_circulant_matrix = flipped_circulant_matrix[:-1, :-1]
-        # This ensures that in duplicate-set ABCDE: [A: BC, B: AC, C: AB, D: AB, E: AB] (if k=2 only needs 2 top neighbors.)
-        sorted_first_k_duplicate_inds = np.sort(sliced_circulant_matrix, axis=1)
-        dists = distances[duplicate_inds]
-        inds = indices[duplicate_inds]
+        sorted_first_k_duplicate_inds = _prepare_neighborhood_of_first_k_duplicates(
+            duplicate_inds, num_same_included
+        )
 
-        if num_same == k + 1:
+        if num_same >= k + 1:
+            # All nearest neighbors are exact duplicates
+
             # We only pass in the ciruclant matrix of nearest neighbors
-            inds = sorted_first_k_duplicate_inds
-
-            # Finally, set the distances between exact duplicates to zero
-            dists = 0
-        elif num_same > k + 1:
-            # Pass the circulant matrix to the first k+1 neighbors
-            inds[:k] = sorted_first_k_duplicate_inds
+            indices[duplicate_inds[: k + 1]] = sorted_first_k_duplicate_inds
             # But the rest will just take the k first duplicate ids
-            inds[k:] = duplicate_inds[:k]
+            indices[duplicate_inds[k + 1 :]] = duplicate_inds[:k]
 
             # Finally, set the distances between exact duplicates to zero
-            dists = 0
+            distances[duplicate_inds] = 0
         else:
+            # Some of the nearest neighbors aren't exact duplicates, move those to the back
+
             # Get indices and distances from knn that are not the same as i
-            different_point_mask = np.isin(inds, duplicate_inds, invert=True)
-
-            # dists[:, num_same_included:k] = dists[different_point_mask][:(num_same_included-k)]
-            # We can pass the circulant matrix to a slice
-            inds[:num_same_included] = sorted_first_k_duplicate_inds
-
-            # Get the shape of the mask
-            n_rows, n_cols = different_point_mask.shape
+            different_point_mask = np.isin(indices[duplicate_inds], duplicate_inds, invert=True)
 
             # Get the indices of the first m True values in each row of the mask
-            true_indices = np.argsort(~different_point_mask, axis=1)[:, : (num_same_included - k)]
-
-            # Create an array of row indices
-            row_indices = np.arange(n_rows)[:, None]
+            true_indices = np.argsort(~different_point_mask, axis=1)[:, :-num_same_included]
 
             # Copy the values to the last m columns in dists
-            dists[:, -(num_same_included - k) :] = dists[true_indices]
-            inds[:, -(num_same_included - k) :] = inds[true_indices]
+            distances[duplicate_inds, -(k - num_same_included) :] = distances[
+                duplicate_inds, true_indices.T
+            ].T
+            indices[duplicate_inds, -(k - num_same_included) :] = indices[
+                duplicate_inds, true_indices.T
+            ].T
+
+            # We can pass the circulant matrix to a slice
+            indices[duplicate_inds, :num_same_included] = sorted_first_k_duplicate_inds
 
             # Finally, set the distances between exact duplicates to zero
-            dists[:, :num_same_included] = 0
-
-        # for i in duplicate_inds:
-        #     dists = distances[i]
-        #     inds = indices[i]
-
-        #     duplicate_inds = np.roll(duplicate_inds, 1)
-
-        #     # Fill the rest of the slots with different points
-        #     num_remaining_slots = k - num_same_included
-        #     if num_remaining_slots > 0:
-        #         # Get indices and distances from knn that are not the same as i
-        #         different_point_mask = np.isin(inds, duplicate_inds, invert=True)
-
-        #         dists[num_same_included:k] = dists[different_point_mask][
-        #             :num_remaining_slots
-        #         ]
-        #         inds[num_same_included:k] = inds[different_point_mask][
-        #             :num_remaining_slots
-        #         ]
-
-        #     # Include same points in the results
-        #     inds[:num_same_included] = duplicate_inds[:num_same_included]
-
-        # # Finally, set the distances between exact duplicates to zero
-        # dists[:num_same_included] = 0
+            distances[duplicate_inds, :num_same_included] = 0
 
     return None
+
+
+def _prepare_neighborhood_of_first_k_duplicates(duplicate_inds, num_same_included):
+    """
+    Prepare a matrix representing the neighborhoods of duplicate items.
+
+    This function constructs a matrix where each row corresponds to an item
+    and contains the indices of its nearest neighbors (excluding itself), up
+    to a specified number `k`.
+
+    Parameters:
+    -----------
+    duplicate_inds : list
+        A list of indices that represent duplicate items.
+
+    num_same_included : int
+        An integer `k` representing the number of neighbors to include for
+        each item.
+
+    Returns:
+    --------
+    np.ndarray
+        A matrix where each row contains the sorted indices of the nearest
+        neighbors for the corresponding item.
+
+    Explanation:
+    ------------
+    1. Extract the Base for the Circulant Matrix:
+       - The function extracts the first `k+1` elements from `duplicate_inds`
+         to form the base of the circulant matrix. This approach ensures that
+         even if the set of duplicate items is larger, we only need to consider
+         the first `k` duplicates as the nearest neighbors, avoiding conflicts
+         with the items themselves.
+
+    2. Create the Circulant Matrix:
+       - A circulant matrix is generated from the base, where each row is a
+         cyclic permutation of the previous row.
+
+    3. Slice the Matrix to Exclude the First Column:
+       - The first column is removed to ensure each row represents the neighbors
+         without including the item itself.
+
+    4. Sort the Neighborhood Indices:
+       - The rows of the sliced matrix are sorted to ensure a consistent order
+         of neighbors.
+
+    Example:
+    --------
+    Given a set of 5 duplicate items `[A, B, C, D, E]` and `k=2`, the function
+    processes this as follows:
+
+    1. `circulant_base` for `k=2` would be `[A, B, C]`.
+    2. The `circulant_matrix` might look like:
+       ```
+       [A B C]
+       [B C A]
+       [C A B]
+       ```
+    3. Removing the first column results in:
+       ```
+       [B C]
+       [C A]
+       [A B]
+       ```
+    4. Sorting each row gives the final matrix:
+       ```
+       [B C]
+       [A C]
+       [A B]
+       ```
+
+    This matrix indicates that:
+    - The nearest neighbors of `A` are `[B, C]`.
+    - The nearest neighbors of `B` are `[A, C]`.
+    - The nearest neighbors of `C` are `[A, B]`.
+
+    For `k=2`, the neighbors of `D`, `E`, onwards could be any of the above.
+
+    The function constructs a sorted matrix of nearest neighbors for a list of
+    duplicate items, ensuring an equal distribution of neighbors up to a specified
+    number `k`. This process is necessary for tasks requiring an understanding of
+    the local neighborhood structure among duplicate examples. By using only the first
+    `k+1` elements, the function avoids the need to construct a larger circulant
+    matrix, simplifying the computation and ensuring no conflicts among the rest of the items.
+    """
+    circulant_base = duplicate_inds[: num_same_included + 1]
+    circulant_matrix = circulant(circulant_base)
+    sliced_circulant_matrix = circulant_matrix[:, 1:]
+    sorted_first_k_duplicate_inds = np.sort(sliced_circulant_matrix, axis=1)
+    return sorted_first_k_duplicate_inds
 
 
 def correct_knn_distances_and_indices(
