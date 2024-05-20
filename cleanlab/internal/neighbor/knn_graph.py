@@ -232,6 +232,62 @@ def correct_knn_distances_and_indices_with_exact_duplicate_sets_inplace(
     indices: np.ndarray,
     exact_duplicate_sets: List[np.ndarray],
 ) -> None:
+    """
+    Corrects the distances and indices arrays of k-nearest neighbors (knn) graphs by handling sets
+    of exact duplicates explicitly. This function modifies the input arrays in-place.
+
+    This function ensures that exact duplicates are correctly represented in the knn graph.
+    It modifies the `distances` and `indices` arrays so that each set of exact duplicates
+    points to itself with zero distance, and adjusts the nearest neighbors accordingly.
+
+    Parameters
+    ----------
+    distances :
+        A 2D array of shape (N, k) representing the distances between each point of the N points and their k-nearest neighbors.
+        This array will be modified in-place to reflect the corrections for exact duplicates (whose mutual distances are explicitly set to zero).
+    indices :
+        A 2D array of shape (N, k) representing the indices of the nearest neighbors for each of the N points.
+        This array will be modified in-place to reflect the corrections for exact duplicates.
+    exact_duplicate_sets :
+        A list of 1D arrays, each containing the indices of points that are exact duplicates of each other.
+        These sets will be used to correct the knn graph by ensuring that duplicates are reflected as nearest neighbors
+        with zero distance.
+
+    High-Level Overview
+    -------------------
+    The function operates in two main scenarios based on the size of the duplicate sets relative to k:
+
+    1. **Duplicate Set Size >= k + 1**:
+       - All nearest neighbors are exact duplicates.
+       - The `indices` array is updated such that the first k+1 entries for each duplicate set point are used to represent the nearest neighbors
+          of all points in the duplicate set.
+       - The rows of the `distances` array belonging to the duplicate set are set to zero.
+
+    2. **Duplicate Set Size < k + 1**:
+       - Some of the nearest neighbors are not exact duplicates.
+       - Non-duplicate neighbors are shifted to the back of the list.
+       - The `indices` and `distances` arrays are updated accordingly to reflect the duplicates at the front with zero distance.
+
+    User Considerations
+    -------------------
+    - **Input Validity**: Ensure that the `distances` and `indices` arrays have the correct shape and correspond to the same knn graph.
+    - **In-Place Modifications**: The function modifies the input arrays directly. If the original data is needed, make a copy before calling the function.
+    - **Duplicate Set Size**: The function is optimized for cases where the number of exact duplicates can be larger than k. Ensure the duplicate sets are accurately identified.
+    - **Performance**: The function uses efficient NumPy operations, but performance can be affected by the size of the input arrays and the number of duplicate sets.
+
+    Capabilities
+    ------------
+    - Handles exact duplicate sets efficiently, ensuring correct knn graph representation.
+    - Maintains zero distances for exact duplicates.
+    - Adjusts neighbor indices to reflect the presence of duplicates.
+
+    Limitations
+    -----------
+    - Assumes that the input arrays (`distances` and `indices`) come from a precomputed knn graph.
+    - Does not handle near-duplicates or merge non-duplicate neighbors.
+    - Requires careful construction of `exact_duplicate_sets` to avoid misidentification.
+    """
+
     # Number of neighbors
     k = distances.shape[1]
 
