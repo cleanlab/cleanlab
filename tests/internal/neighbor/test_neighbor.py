@@ -461,7 +461,7 @@ def test_construct_knn_then_correct_knn_graph_does_the_same_work():
     knn = features_to_knn(features, n_neighbors=n_neighbors, metric=metric)
     knn_graph_from_index = construct_knn_graph_from_index(knn)  # Without correction
     knn_graph_from_index_with_correction = construct_knn_graph_from_index(
-        knn, correct_exact_duplicates=True
+        knn, correction_features=features
     )
     knn_graph, _ = create_knn_graph_and_index(
         features=features, n_neighbors=n_neighbors, metric=metric

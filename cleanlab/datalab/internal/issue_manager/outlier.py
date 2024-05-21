@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index, correct_knn_graph
+from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index
 from cleanlab.outlier import OutOfDistribution, transform_distances_to_scores
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -93,9 +93,6 @@ class OutlierIssueManager(IssueManager):
             "pred_probs": False,
             "knn_graph": False,
         }
-        # Internal variable for deciding if a knn_graph constructed within this issue manager
-        # needs to be corrected for exact duplicates
-        self._knn_graph_needs_correction: bool = False
 
     def find_issues(
         self,
@@ -136,10 +133,7 @@ class OutlierIssueManager(IssueManager):
                 assert (
                     features is not None
                 ), "features must be provided so that we can compute the knn graph."
-                knn_graph = self._process_knn_graph_from_features(kwargs)
-                if self._knn_graph_needs_correction:
-                    # Must apply corrections for exact duplicates manually
-                    knn_graph = correct_knn_graph(features, knn_graph)
+                knn_graph = self._process_knn_graph_from_features(features, kwargs)
 
             distances = knn_graph.data.reshape(knn_graph.shape[0], -1)
 
@@ -213,7 +207,7 @@ class OutlierIssueManager(IssueManager):
         issue_threshold = compute_issue_threshold(avg_distances, threshold)
         return threshold, issue_threshold, avg_distances > issue_threshold
 
-    def _process_knn_graph_from_features(self, kwargs: Dict) -> csr_matrix:
+    def _process_knn_graph_from_features(self, features: np.ndarray, kwargs: Dict) -> csr_matrix:
         # Check if the weighted knn graph exists in info
         knn_graph = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
 
@@ -227,7 +221,7 @@ class OutlierIssueManager(IssueManager):
             # If the pre-existing knn graph has fewer neighbors than the knn object,
             # then we need to recompute the knn graph
             assert knn == self.ood.params["knn"]  # type: ignore[union-attr]
-            knn_graph = construct_knn_graph_from_index(knn, correct_exact_duplicates=True)
+            knn_graph = construct_knn_graph_from_index(knn, correction_features=features)
             self._metric = knn.metric  # type: ignore[union-attr]
 
         return knn_graph

@@ -72,7 +72,8 @@ def features_to_knn(
 
 
 def construct_knn_graph_from_index(
-    knn: NearestNeighbors, correct_exact_duplicates: bool = False
+    knn: NearestNeighbors,
+    correction_features: Optional[FeatureArray] = None,
 ) -> csr_matrix:
     """Construct a sparse distance matrix representation of KNN graph out of a fitted NearestNeighbors search object.
 
@@ -81,16 +82,19 @@ def construct_knn_graph_from_index(
     knn :
         A NearestNeighbors object that has been fitted to a feature array.
         The KNN graph is constructed based on the distances and indices of each feature row's nearest neighbors.
-    correct_exact_duplicates :
-        Whether to adjust the KNN graph to ensure that exact duplicate points have zero mutual distance and are correctly included in the KNN graph.
-        This involves accessing the private attribute `_fit_X` of the NearestNeighbors object,
-        which could lead to unexpected behavior across different versions of sklearn.
+    correction_features :
+        The input feature array used to fit the NearestNeighbors object.
+        If provided, the function the distances and indices of the neighbors will be corrected based on exact
+        duplicates in the feature array.
+        If not provided, no correction will be applied.
 
         Warning
         -------
-        Using `correct_exact_duplicates` may lead to unexpected behavior due to reliance on the private attribute `_fit_X`.
-        It is recommended to keep this option as False.
-        For constructing a corrected KNN graph, consider using the `create_knn_graph_and_index` function, which accepts a feature array directly.
+        This function is designed to handle a specific case where a KNN index is used to construct a KNN graph by itself,
+        and there is a need to detect and correct for exact duplicates in the feature array. However, relying on this
+        function for such corrections is generally discouraged. There are other functions in the module that handle
+        KNN graph construction with feature corrections in a more flexible and robust manner. Use this function only
+        when there is a special need to correct distances and indices based on the feature array provided.
 
     Returns
     -------
@@ -118,13 +122,14 @@ def construct_knn_graph_from_index(
            [0.76210367, 0.        , 0.        ]])
     """
 
-    distances, indices = knn.kneighbors(return_distance=True)
+    # Perform self-querying to get the distances and indices of the nearest neighbors
+    distances, indices = knn.kneighbors(X=None, return_distance=True)
 
-    if correct_exact_duplicates:
-        # NOTE: Accessing the features used to fit the knn object is a short-term solution.
-        # WARNING: Accessing an object's private attribute from a third-party library is
-        _features = knn._fit_X
-        distances, indices = correct_knn_distances_and_indices(_features, distances, indices)
+    # Correct the distances and indices if the correction_features array is provided
+    if correction_features is not None:
+        distances, indices = correct_knn_distances_and_indices(
+            features=correction_features, distances=distances, indices=indices
+        )
 
     N, K = distances.shape
 

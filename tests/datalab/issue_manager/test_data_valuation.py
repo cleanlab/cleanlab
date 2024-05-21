@@ -26,7 +26,9 @@ class TestDataValuationIssueManager:
 
     def test_find_issues_with_input(self, issue_manager, embeddings, outlier_issue_manager):
         outlier_issue_manager.find_issues(features=embeddings["embedding"])
-        knn_graph = outlier_issue_manager._process_knn_graph_from_features({})
+        knn_graph = outlier_issue_manager._process_knn_graph_from_features(
+            features=embeddings["embedding"], kwargs={}
+        )
         issue_manager.find_issues(knn_graph=knn_graph)
         issues, summary, info = issue_manager.issues, issue_manager.summary, issue_manager.info
         assert isinstance(issues, pd.DataFrame), "Issues should be a dataframe"
@@ -69,7 +71,9 @@ class TestDataValuationIssueManager:
 
     def test_get_larger_k_than_knn_graph(self, issue_manager, embeddings, outlier_issue_manager):
         outlier_issue_manager.find_issues(features=embeddings["embedding"])
-        knn_graph = outlier_issue_manager._process_knn_graph_from_features({})
+        knn_graph = outlier_issue_manager._process_knn_graph_from_features(
+            features=embeddings["embedding"], kwargs={}
+        )
         issue_manager.k = 4
         issue_manager.find_issues(knn_graph=knn_graph)
         assert issue_manager.k == 3
