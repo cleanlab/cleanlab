@@ -458,7 +458,7 @@ class OutOfDistribution:
         distances, indices = knn.kneighbors(features)
         if (
             correct_knn
-        ):  # This should only happen if knn is None at the start of this function. Will NEVER happen for approximate KNN.
+        ):  # This should only happen if knn is None at the start of this function. Will NEVER happen for approximate KNN provided by user.
             _features_for_correction = (
                 knn._fit_X if features is None else features
             )  # Hacky way to get features (training or test). Storing np.unique results is a hassle. ONLY WORKS WITH NearestNeighbors
