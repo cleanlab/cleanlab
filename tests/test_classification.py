@@ -155,9 +155,7 @@ DATA_FORMATS = {
 
 @pytest.mark.parametrize("data", list(DATA_FORMATS.values()))
 def test_cl(data):
-    cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
-    )
+    cl = CleanLearning(clf=LogisticRegression(solver="lbfgs", random_state=SEED))
     X_train_og = deepcopy(data["X_train"])
     cl.fit(data["X_train"], data["labels"])
     score = cl.score(data["X_test"], data["true_labels_test"])
@@ -214,7 +212,7 @@ def test_invalid_inputs():
         raise Exception("expected test to raise Exception")
     try:
         cl = CleanLearning(
-            clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+            clf=LogisticRegression(solver="lbfgs", random_state=SEED),
             find_label_issues_kwargs={"return_indices_ranked_by": "self_confidence"},
         )
         cl.fit(
@@ -238,7 +236,7 @@ def test_aux_inputs():
         "min_examples_per_class": 2,
     }
     cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+        clf=LogisticRegression(solver="lbfgs", random_state=SEED),
         find_label_issues_kwargs=find_label_issues_kwargs,
         verbose=1,
     )
@@ -274,21 +272,15 @@ def test_aux_inputs():
     assert cl.label_issues_df is None
 
     # Verbose off
-    cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=0
-    )
+    cl = CleanLearning(clf=LogisticRegression(solver="lbfgs", random_state=SEED), verbose=0)
     cl.save_space()  # dummy call test
 
-    cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=0
-    )
+    cl = CleanLearning(clf=LogisticRegression(solver="lbfgs", random_state=SEED), verbose=0)
     cl.find_label_issues(
         labels=data["true_labels_test"], pred_probs=pred_probs_test, save_space=True
     )
 
-    cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=1
-    )
+    cl = CleanLearning(clf=LogisticRegression(solver="lbfgs", random_state=SEED), verbose=1)
 
     # Test with label_issues_mask input
     label_issues_mask = find_label_issues(
@@ -325,9 +317,7 @@ def test_aux_inputs():
     assert "label_quality" in label_issues_df.columns
 
     # Test with sample_weight input:
-    cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=1
-    )
+    cl = CleanLearning(clf=LogisticRegression(solver="lbfgs", random_state=SEED), verbose=1)
     cl.fit(
         data["X_test"],
         data["true_labels_test"],
