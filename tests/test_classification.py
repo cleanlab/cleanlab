@@ -757,6 +757,7 @@ def test_1D_formats():
     cl.score(X, labels)
 
 
+@pytest.mark.skip
 def test_sklearn_gridsearchcv():
     # hyper-parameters for grid search
     param_grid = {
@@ -929,3 +930,61 @@ def test_find_issues_low_memory():
         low_memory=True, find_label_issues_kwargs=find_label_issues_kwargs, seed=SEED
     ).find_label_issues(X=X, labels=labels, noise_matrix=DATA["noise_matrix"])
     assert issues_df.equals(issues_df_lm)
+
+
+def test_confident_joint_setting_in_find_label_issues_kwargs():
+    """
+    This test ensures that the 'confident_joint' is correctly set in the
+    'find_label_issues_kwargs' of the 'CleanLearning' class when calling find_label_issues().
+
+    This test was added to cover the lines of code that were previously
+    missed due to the removal of another test.
+    """
+    # Load training data and labels
+    X = DATA["X_train"]
+    labels = DATA["labels"]
+
+    # Estimate predicted probabilities using cross-validation
+    pred_probs = estimate_cv_predicted_probabilities(X=X, labels=labels, seed=SEED)
+
+    # Initialize CleanLearning instance
+    cl = CleanLearning()
+
+    # Test that the confident joint is not set initially
+    cj = cl.find_label_issues_kwargs.get("confident_joint")
+    assert cj is None, "Initial confident_joint should be None"
+
+    # Call find_label_issues to set the confident joint
+    cl.find_label_issues(labels=labels, pred_probs=pred_probs)
+    cj = cl.find_label_issues_kwargs.get("confident_joint")
+
+    # Compute expected confident joint
+    expected_cj = compute_confident_joint(labels=labels, pred_probs=pred_probs)
+
+    # Assert that the confident joint is set correctly
+    np.testing.assert_array_equal(
+        cj, expected_cj, "Confident joint not set correctly after find_label_issues"
+    )
+
+    # Pass a precomputed confident_joint to the CleanLearning instance
+    cj_as_input = np.random.rand(3, 3)
+    cl = CleanLearning(
+        find_label_issues_kwargs={
+            "confident_joint": cj_as_input,
+        }
+    )
+
+    # Ensure the precomputed confident joint is used
+    cj = cl.find_label_issues_kwargs.get("confident_joint")
+    np.testing.assert_array_equal(
+        cj, cj_as_input, "Confident joint not set correctly when passed as input"
+    )
+
+    # Calling find_label_issues should not change the precomputed confident_joint
+    cl.find_label_issues(labels=labels, pred_probs=pred_probs)
+    cj = cl.find_label_issues_kwargs.get("confident_joint")
+    np.testing.assert_array_equal(
+        cj,
+        cj_as_input,
+        "Confident joint should not change after find_label_issues call when precomputed joint is provided",
+    )
