@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 from copy import deepcopy
-import warnings
+import sys
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import GridSearchCV
@@ -757,7 +757,24 @@ def test_1D_formats():
     cl.score(X, labels)
 
 
-@pytest.mark.skip
+# Check if the current Python version is 3.11
+is_python_311 = sys.version_info.major == 3 and sys.version_info.minor == 11
+
+# This warning should be ignore as in Python 3.11, the sre_constants module has been deprecated.
+# At the time of writing this, cleanlab supports Python 3.8-3.11. This warning is raised by
+# tensorflow <2.14.0, which imports sre_constants. This warning is not relevant to cleanlab.
+# Once Python 3.8 reaches EOL, we may remove this warning filter as we can set the tensorflow dev-dependency
+# to a version that does not raise this warning (2.14 or higher).
+if is_python_311:
+    sre_deprecation_pytestmark = pytest.mark.filterwarnings(
+        "ignore:module 'sre_constants' is deprecated"
+    )
+else:
+    sre_deprecation_pytestmark = pytest.mark.filterwarnings("default")
+
+
+@sre_deprecation_pytestmark  # Allow sre_constants deprecation error for Python 3.11
+@pytest.mark.filterwarnings("error")  # All other warnings are treated as errors
 def test_sklearn_gridsearchcv():
     # hyper-parameters for grid search
     param_grid = {
@@ -771,7 +788,7 @@ def test_sklearn_gridsearchcv():
         "converge_latent_estimates": [True, False],
     }
 
-    clf = LogisticRegression(random_state=0, solver="lbfgs", multi_class="auto")
+    clf = LogisticRegression(random_state=0, solver="lbfgs")
 
     cv = GridSearchCV(
         estimator=CleanLearning(clf),
@@ -782,9 +799,7 @@ def test_sklearn_gridsearchcv():
     # cv.fit() raises a warning if some fits fail (including raising
     # exceptions); we don't expect any fits to fail, so ensure that the code
     # doesn't raise any warnings
-    with warnings.catch_warnings(record=True) as record:
-        cv.fit(X=DATA["X_train"], y=DATA["labels"])
-    assert len(record) == 0, "expected no warnings"
+    cv.fit(X=DATA["X_train"], y=DATA["labels"])
 
 
 @pytest.mark.parametrize("filter_by", ["both", "confident_learning"])
