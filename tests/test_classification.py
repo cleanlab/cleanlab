@@ -771,10 +771,6 @@ def test_sklearn_gridsearchcv():
         "converge_latent_estimates": [True, False],
     }
 
-    # make params_grid a list of dicts
-    # from itertools import product
-    # param_grid = [dict(zip(param_grid, v)) for v in product(*param_grid.values())]
-
     clf = LogisticRegression(random_state=0, solver="lbfgs", multi_class="auto")
 
     cv = GridSearchCV(
