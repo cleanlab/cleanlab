@@ -44,7 +44,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-latest
+          - macos-12
         python:
           - "3.8"
           - "3.9"

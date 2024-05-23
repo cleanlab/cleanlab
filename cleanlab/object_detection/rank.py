@@ -28,6 +28,7 @@ from cleanlab.internal.constants import (
     CUSTOM_SCORE_WEIGHT_BADLOC,
     CUSTOM_SCORE_WEIGHT_OVERLOOKED,
     CUSTOM_SCORE_WEIGHT_SWAP,
+    EPSILON,
     EUC_FACTOR,
     HIGH_PROBABILITY_THRESHOLD,
     LABEL_OVERLAP_THRESHOLD,
@@ -41,6 +42,7 @@ from cleanlab.internal.object_detection_utils import (
     assert_valid_inputs,
     softmin1d,
 )
+
 
 if TYPE_CHECKING:  # pragma: no cover
     from typing import TypedDict
@@ -369,7 +371,8 @@ def _get_iou(bb1: np.ndarray, bb2: np.ndarray) -> np.ndarray:
     # area and dividing it by the sum of prediction + ground-truth
     # areas - the interesection area
     union_area = bb1_area[:, np.newaxis] + bb2_area[np.newaxis, :] - intersection_area
-    iou = intersection_area / union_area
+    iou = intersection_area / np.clip(union_area, a_min=EPSILON, a_max=None) # avoid division by 0
+
     # There are some hyper-parameters here like consider tile area/object area
     return iou
 

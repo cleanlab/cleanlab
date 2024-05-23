@@ -15,19 +15,17 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, Tuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Union, Tuple
 import warnings
 import inspect
 
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
-from sklearn.neighbors import NearestNeighbors
-from sklearn.exceptions import NotFittedError
-from sklearn.utils.validation import check_is_fitted
 from sklearn.cluster import DBSCAN
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 from cleanlab.rank import get_self_confidence_for_each_label
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -79,7 +77,7 @@ class UnderperformingGroupIssueManager(IssueManager):
     def __init__(
         self,
         datalab: Datalab,
-        metric: Optional[str] = None,
+        metric: Optional[Union[str, Callable]] = None,
         threshold: float = 0.1,
         k: int = 10,
         clustering_kwargs: Dict[str, Any] = {},
@@ -152,27 +150,10 @@ class UnderperformingGroupIssueManager(IssueManager):
         metric_changes = self.metric and self.metric != old_knn_metric
 
         if knn_graph is None or metric_changes:
-            if features is None:
-                raise ValueError(
-                    "If a knn_graph is not provided, features must be provided to fit a new knn."
-                )
-            if self.metric is None:
-                self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
-            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
-
-            if self.metric and self.metric != knn.metric:
-                warnings.warn(
-                    f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                    "Most likely an existing NearestNeighbors object was passed in, but a different "
-                    "metric was specified."
-                )
+            knn_graph, knn = create_knn_graph_and_index(
+                features, n_neighbors=self.k, metric=self.metric
+            )
             self.metric = knn.metric
-
-            try:
-                check_is_fitted(knn)
-            except NotFittedError:
-                knn.fit(features)
-            knn_graph = knn.kneighbors_graph(mode="distance")
         return knn_graph
 
     def perform_clustering(self, knn_graph: csr_matrix) -> npt.NDArray[np.int_]:

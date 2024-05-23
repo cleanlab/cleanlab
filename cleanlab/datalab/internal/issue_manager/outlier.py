@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index
 from cleanlab.outlier import OutOfDistribution, transform_distances_to_scores
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -87,6 +88,11 @@ class OutlierIssueManager(IssueManager):
         self.threshold = threshold
         self._embeddings: Optional[np.ndarray] = None
         self._metric: str = None  # type: ignore
+        self._find_issues_inputs: Dict[str, bool] = {
+            "features": False,
+            "pred_probs": False,
+            "knn_graph": False,
+        }
 
     def find_issues(
         self,
@@ -105,13 +111,16 @@ class OutlierIssueManager(IssueManager):
             assert isinstance(distances, np.ndarray)
             avg_distances = distances.mean(axis=1)
             median_avg_distance = np.median(avg_distances)
+            self._find_issues_inputs.update({"knn_graph": True})
             scores = transform_distances_to_scores(
                 avg_distances, t=t, scaling_factor=median_avg_distance
             )
         elif features is not None:
             scores = self._score_with_features(features, **kwargs)
+            self._find_issues_inputs.update({"features": True})
         elif pred_probs is not None:
             scores = self._score_with_pred_probs(pred_probs, **kwargs)
+            self._find_issues_inputs.update({"pred_probs": True})
         else:
             if kwargs.get("knn_graph", None) is not None:
                 raise ValueError(
@@ -130,6 +139,7 @@ class OutlierIssueManager(IssueManager):
             assert isinstance(distances, np.ndarray)
             (
                 self.threshold,
+                issue_threshold,  # Useful info for detecting issues in test data
                 is_issue_column,
             ) = self._compute_threshold_and_issue_column_from_distances(distances, self.threshold)
 
@@ -140,7 +150,10 @@ class OutlierIssueManager(IssueManager):
                 self.threshold = self.DEFAULT_THRESHOLDS["pred_probs"]
             if not 0 <= self.threshold:
                 raise ValueError(f"threshold must be non-negative, but got {self.threshold}.")
-            is_issue_column = scores < self.threshold * np.median(scores)
+            issue_threshold = float(
+                self.threshold * np.median(scores)
+            )  # Useful info for detecting issues in test data
+            is_issue_column = scores < issue_threshold
 
         self.issues = pd.DataFrame(
             {
@@ -151,7 +164,7 @@ class OutlierIssueManager(IssueManager):
 
         self.summary = self.make_summary(score=scores.mean())
 
-        self.info = self.collect_info(knn_graph=knn_graph)
+        self.info = self.collect_info(issue_threshold=issue_threshold, knn_graph=knn_graph)
 
     def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
         """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
@@ -174,7 +187,7 @@ class OutlierIssueManager(IssueManager):
 
     def _compute_threshold_and_issue_column_from_distances(
         self, distances: np.ndarray, threshold: Optional[float] = None
-    ) -> Tuple[float, np.ndarray]:
+    ) -> Tuple[float, float, np.ndarray]:
         avg_distances = distances.mean(axis=1)
         if threshold:
             if not (isinstance(threshold, (int, float)) and 0 <= threshold <= 1):
@@ -183,9 +196,15 @@ class OutlierIssueManager(IssueManager):
                 )
         if threshold is None:
             threshold = OutlierIssueManager.DEFAULT_THRESHOLDS["features"]
-        q3_distance = np.percentile(avg_distances, 75)
-        iqr_scale = 1 / threshold - 1 if threshold != 0 else np.inf
-        return threshold, avg_distances > q3_distance + iqr_scale * iqr(avg_distances)
+
+        def compute_issue_threshold(avg_distances: np.ndarray, threshold: float) -> float:
+            q3_distance = np.percentile(avg_distances, 75)
+            iqr_scale = 1 / threshold - 1 if threshold != 0 else np.inf
+            issue_threshold = q3_distance + iqr_scale * iqr(avg_distances)
+            return float(issue_threshold)
+
+        issue_threshold = compute_issue_threshold(avg_distances, threshold)
+        return threshold, issue_threshold, avg_distances > issue_threshold
 
     def _process_knn_graph_from_features(self, kwargs: Dict) -> csr_matrix:
         # Check if the weighted knn graph exists in info
@@ -201,15 +220,21 @@ class OutlierIssueManager(IssueManager):
             # If the pre-existing knn graph has fewer neighbors than the knn object,
             # then we need to recompute the knn graph
             assert knn == self.ood.params["knn"]  # type: ignore[union-attr]
-            knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
+            knn_graph = construct_knn_graph_from_index(knn)
             self._metric = knn.metric  # type: ignore[union-attr]
 
         return knn_graph
 
-    def collect_info(self, *, knn_graph: Optional[csr_matrix] = None) -> dict:
+    def collect_info(
+        self,
+        *,
+        issue_threshold: float,
+        knn_graph: Optional[csr_matrix] = None,
+    ) -> dict:
         issues_dict = {
             "average_ood_score": self.issues[self.issue_score_key].mean(),
             "threshold": self.threshold,
+            "issue_threshold": issue_threshold,
         }
         pred_probs_issues_dict: Dict[str, Any] = {}
         feature_issues_dict = {}
@@ -235,7 +260,10 @@ class OutlierIssueManager(IssueManager):
         if self.ood.params["confident_thresholds"] is not None:
             pass  #
         statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
-        ood_params_dict = self.ood.params
+        ood_params_dict = {
+            "ood": self.ood,
+            **self.ood.params,
+        }
         knn_dict = {
             **pred_probs_issues_dict,
             **feature_issues_dict,
@@ -245,6 +273,7 @@ class OutlierIssueManager(IssueManager):
             **ood_params_dict,  # type: ignore[arg-type]
             **knn_dict,
             **statistics_dict,
+            "find_issues_inputs": self._find_issues_inputs,
         }
         return info_dict
 

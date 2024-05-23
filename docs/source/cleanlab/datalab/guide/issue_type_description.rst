@@ -118,9 +118,11 @@ More generally, examples which happen to be duplicated can affect the final mod
 Non-IID Issue
 -------------
 
-Whether the dataset exhibits statistically significant violations of the IID assumption like:  changepoints or shift, drift, autocorrelation, etc. The specific form of violation considered is whether the examples are ordered such that almost adjacent examples tend to have more similar feature values. If you care about this check, do **not** first shuffle your dataset -- this check is entirely based on the sequential order of your data.
+Whether the overall dataset exhibits statistically significant violations of the IID assumption like:  changepoints or shift, drift, autocorrelation, etc. The specific form of violation considered is whether the examples are ordered within the dataset such that almost adjacent examples tend to have more similar feature values. If you care about this check, do **not** first shuffle your dataset -- this check is entirely based on the sequential order of your data. Learn more via our blog: `https://cleanlab.ai/blog/non-iid-detection/ <https://cleanlab.ai/blog/non-iid-detection/>`_
 
 The Non-IID issue is detected based on provided `features` or `knn_graph`. If you do not provide one of these arguments, this type of issue will not be considered.
+
+The Non-IID issue is really a dataset-level check, not a per-datapoint level check (either a dataset violates the IID assumption or it doesn't). The per-datapoint scores returned for Non-IID issues merely highlight which datapoints you might focus on to better understand this dataset-level issue - there is not necessarily something specifically wrong with these specific datapoints.
 
 Mathematically, the **overall** Non-IID score for the dataset is defined as the p-value of a statistical test for whether the distribution of *index-gap* values differs between group A vs. group B defined as follows. For a pair of examples in the dataset `x1, x2`, we define their *index-gap* as the distance between the indices of these examples in the ordering of the data (e.g. if `x1` is the 10th example and `x2` is the 100th example in the dataset, their index-gap is 90). We construct group A from pairs of examples which are amongst the K nearest neighbors of each other, where neighbors are defined based on the provided `knn_graph` or via distances in the space of the provided vector `features` . Group B is constructed from random pairs of examples in the dataset.
 
@@ -294,7 +296,7 @@ Duplicate Issue Parameters
 .. code-block:: python
 
     near_duplicate_kwargs = {
-    	"metric": # string representing the distance metric used in nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary,
+    	"metric": # string or callable representing the distance metric used in nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary,
     	"k": # integer representing the number of nearest neighbors for nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary,
     	"threshold": # `threshold` argument to constructor of `NearDuplicateIssueManager()`. Non-negative floating value that determines the maximum distance between two examples to be considered outliers, relative to the median distance to the nearest neighbors,
     }
@@ -314,7 +316,7 @@ Non-IID Issue Parameters
 .. code-block:: python
 
     non_iid_kwargs = {
-    	"metric": # `metric` argument to constructor of `NonIIDIssueManager`. String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
+    	"metric": # `metric` argument to constructor of `NonIIDIssueManager`. String or callable for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
     	"k": # `k` argument to constructor of `NonIIDIssueManager`. Integer representing the number of nearest neighbors for nearest neighbors search if necessary. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`,
         "num_permutations": # `num_permutations` argument to constructor of `NonIIDIssueManager`,
         "seed": # seed for numpy's random number generator (used for permutation tests),
@@ -347,7 +349,7 @@ Underperforming Group Issue Parameters
     underperforming_group_kwargs = {
         # Constructor arguments for `UnderperformingGroupIssueManager`
         "threshold": # Non-negative floating value between 0 and 1 used for determinining group of points with low confidence.
-        "metric": # String for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
+        "metric": # String or callable for the distance metric used for nearest neighbors search if necessary. `metric` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
         "k": # Integer representing the number of nearest neighbors for constructing the nearest neighbour graph. `n_neighbors` argument to constructor of `sklearn.neighbors.NearestNeighbors`.
         "min_cluster_samples": # Non-negative integer value specifying the minimum number of examples required for a cluster to be considered as the underperforming group. Used in `UnderperformingGroupIssueManager.filter_cluster_ids`.
         "clustering_kwargs": # Key-value pairs representing arguments for the constructor of the clustering algorithm class (e.g. `sklearn.cluster.DBSCAN`).

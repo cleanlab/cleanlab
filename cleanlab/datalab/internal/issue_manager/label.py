@@ -80,10 +80,11 @@ class LabelIssueManager(IssueManager):
         self.health_summary_parameters: Dict[str, Any] = (
             health_summary_parameters.copy() if health_summary_parameters else {}
         )
+        self._find_issues_inputs: Dict[str, bool] = {"features": False, "pred_probs": False}
         self._reset()
 
     @staticmethod
-    def _process_find_label_issues_kwargs(**kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_find_label_issues_kwargs(**kwargs) -> Dict[str, Any]:
         """Searches for keyword arguments that are meant for the
         CleanLearning.find_label_issues method call
 
@@ -142,7 +143,10 @@ class LabelIssueManager(IssueManager):
         features :
             The features for each example.
         """
+        if pred_probs is not None:
+            self._find_issues_inputs.update({"pred_probs": True})
         if pred_probs is None:
+            self._find_issues_inputs.update({"features": True})
             if features is None:
                 raise ValueError(
                     "Either pred_probs or features must be provided to find label issues."
@@ -275,6 +279,7 @@ class LabelIssueManager(IssueManager):
             **health_summary_info,
             **cl_info,
             "confident_thresholds": confident_thresholds.tolist(),
+            "find_issues_inputs": self._find_issues_inputs,
         }
 
         return info_dict

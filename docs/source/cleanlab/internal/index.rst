@@ -17,6 +17,7 @@ internal
     label_quality_utils
     multilabel_utils
     multilabel_scorer
+    neighbor/index
     outlier
     token_classification_utils
     validation
