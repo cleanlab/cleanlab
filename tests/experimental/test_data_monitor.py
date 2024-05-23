@@ -108,9 +108,12 @@ class SetupClass:
 
     @pytest.fixture
     def datalab(self, pred_probs_train, data):
-        data = {"labels": data["noisy_labels_train"]}
-        lab = Datalab(data=data, label_name="labels")
-        lab.find_issues(pred_probs=pred_probs_train, issue_types={"label": {}})
+        dataset = {"labels": data["noisy_labels_train"]}
+        lab = Datalab(data=dataset, label_name="labels")
+        issue_types = {"label": {}, "outlier": {}}
+        lab.find_issues(
+            pred_probs=pred_probs_train, features=data["X_train"], issue_types=issue_types
+        )
         return lab
 
 
@@ -129,7 +132,9 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
         """Check the label-specific info is available in the DataMonitor instance for detecting label issues.
         The info should not be affected by the test data."""
         monitor = DataMonitor(datalab=datalab)
-        monitor.find_issues(labels=data["noisy_labels_test"], pred_probs=pred_probs_test)
+        monitor.find_issues(
+            labels=data["noisy_labels_test"], pred_probs=pred_probs_test, features=data["X_test"]
+        )
         trained_statistics = datalab.get_info("label")
         test_statistics = monitor.info["label"]
         for k, v in trained_statistics.items():
@@ -150,7 +155,9 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
         # Monitor test data only
         test_data = {"labels": data["noisy_labels_test"]}
         monitor = DataMonitor(datalab=datalab)
-        monitor.find_issues(labels=test_data["labels"], pred_probs=pred_probs_test)
+        monitor.find_issues(
+            labels=test_data["labels"], pred_probs=pred_probs_test, features=data["X_test"]
+        )
 
         # Compare results
         lab_results = lab_all.get_issues()[: int(self.num_examples * self.test_size)]
@@ -181,14 +188,13 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
         for i in range(1, len(batch_sizes)):
             start_positions[i] = start_positions[i - 1] + batch_sizes[i - 1]
         for batch_size, start_position in zip(batch_sizes, start_positions):
-            test_data = {
-                "labels": data["noisy_labels_test"][start_position : start_position + batch_size]
+            data_batch = {
+                "labels": data["noisy_labels_test"][start_position : start_position + batch_size],
+                "pred_probs": pred_probs_test[start_position : start_position + batch_size],
+                "features": data["X_test"][start_position : start_position + batch_size],
             }
             monitor = DataMonitor(datalab=datalab)
-            monitor.find_issues(
-                labels=test_data["labels"],
-                pred_probs=pred_probs_test[start_position : start_position + batch_size],
-            )
+            monitor.find_issues(**data_batch)
             monitor_results = pd.concat([monitor_results, monitor.issues], axis=0)
 
         # Compare results
@@ -203,9 +209,11 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
         # Check for issues on test data
         dataset = {"labels": data["noisy_labels_test"]}
         monitor = DataMonitor(datalab=datalab)
-        monitor.find_issues(labels=dataset["labels"], pred_probs=pred_probs_test)
+        monitor.find_issues(
+            labels=dataset["labels"], pred_probs=pred_probs_test, features=data["X_test"]
+        )
 
-        expected_issue_types_keys = ["label"]
+        expected_issue_types_keys = ["label", "outlier"]
 
         # Verify that the correct types of issues were checked for
         issue_summary = monitor.issue_summary
@@ -254,7 +262,7 @@ class TestDataMonitorInit(SetupClass):
 
         singleton_stream = (
             {
-                # "features": f[np.newaxis, :],  # TODO: Support features in the future
+                "features": f[np.newaxis, :],
                 "pred_probs": p[np.newaxis, :],
                 "labels": l[np.newaxis],
             }
@@ -263,7 +271,7 @@ class TestDataMonitorInit(SetupClass):
 
         batch_stream = (
             {
-                # "features": f,  # TODO: Support features in the future
+                "features": f,
                 "pred_probs": p,
                 "labels": l,
             }
@@ -316,3 +324,133 @@ class TestDataMonitorInit(SetupClass):
             expected_ids_sorted_by_label_score, list(issues.sort_values("label_score").index)
         )
         assert corr > 0.9
+
+    def test_outlier_detection(self, datalab, data):
+        monitor = DataMonitor(datalab=datalab)
+        assert isinstance(monitor, DataMonitor)
+
+        features = data["X_test"][:20]
+
+        # Make the first example an outlier
+        features[0] += 5
+
+        labels = data["noisy_labels_test"][:20]
+
+        # Correct the label of the outlier
+        labels[0] = np.where(features[0].sum() < 3.3, 0, np.where(features[0].sum() < 6.6, 1, 2))
+        from sklearn.linear_model import LogisticRegression
+
+        clf = LogisticRegression()
+        clf.fit(data["X_train"], data["noisy_labels_train"])
+        pred_probs = clf.predict_proba(features)
+
+        singleton_stream = (
+            {
+                "features": f[np.newaxis, :],
+                "pred_probs": p[np.newaxis, :],
+                "labels": l[np.newaxis],
+            }
+            for f, p, l in zip(features[:5], pred_probs[:5], labels[:5])
+        )
+
+        batch_stream = (
+            {
+                "features": f,
+                "pred_probs": p,
+                "labels": l,
+            }
+            for f, p, l in zip(
+                batch_slices(features[5:], 0, 5),
+                batch_slices(pred_probs[5:], 0, 5),
+                batch_slices(labels[5:], 0, 5),
+            )
+        )
+
+        for i, eg in enumerate(singleton_stream):
+            monitor.find_issues(**eg)
+
+        issues = monitor.issues
+        outlier_issue_mask = issues["is_outlier_issue"].to_numpy()
+        expected_mask = np.array([True, False, False, False, False])
+        np.testing.assert_array_equal(outlier_issue_mask, expected_mask)
+
+        outlier_scores = issues["outlier_score"].to_numpy()
+        expected_scores = np.array([6.4e-15, 0.38, 0.33, 0.42, 0.33])
+        np.testing.assert_allclose(outlier_scores, expected_scores, atol=1e-2)
+
+    def test_only_on_pred_probs(self, data):
+        train_dataset = {"labels": data["noisy_labels_train"], "X_train": data["X_train"]}
+        lab = Datalab(data=train_dataset, label_name="labels", task="classification")
+
+        from sklearn.model_selection import cross_val_predict
+        from sklearn.linear_model import LogisticRegression
+
+        pred_probs = cross_val_predict(
+            LogisticRegression(),
+            train_dataset["X_train"],
+            train_dataset["labels"],
+            cv=5,
+            method="predict_proba",
+        )
+
+        lab.find_issues(pred_probs=pred_probs)
+
+        # Set up monitor
+        monitor = DataMonitor(datalab=lab)
+
+        # Set up stream of test data
+        features = data["X_test"][:20]
+        labels = data["noisy_labels_test"][:20]
+
+        clf = LogisticRegression()
+        clf.fit(train_dataset["X_train"], train_dataset["labels"])
+
+        pred_probs = clf.predict_proba(features)
+
+        singleton_stream = (
+            {
+                "pred_probs": clf.predict_proba(f[np.newaxis, :]),
+                "labels": l[np.newaxis],
+            }
+            for f, l in zip(features, labels)
+        )
+
+        for eg in singleton_stream:
+            monitor.find_issues(**eg)
+
+        issues = monitor.issues
+
+        # Only the "label" monitor is configured
+        assert set(["label"]) == set(monitor.monitors.keys())
+
+        # Only label issues should have been checked
+        assert set(issues.columns) == set(["is_label_issue", "label_score"])
+        # All the "test" examples should been checked
+        assert len(issues) == len(features)
+
+    def test_only_on_features(self, data):
+        train_dataset = {"X_train": data["X_train"]}
+        lab = Datalab(data=train_dataset, task="classification")
+
+        lab.find_issues(features=train_dataset["X_train"])
+
+        # Set up monitor
+        monitor = DataMonitor(datalab=lab)
+
+        # Set up stream of test data
+        features = data["X_test"][:20]
+
+        singleton_stream = ({"features": f[np.newaxis, :]} for f in features)
+
+        for eg in singleton_stream:
+            monitor.find_issues(**eg)
+
+        issues = monitor.issues
+
+        # Only the "outlier" monitor is configured
+        assert set(["outlier"]) == set(monitor.monitors.keys())
+
+        # Only outlier issues should have been checked
+        assert set(issues.columns) == set(["is_outlier_issue", "outlier_score"])
+        # All the "test" examples should been checked
+        assert len(issues) == len(features)

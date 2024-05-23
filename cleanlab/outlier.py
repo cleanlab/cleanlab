@@ -32,6 +32,7 @@ from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
+from cleanlab.internal.neighbor.knn_graph import features_to_knn
 from cleanlab.internal.numerics import softmax
 from cleanlab.internal.outlier import correct_precision_errors, transform_distances_to_scores
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
@@ -60,9 +61,16 @@ class OutOfDistribution:
              You can also pass in a subclass of ``sklearn.neighbors.NearestNeighbors`` which allows you to use faster
              approximate neighbor libraries as long as you wrap them behind the same sklearn API.
              If you specify ``knn`` here, there is no need to later call ``fit()`` before calling ``score()``.
-             If ``knn = None``, then by default: ``knn = sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric=dist_metric).fit(features)``
-             where ``dist_metric == "cosine"`` if ``dim(features) > 3`` or ``dist_metric == "euclidean"`` otherwise.
+             If ``knn is None``, then by default:
+             The knn object is instantiated as ``sklearn.neighbors.NearestNeighbors(n_neighbors=k, metric=dist_metric).fit(features)``.
+             - If ``dim(features) > 3``, the distance metric is set to "cosine".
+             - If ``dim(features) <= 3``, the distance metric is set to "euclidean".
+               The implementation of the euclidean distance metric depends on the number of examples in the features array:
+                - For more than 100 rows, it uses scikit-learn's "euclidean" metric. This is for efficiency reasons reasons.
+                - For 100 or fewer rows, it uses scipy's ``scipy.spatial.distance.euclidean`` metric. This is for numerical stability reasons.
              See: https://scikit-learn.org/stable/modules/neighbors.html
+             See: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.euclidean_distances.html
+             See: https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.euclidean.html
        *  k : int, default=None
              Optional number of neighbors to use when calculating outlier score (average distance to neighbors).
              If `k` is not provided, then by default ``k = knn.n_neighbors`` or ``k = 10`` if ``knn is None``.
@@ -413,26 +421,16 @@ class OutOfDistribution:
         """
         DEFAULT_K = 10
         # fit skip over (if knn is not None) then skipping fit and suggest score else fit.
+        distance_metric = None
         if knn is None:  # setup default KNN estimator
             # Make sure both knn and features are not None
-            if features is None:
-                raise ValueError(
-                    "Both knn and features arguments cannot be None at the same time. Not enough information to compute outlier scores."
-                )
-            if k is None:
-                k = DEFAULT_K  # use default when knn and k are both None
-            if k > len(features):  # Ensure number of neighbors less than number of examples
-                raise ValueError(
-                    f"Number of nearest neighbors k={k} cannot exceed the number of examples N={len(features)} passed into the estimator (knn)."
-                )
-
-            if features.shape[1] > 3:  # use euclidean distance for lower dimensional spaces
-                metric = "cosine"
-            else:
-                metric = "euclidean"
-
-            knn = NearestNeighbors(n_neighbors=k, metric=metric).fit(features)
+            knn = features_to_knn(features, n_neighbors=k)
             features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
+            # Log knn metric as string to ensure compatibility for score correction
+            distance_metric = (
+                metric if isinstance((metric := knn.metric), str) else str(metric.__name__)
+            )
+            k = knn.n_neighbors
 
         elif k is None:
             k = knn.n_neighbors
@@ -472,12 +470,14 @@ class OutOfDistribution:
         ood_features_scores = transform_distances_to_scores(
             avg_knn_distances, t, scaling_factor=scaling_factor
         )
-        distance_metric = knn.metric
+        distance_metric = distance_metric or (
+            metric if isinstance((metric := knn.metric), str) else metric.__name__
+        )
         p = None
         if distance_metric == "minkowski":
             p = knn.p
         ood_features_scores = correct_precision_errors(
-            ood_features_scores, avg_knn_distances, knn.metric, p=p
+            ood_features_scores, avg_knn_distances, distance_metric, p=p
         )
         return (ood_features_scores, knn)
 

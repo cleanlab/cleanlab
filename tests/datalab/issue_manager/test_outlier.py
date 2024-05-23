@@ -48,6 +48,9 @@ class TestOutlierIssueManager:
         assert summary["score"][0] == pytest.approx(expected=0.3028243, abs=1e-7)
 
         assert info.get("knn", None) is not None, "Should have knn info"
+        # New test data points are considered outliers if their average knn distance is greater than this issue threshold.
+        assert info.get("issue_threshold", None) is not None, "Should have issue_threshold info"
+        assert info.get("ood", None) is not None, "Should have the OutOfDistribution object in info"
         assert issue_manager.threshold == pytest.approx(expected=0.37037, abs=1e-5)
 
         issue_manager_with_threshold.find_issues(features=embeddings["embedding"])

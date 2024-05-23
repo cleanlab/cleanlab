@@ -17,7 +17,7 @@
 """
 Helper functions used internally for multi-label classification tasks.
 """
-from typing import Tuple, Optional, List
+from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -102,4 +102,4 @@ def onehot2int(onehot_matrix: np.ndarray) -> List[List[int]]:
       e.g. [[0,1], [3], [1,2,3], [1], [2]]
       All integers from 0,1,...,K-1 must be represented."""
 
-    return [list(np.where(row == 1)[0]) for row in onehot_matrix]
+    return [np.where(row)[0].tolist() for row in onehot_matrix]

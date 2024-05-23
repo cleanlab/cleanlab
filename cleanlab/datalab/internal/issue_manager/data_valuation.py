@@ -18,24 +18,22 @@ from __future__ import annotations
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     ClassVar,
     Dict,
     List,
     Optional,
     Union,
 )
-import warnings
 
 
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
-from sklearn.exceptions import NotFittedError
-from sklearn.neighbors import NearestNeighbors
-from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.data_valuation import data_shapley_knn
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -101,7 +99,7 @@ class DataValuationIssueManager(IssueManager):
     def __init__(
         self,
         datalab: Datalab,
-        metric: Optional[str] = None,
+        metric: Optional[Union[str, Callable]] = None,
         threshold: Optional[float] = None,
         k: int = 10,
         **kwargs,
@@ -137,28 +135,10 @@ class DataValuationIssueManager(IssueManager):
             )
             raise TypeError(error_msg)
         if knn_graph is None or metric_changes:
-            if features is None:
-                raise ValueError(
-                    "If a knn_graph is not provided, features must be provided to fit a new knn."
-                )
-            if self.metric is None:
-                self.metric = "cosine" if features.shape[1] > 3 else "euclidean"
-            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric).fit(features)
-
-            if self.metric and self.metric != knn.metric:
-                warnings.warn(
-                    f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                    "Most likely an existing NearestNeighbors object was passed in, but a different "
-                    "metric was specified."
-                )
+            knn_graph, knn = create_knn_graph_and_index(
+                features, n_neighbors=self.k, metric=self.metric
+            )
             self.metric = knn.metric
-
-            try:
-                check_is_fitted(knn)
-            except NotFittedError:
-                knn.fit(features)
-
-            knn_graph = knn.kneighbors_graph(mode="distance")
 
         scores = data_shapley_knn(labels, knn_graph=knn_graph, k=self.k)
 

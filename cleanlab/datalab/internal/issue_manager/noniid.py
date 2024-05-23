@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
-import warnings
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Union, cast
 import itertools
 
 from scipy.stats import gaussian_kde
@@ -9,10 +8,9 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
-from sklearn.exceptions import NotFittedError
-from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index, features_to_knn
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -106,7 +104,7 @@ class NonIIDIssueManager(IssueManager):
     def __init__(
         self,
         datalab: Datalab,
-        metric: Optional[str] = None,
+        metric: Optional[Union[str, Callable]] = None,
         k: int = 10,
         num_permutations: int = 25,
         seed: Optional[int] = 0,
@@ -202,24 +200,8 @@ class NonIIDIssueManager(IssueManager):
             return None
         features_to_use = self._determine_features(features, pred_probs)
 
-        if self.metric is None:
-            self.metric = "cosine" if features_to_use.shape[1] > 3 else "euclidean"
-
-        knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
-
-        if self.metric != knn.metric:
-            warnings.warn(
-                f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                "Most likely an existing NearestNeighbors object was passed in, but a different "
-                "metric was specified."
-            )
-        self.metric = knn.metric
-
-        try:
-            check_is_fitted(knn)
-        except NotFittedError:
-            knn.fit(features_to_use)
-
+        knn = features_to_knn(features_to_use, n_neighbors=self.k, metric=self.metric)
+        self.metric = knn.metric  # Update the metric to the one used in the KNN object.
         return knn
 
     def find_issues(
@@ -300,7 +282,7 @@ class NonIIDIssueManager(IssueManager):
         }
         if knn_graph is None:
             assert knn is not None, "If knn_graph is None, knn must be provided."
-            knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
+            knn_graph = construct_knn_graph_from_index(knn)
 
         assert knn_graph is not None, "knn_graph must be provided or computed."
         statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)

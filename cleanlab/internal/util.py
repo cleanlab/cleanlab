@@ -19,7 +19,8 @@ Ancillary helper methods used internally throughout this package; mostly related
 """
 
 import warnings
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
+
 
 import numpy as np
 import pandas as pd
@@ -130,7 +131,7 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
     return x
 
 
-def value_counts(x, *, num_classes=None, multi_label=False) -> np.ndarray:
+def value_counts(x, *, num_classes: Optional[int] = None, multi_label=False) -> np.ndarray:
     """Returns an np.ndarray of shape (K, 1), with the
     value counts for every unique item in the labels list/array,
     where K is the number of unique entries in labels.
@@ -165,17 +166,27 @@ def value_counts(x, *, num_classes=None, multi_label=False) -> np.ndarray:
     if multi_label:
         x = [z for lst in x for z in lst]  # Flatten
     unique_classes, counts = np.unique(x, return_counts=True)
+
+    # Early exit if num_classes is not provided or redundant
     if num_classes is None or num_classes == len(unique_classes):
         return counts
+
     # Else, there are missing classes
-    if num_classes <= max(unique_classes):
-        raise ValueError(f"Required: num_classes > max(x), but {num_classes} <= {max(x)}.")
+    labels_are_integers = np.issubdtype(np.array(x).dtype, np.integer)
+    if labels_are_integers and num_classes <= np.max(unique_classes):
+        raise ValueError(f"Required: num_classes > max(x), but {num_classes} <= {np.max(x)}.")
+
     # Add zero counts for all missing classes in [0, 1,..., num_classes-1]
-    # multi_label=False regardless because x was flattened.
-    missing_classes = get_missing_classes(x, num_classes=num_classes, multi_label=False)
-    missing_counts = [(z, 0) for z in missing_classes]
+    total_counts = np.zeros(num_classes, dtype=int)
+    # Fill in counts for classes that are present.
+    # If labels are integers, unique_classes can be used directly as indices to place counts
+    # into the correct positions in total_counts array.
+    # If labels are strings, use a slice to fill counts sequentially since strings do not map to indices.
+    count_ids = unique_classes if labels_are_integers else slice(len(unique_classes))
+    total_counts[count_ids] = counts
+
     # Return counts with zeros for all missing classes.
-    return np.array(list(zip(*sorted(list(zip(unique_classes, counts)) + missing_counts)))[1])
+    return total_counts
 
 
 def value_counts_fill_missing_classes(x, num_classes, *, multi_label=False) -> np.ndarray:
