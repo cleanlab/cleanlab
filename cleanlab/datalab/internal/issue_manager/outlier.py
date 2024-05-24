@@ -133,7 +133,8 @@ class OutlierIssueManager(IssueManager):
                 assert (
                     features is not None
                 ), "features must be provided so that we can compute the knn graph."
-                knn_graph = self._process_knn_graph_from_features(kwargs)
+                knn_graph = self._process_knn_graph_from_features(features, kwargs)
+
             distances = knn_graph.data.reshape(knn_graph.shape[0], -1)
 
             assert isinstance(distances, np.ndarray)
@@ -206,7 +207,7 @@ class OutlierIssueManager(IssueManager):
         issue_threshold = compute_issue_threshold(avg_distances, threshold)
         return threshold, issue_threshold, avg_distances > issue_threshold
 
-    def _process_knn_graph_from_features(self, kwargs: Dict) -> csr_matrix:
+    def _process_knn_graph_from_features(self, features: np.ndarray, kwargs: Dict) -> csr_matrix:
         # Check if the weighted knn graph exists in info
         knn_graph = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
 
@@ -220,7 +221,7 @@ class OutlierIssueManager(IssueManager):
             # If the pre-existing knn graph has fewer neighbors than the knn object,
             # then we need to recompute the knn graph
             assert knn == self.ood.params["knn"]  # type: ignore[union-attr]
-            knn_graph = construct_knn_graph_from_index(knn)
+            knn_graph = construct_knn_graph_from_index(knn, correction_features=features)
             self._metric = knn.metric  # type: ignore[union-attr]
 
         return knn_graph
