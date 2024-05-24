@@ -772,7 +772,8 @@ uses_sklearn_1_5_0 = sklearn.__version__ == "1.5.0"
 @sre_deprecation_pytestmark  # Allow sre_constants deprecation warning for Python 3.11
 @pytest.mark.filterwarnings("error")  # All other warnings are treated as errors
 @pytest.mark.skipif(
-    uses_sklearn_1_5_0, reason="Test is skipped because sklearn 1.5.0 is installed"
+    uses_sklearn_1_5_0,
+    reason="Test is skipped because sklearn 1.5.0 is installed, which has a regression for GridSearchCV.",
 )  # TODO: Remove this line once sklearn 1.5.1 is released
 def test_sklearn_gridsearchcv():
     # hyper-parameters for grid search
