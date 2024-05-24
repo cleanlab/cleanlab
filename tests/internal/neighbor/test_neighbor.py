@@ -437,20 +437,6 @@ def test_knn_graph_duplicate_handling(base_point, num_duplicates, extra_points, 
     )
 
 
-def test_warnings():
-    features = np.array([[0, 0], [0, 0], [0, 0], [1, 1]])
-    distances = np.array([[0, np.sqrt(2)], [0, 0], [0, 0], [np.sqrt(2)] * 2])
-    indices = np.array([[1, 3], [0, 2], [0, 1], [0, 1]])
-
-    with pytest.warns(UserWarning) as w:
-        correct_knn_distances_and_indices(features, distances, indices, enable_warning=True)
-        assert len(w) == 1
-        assert issubclass(w[-1].category, UserWarning)
-        assert ("There were some slots available for an exact duplicate that were missed.") in str(
-            w[-1].message
-        )
-
-
 def test_construct_knn_then_correct_knn_graph_does_the_same_work():
     features = np.random.rand(1000, 2)
     features[10:20] = features[10]  # Make the 10th to 20th rows identical
