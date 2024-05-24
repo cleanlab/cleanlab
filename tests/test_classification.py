@@ -19,6 +19,7 @@ import sys
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import GridSearchCV
+import sklearn
 import scipy
 import pytest
 import numpy as np
@@ -750,11 +751,11 @@ def test_1D_formats():
 # Check if the current Python version is 3.11
 is_python_311 = sys.version_info.major == 3 and sys.version_info.minor == 11
 
-# This warning should be ignore as in Python 3.11, the sre_constants module has been deprecated.
+# This warning should be ignored as in Python 3.11, the sre_constants module has been deprecated.
 # At the time of writing this, cleanlab supports Python 3.8-3.11. This warning is raised by
 # tensorflow <2.14.0, which imports sre_constants. This warning is not relevant to cleanlab.
-# Once Python 3.8 reaches EOL, we may remove this warning filter as we can set the tensorflow dev-dependency
-# to a version that does not raise this warning (2.14 or higher).
+# Once Python 3.8 reaches EOL, we may remove this warning filter as we can set the tensorflow
+# dev-dependency to a version that does not raise this warning (2.14 or higher).
 if is_python_311:
     sre_deprecation_pytestmark = pytest.mark.filterwarnings(
         "ignore:module 'sre_constants' is deprecated"
@@ -762,9 +763,17 @@ if is_python_311:
 else:
     sre_deprecation_pytestmark = pytest.mark.filterwarnings("default")
 
+# Check if the installed version of sklearn is 1.5.0.
+# The test_sklearn_gridsearchcv test fails due to a regression introduced in 1.5.0.
+# This issue will be fixed in sklearn version 1.5.1.
+uses_sklearn_1_5_0 = sklearn.__version__ == "1.5.0"
 
-@sre_deprecation_pytestmark  # Allow sre_constants deprecation error for Python 3.11
+
+@sre_deprecation_pytestmark  # Allow sre_constants deprecation warning for Python 3.11
 @pytest.mark.filterwarnings("error")  # All other warnings are treated as errors
+@pytest.mark.skipif(
+    uses_sklearn_1_5_0, reason="Test is skipped because sklearn 1.5.0 is installed"
+)  # TODO: Remove this line once sklearn 1.5.1 is released
 def test_sklearn_gridsearchcv():
     # hyper-parameters for grid search
     param_grid = {
