@@ -483,11 +483,10 @@ class IssueFinder:
         if drop_class_imbalance_check:
             issue_types_copy.pop("class_imbalance")
 
-        if (
-            self.task == Task.CLASSIFICATION
-            and "underperforming_group" in issue_types_copy
-            and pred_probs is None
-        ):
+        drop_underperforming_group_check = (
+            "underperforming_group" in issue_types_copy and pred_probs is None
+        )
+        if drop_underperforming_group_check:
             issue_types_copy.pop("underperforming_group")
 
         return issue_types_copy
