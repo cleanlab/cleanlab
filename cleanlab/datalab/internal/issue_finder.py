@@ -59,7 +59,7 @@ _CLASSIFICATION_ARGS_DICT = {
     "outlier": ["pred_probs", "features", "knn_graph"],
     "near_duplicate": ["features", "knn_graph"],
     "non_iid": ["pred_probs", "features", "knn_graph"],
-    # The underperforming_group issue type require a pair of inputs: (pred_probs, <any_of_the_other_three>)
+    # The underperforming_group issue type requires a pair of inputs: (pred_probs, <any_of_the_other_three>)
     "underperforming_group": ["pred_probs", "features", "knn_graph", "cluster_ids"],
     "data_valuation": ["features", "knn_graph"],
     "class_imbalance": [],
