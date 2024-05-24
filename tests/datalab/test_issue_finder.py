@@ -1,9 +1,8 @@
-import pytest
 import numpy as np
-
-from cleanlab.datalab.internal.issue_finder import IssueFinder
+import pytest
 
 from cleanlab import Datalab
+from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.task import Task
 
 
@@ -24,6 +23,101 @@ class TestIssueFinder:
 
     def test_init(self, issue_finder):
         assert issue_finder.verbosity == 1
+
+    @pytest.mark.parametrize("key", ["pred_probs", "features", "knn_graph"])
+    def test_get_available_issue_types_no_kwargs(self, issue_finder, key):
+        expected_issue_types = {"class_imbalance": {}}
+        issue_types = issue_finder.get_available_issue_types(**{key: None})
+        assert (
+            issue_types == expected_issue_types
+        ), "Only class_imbalance issue type for classification requires no kwargs"
+
+    @pytest.mark.parametrize(
+        "issue_types",
+        [
+            {"label": {}},
+            {"label": {"some_arg": "some_value"}},
+            {"label": {"some_arg": "some_value"}, "outlier": {}},
+            {"label": {}, "outlier": {}, "some_issue_type": {"some_arg": "some_value"}},
+            {},
+        ],
+    )
+    def test_get_available_issue_types_with_issue_types(self, issue_finder, issue_types):
+        available_issue_types = issue_finder.get_available_issue_types(issue_types=issue_types)
+        assert (
+            available_issue_types == issue_types
+        ), f"Failed to get available issue types with issue_types={issue_types}"
+
+    @pytest.mark.parametrize(
+        "keys, should_contain_underperforming_group",
+        [
+            # Test cases where 'pred_probs' is not provided, should all give False
+            (["features"], False),
+            (["knn_graph"], False),
+            (["cluster_ids"], False),
+            (["features", "knn_graph"], False),
+            (["features", "cluster_ids"], False),
+            (["knn_graph", "cluster_ids"], False),
+            (["features", "knn_graph", "cluster_ids"], False),
+            # Test cases where 'pred_probs' is provided should all give True
+            (["pred_probs", "features"], True),
+            (["pred_probs", "knn_graph"], True),
+            (["pred_probs", "cluster_ids"], True),
+            (["pred_probs", "features", "knn_graph"], True),
+            (["pred_probs", "features", "cluster_ids"], True),
+            (["pred_probs", "knn_graph", "cluster_ids"], True),
+            (["pred_probs", "features", "knn_graph", "cluster_ids"], True),
+            # only if other required keys are provided
+            (["pred_probs"], False),
+        ],
+        ids=lambda v: (
+            f"keys={v} "
+            if isinstance(v, list)
+            else ("> available" if v is True else "> unavailable")
+        ),
+    )
+    # Some warnings about preferring cluster_ids over knn_graph, or knn_graph over features can be ignored
+    @pytest.mark.filterwarnings(r"ignore:.*will (likely )?prefer.*:UserWarning")
+    # No other warnings should be allowed
+    @pytest.mark.filterwarnings("error")
+    def test_underperforming_group_availability_issue_1065(
+        self, issue_finder, keys, should_contain_underperforming_group
+    ):
+        """
+        Tests the availability of the 'underperforming_group' issue type based on the presence of 'pred_probs' and other required keys in the supplied arguments.
+
+        This test addresses issue #1065, where the mapping that decides which issue types to run based on the supplied arguments is incorrect.
+        Specifically, the 'underperforming_group' check should only be executed if 'pred_probs' and another required key are included in the supplied arguments.
+        See: https://github.com/cleanlab/cleanlab/issues/1065.
+
+        Parameters
+        ----------
+        keys : list
+            A list of keys to be included in the kwargs.
+        should_contain_underperforming_group : bool
+            A flag indicating whether the 'underperforming_group' issue type should be present in the available issue types.
+
+        Scenarios
+        ---------
+        Various combinations of 'features', 'pred_probs', 'knn_graph', and 'cluster_ids' are tested.
+
+        Asserts
+        -------
+        Ensures 'underperforming_group' is in the available issue types if 'pred_probs' and another required key are provided.
+        Ensures 'underperforming_group' is not in the available issue types if the required conditions are not met.
+        """
+        mock_value = object()  # Mock value to simulate presence of the required keys
+        kwargs = {key: mock_value for key in keys}
+
+        available_issue_types = issue_finder.get_available_issue_types(**kwargs)
+        if should_contain_underperforming_group:
+            assert (
+                "underperforming_group" in available_issue_types
+            ), "underperforming_group should be available if 'pred_probs' and another required key are provided"
+        else:
+            assert (
+                "underperforming_group" not in available_issue_types
+            ), "underperforming_group should not be available if the required conditions are not met"
 
     def test_get_available_issue_types(self, issue_finder):
         expected_issue_types = {"class_imbalance": {}}
@@ -46,6 +140,21 @@ class TestIssueFinder:
             available_issue_types = issue_finder.get_available_issue_types(issue_types=issue_types)
             fail_msg = f"Failed to get available issue types with issue_types={issue_types}"
             assert available_issue_types == issue_types, fail_msg
+
+        ## Test availability of underperforming_group issue type
+        only_features_available = {"features": np.random.random((10, 2))}
+        available_issue_types = issue_finder.get_available_issue_types(**only_features_available)
+        fail_msg = "underperforming_group should not be available if 'pred_probs' is not provided"
+        assert "underperforming_group" not in available_issue_types, fail_msg
+        features_and_pred_probs_available = {
+            **only_features_available,
+            "pred_probs": np.random.random((10, 2)),
+        }
+        available_issue_types = issue_finder.get_available_issue_types(
+            **features_and_pred_probs_available
+        )
+        fail_msg = "underperforming_group should be available if 'pred_probs' is provided"
+        assert "underperforming_group" in available_issue_types, fail_msg
 
     def test_find_issues(self, issue_finder, lab):
         N = len(lab.data)
