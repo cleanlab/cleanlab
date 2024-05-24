@@ -896,7 +896,7 @@ def estimate_py_and_noise_matrices_from_probabilities(
 def estimate_confident_joint_and_cv_pred_proba(
     X,
     labels,
-    clf=LogReg(multi_class="auto", solver="lbfgs"),
+    clf=LogReg(solver="lbfgs"),
     *,
     cv_n_folds=5,
     thresholds=None,
@@ -1078,7 +1078,7 @@ def estimate_confident_joint_and_cv_pred_proba(
 def estimate_py_noise_matrices_and_cv_pred_proba(
     X,
     labels,
-    clf=LogReg(multi_class="auto", solver="lbfgs"),
+    clf=LogReg(solver="lbfgs"),
     *,
     cv_n_folds=5,
     thresholds=None,
@@ -1189,7 +1189,7 @@ def estimate_py_noise_matrices_and_cv_pred_proba(
 def estimate_cv_predicted_probabilities(
     X,
     labels,
-    clf=LogReg(multi_class="auto", solver="lbfgs"),
+    clf=LogReg(solver="lbfgs"),
     *,
     cv_n_folds=5,
     seed=None,
@@ -1255,7 +1255,7 @@ def estimate_cv_predicted_probabilities(
 def estimate_noise_matrices(
     X,
     labels,
-    clf=LogReg(multi_class="auto", solver="lbfgs"),
+    clf=LogReg(solver="lbfgs"),
     *,
     cv_n_folds=5,
     thresholds=None,
