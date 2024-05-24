@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import List, Optional, TYPE_CHECKING, Tuple
-import warnings
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -490,47 +489,11 @@ def _prepare_neighborhood_of_first_k_duplicates(duplicate_inds, num_same_include
     return sorted_first_k_duplicate_inds
 
 
-def _warn_missing_exact_duplicates(indices: np.ndarray, exact_duplicate_sets: list) -> None:
-    """Go through all sets of points in the sets of exact duplicates, and ensure that none are missing in the indices array.
-
-    Raises
-    ------
-    UserWarning :
-        A warning may be raised if there were some slots available for an exact duplicate that were missed.
-        This may happen if the number of exact duplicates in the existing KNN graph is lower than k,
-        but the set of exact duplicates is larger than what was included in the KNN graph.
-    """
-    # The number of neighbors to consider
-    k = indices.shape[0]
-
-    points_missing_exact_duplicates = []
-    for duplicate_inds in exact_duplicate_sets:
-        for i in duplicate_inds:
-            inds = indices[i]
-
-            same_point_indices = np.setdiff1d(duplicate_inds, i)
-
-            # Figure out how many were already included in the original knn graph
-            pre_existing_same_point_indices = np.intersect1d(same_point_indices, inds)
-
-            # Optionally warn the user if there are more identical points than slots available in the existing knn graph
-            same_point_indices_set_is_larger = len(pre_existing_same_point_indices) < len(
-                same_point_indices
-            )
-            slots_larger = len(pre_existing_same_point_indices) < k
-            if same_point_indices_set_is_larger and slots_larger:
-                points_missing_exact_duplicates.append(i)
-
-    if points_missing_exact_duplicates:
-        warnings.warn("There were some slots available for an exact duplicate that were missed.")
-
-
 def correct_knn_distances_and_indices(
     features: FeatureArray,
     distances: np.ndarray,
     indices: np.ndarray,
     exact_duplicate_sets: Optional[List[np.ndarray]] = None,
-    enable_warning: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Corrects the distances and indices of a k-nearest neighbors (KNN) graph
@@ -546,8 +509,6 @@ def correct_knn_distances_and_indices(
         The indices of the k nearest neighbors for each point.
     exact_duplicate_sets:
         A list of numpy arrays, where each array contains the indices of exact duplicates in the feature array. If not provided, it will be computed from the feature array.
-    enable_warning :
-        Whether to enable warning messages if any row underestimates the number of exact duplicates.
 
     Returns
     -------
@@ -555,15 +516,6 @@ def correct_knn_distances_and_indices(
         The corrected distances between each point and its k nearest neighbors. Exact duplicates (based on the feature array) are ensured to have zero mutual distance.
     corrected_indices :
         The corrected indices of the k nearest neighbors for each point. Exact duplicates are ensured to be included in the k nearest neighbors, unless the number of exact duplicates exceeds k.
-
-    Raises
-    ------
-    UserWarning :
-        A warning may be raised if there were some slots available for an exact duplicate that were missed.
-        This may happen if the number of exact duplicates in the existing KNN graph is lower than k,
-        but the set of exact duplicates is larger than what was included in the KNN graph.
-        This warning may be disabled by setting enable_warning=False.
-
 
     Example
     -------
@@ -594,19 +546,10 @@ def correct_knn_distances_and_indices(
     array([[0.], [0.], [1.41421356]])
     >>> corrected_indices
     array([[1], [0], [0]])
-
-
-    Clearly, the first point misses its exact duplicate in the KNN graph. To raise a warning for such cases, set enable_warning=True.
-
-    >>> corrected_distances, corrected_indices = correct_knn_distances_and_indices(X, distances, indices, enable_warning=True)
-    UserWarning: There were some slots available for an exact duplicate that were missed.
     """
 
     if exact_duplicate_sets is None:
         exact_duplicate_sets = _compute_exact_duplicate_sets(features)
-
-    if enable_warning:
-        _warn_missing_exact_duplicates(indices, exact_duplicate_sets)
 
     # Prepare the output arrays
     corrected_distances = np.copy(distances)
