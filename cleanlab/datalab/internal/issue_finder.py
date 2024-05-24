@@ -59,6 +59,7 @@ _CLASSIFICATION_ARGS_DICT = {
     "outlier": ["pred_probs", "features", "knn_graph"],
     "near_duplicate": ["features", "knn_graph"],
     "non_iid": ["pred_probs", "features", "knn_graph"],
+    # The underperforming_group issue type require a pair of inputs: (pred_probs, <any_of_the_other_three>)
     "underperforming_group": ["pred_probs", "features", "knn_graph", "cluster_ids"],
     "data_valuation": ["features", "knn_graph"],
     "class_imbalance": [],
@@ -483,8 +484,14 @@ class IssueFinder:
         if drop_class_imbalance_check:
             issue_types_copy.pop("class_imbalance")
 
-        drop_underperforming_group_check = (
-            "underperforming_group" in issue_types_copy and pred_probs is None
+        required_pairs_for_underperforming_group = [
+            ("pred_probs", "features"),
+            ("pred_probs", "knn_graph"),
+            ("pred_probs", "cluster_ids"),
+        ]
+        drop_underperforming_group_check = "underperforming_group" in issue_types_copy and not any(
+            all(key in kwargs and kwargs.get(key) is not None for key in pair)
+            for pair in required_pairs_for_underperforming_group
         )
         if drop_underperforming_group_check:
             issue_types_copy.pop("underperforming_group")
