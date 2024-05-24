@@ -172,6 +172,7 @@ html_context = {
     # Add new tags to RELEASE_VERSIONS before release
     # fmt: off
     "RELEASE_VERSIONS": [
+        "v2.6.5",
         "v2.6.4",
         "v2.6.3",
         "v2.6.2",
