@@ -91,11 +91,10 @@ def assert_valid_inputs_multiannotator(
 
         # Raise warning if no examples with 2 or more annotators agree
         # TODO: might shift this later in the code to avoid extra compute
-        if np.apply_along_axis(
-            lambda s: np.array_equal(np.unique(s[~np.isnan(s)]), s[~np.isnan(s)]),
-            axis=1,
-            arr=labels_multiannotator,
-        ).all():
+        has_agreement = np.zeros(labels_multiannotator.shape[0], dtype=bool)
+        for i in np.unique(labels_multiannotator):
+            has_agreement |= (labels_multiannotator == i).sum(axis=1) > 1
+        if not has_agreement.any():
             warnings.warn("Annotators do not agree on any example. Check input data.")
 
     # Check labels

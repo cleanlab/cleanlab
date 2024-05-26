@@ -384,7 +384,7 @@ class MultiClass(Label):
             formatted_labels = labels
         else:
             label_map = {label: i for i, label in enumerate(np.unique(labels))}
-            formatted_labels = np.vectorize(label_map.get)(labels)
+            formatted_labels = np.vectorize(label_map.get, otypes=[int])(labels)
         inverse_map = {i: label for label, i in label_map.items()}
 
         return formatted_labels, inverse_map

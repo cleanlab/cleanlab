@@ -19,14 +19,15 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
 
 import pandas as pd
 
-from cleanlab.multilabel_classification.filter import find_label_issues
-from cleanlab.multilabel_classification.rank import get_label_quality_scores
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.internal.multilabel_utils import onehot2int
+from cleanlab.multilabel_classification.filter import find_label_issues
+from cleanlab.multilabel_classification.rank import get_label_quality_scores
 
 if TYPE_CHECKING:  # pragma: no cover
-    import pandas as pd
     import numpy.typing as npt
+    import pandas as pd
+
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -64,7 +65,7 @@ class MultilabelIssueManager(IssueManager):
         super().__init__(datalab)
 
     @staticmethod
-    def _process_find_label_issues_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_find_label_issues_kwargs(**kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """Searches for keyword arguments that are meant for the
         multilabel_classification.filter.find_label_issues method call.
 
@@ -72,24 +73,22 @@ class MultilabelIssueManager(IssueManager):
         --------
         >>> from cleanlab.datalab.internal.issue_manager.multilabel.label import MultilabelIssueManager
         >>> MultilabelIssueManager._process_find_label_issues_kwargs(frac_noise=0.9)
-        {'frac_noise': 0.1}
+        {'frac_noise': 0.9}
         """
-        accepted_kwargs = (
-            [
-                "filter_by",
-                "frac_noise",
-                "num_to_remove_per_class",
-                "min_examples_per_class",
-                "confident_joint",
-                "n_jobs",
-                "verbose",
-                "low_memory",
-            ],
-        )
+        accepted_kwargs = [
+            "filter_by",
+            "frac_noise",
+            "num_to_remove_per_class",
+            "min_examples_per_class",
+            "confident_joint",
+            "n_jobs",
+            "verbose",
+            "low_memory",
+        ]
         return {k: v for k, v in kwargs.items() if k in accepted_kwargs and v is not None}
 
     @staticmethod
-    def _process_get_label_quality_scores_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_get_label_quality_scores_kwargs(**kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """Searches for keyword arguments that are meant for the
         multilabel_classification.rank.get_label_quality_scores method call.
 
@@ -97,9 +96,9 @@ class MultilabelIssueManager(IssueManager):
         --------
         >>> from cleanlab.datalab.internal.issue_manager.multilabel.label import MultilabelIssueManager
         >>> MultilabelIssueManager._process_get_label_quality_scores_kwargs(method="self_confidence")
-        {'method': "self_confidence"}
+        {'method': 'self_confidence'}
         """
-        accepted_kwargs = (["method", "adjust_pred_probs", "aggregator_kwargs"],)
+        accepted_kwargs = ["method", "adjust_pred_probs", "aggregator_kwargs"]
         return {k: v for k, v in kwargs.items() if k in accepted_kwargs and v is not None}
 
     def find_issues(
@@ -121,12 +120,12 @@ class MultilabelIssueManager(IssueManager):
         is_issue_column = find_label_issues(
             labels=self.datalab.labels,
             pred_probs=pred_probs,
-            **self._process_find_label_issues_kwargs(kwargs),
+            **self._process_find_label_issues_kwargs(**kwargs),
         )
         scores = get_label_quality_scores(
             labels=self.datalab.labels,
             pred_probs=pred_probs,
-            **self._process_get_label_quality_scores_kwargs(kwargs),
+            **self._process_get_label_quality_scores_kwargs(**kwargs),
         )
 
         self.issues = pd.DataFrame(
@@ -143,11 +142,9 @@ class MultilabelIssueManager(IssueManager):
 
     def collect_info(
         self, given_labels: List[List[int]], predicted_labels: List[List[int]]
-    ) -> dict:
+    ) -> Dict[str, Any]:
         issues_info = {
             "given_label": given_labels,
             "predicted_label": predicted_labels,
         }
-        info_dict = {**issues_info}
-
-        return info_dict
+        return issues_info

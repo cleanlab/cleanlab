@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
-import warnings
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Union, cast
 import itertools
 
 from scipy.stats import gaussian_kde
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
-from sklearn.neighbors import NearestNeighbors
-from sklearn.exceptions import NotFittedError
-from sklearn.utils.validation import check_is_fitted
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -106,7 +103,7 @@ class NonIIDIssueManager(IssueManager):
     def __init__(
         self,
         datalab: Datalab,
-        metric: Optional[str] = None,
+        metric: Optional[Union[str, Callable]] = None,
         k: int = 10,
         num_permutations: int = 25,
         seed: Optional[int] = 0,
@@ -165,63 +162,6 @@ class NonIIDIssueManager(IssueManager):
             "If a knn_graph is not provided, either 'features' or 'pred_probs' must be provided to fit a new knn."
         )
 
-    def _setup_knn(
-        self,
-        features: Optional[npt.NDArray],
-        pred_probs: Optional[np.ndarray],
-        knn_graph: Optional[csr_matrix],
-        metric_changes: bool,
-    ) -> Optional[NearestNeighbors]:
-        """
-        Selects features (or pred_probs if features are None) and sets up a NearestNeighbors object if needed.
-
-        Parameters
-        ----------
-        features :
-            Original feature array or None.
-
-        pred_probs :
-            Predicted probabilities array or None.
-
-        knn_graph :
-            A precomputed KNN-graph stored in a csr_matrix or None. If None, a new NearestNeighbors object will be created.
-
-        metric_changes :
-            Whether the metric used to compute the KNN-graph has changed.
-            This is a result of comparing the metric of a pre-existing KNN-graph and the metric specified by the user.
-
-        Returns
-        -------
-        knn :
-            A NearestNeighbors object or None.
-        """
-        if features is None and pred_probs is not None:
-            self._skip_storing_knn_graph_for_pred_probs = True
-
-        if knn_graph is not None and not metric_changes:
-            return None
-        features_to_use = self._determine_features(features, pred_probs)
-
-        if self.metric is None:
-            self.metric = "cosine" if features_to_use.shape[1] > 3 else "euclidean"
-
-        knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
-
-        if self.metric != knn.metric:
-            warnings.warn(
-                f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                "Most likely an existing NearestNeighbors object was passed in, but a different "
-                "metric was specified."
-            )
-        self.metric = knn.metric
-
-        try:
-            check_is_fitted(knn)
-        except NotFittedError:
-            knn.fit(features_to_use)
-
-        return knn
-
     def find_issues(
         self,
         features: Optional[npt.NDArray] = None,
@@ -231,13 +171,18 @@ class NonIIDIssueManager(IssueManager):
         knn_graph = self._process_knn_graph_from_inputs(kwargs)
         old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
         metric_changes = bool(self.metric and self.metric != old_knn_metric)
-        knn = self._setup_knn(features, pred_probs, knn_graph, metric_changes)
 
         if knn_graph is None or metric_changes:
-            self.neighbor_index_choices = self._get_neighbors(knn=knn)
-        else:
-            self._skip_storing_knn_graph_for_pred_probs = False
-            self.neighbor_index_choices = self._get_neighbors(knn_graph=knn_graph)
+            if features is None and pred_probs is not None:
+                self._skip_storing_knn_graph_for_pred_probs = True
+
+            features_to_use = self._determine_features(features, pred_probs)
+            knn_graph, knn = create_knn_graph_and_index(
+                features=features_to_use, n_neighbors=self.k, metric=self.metric
+            )
+            self.metric = knn.metric  # Update the metric to the one used in the KNN object.
+
+        self.neighbor_index_choices = self._get_neighbors(knn_graph=knn_graph)
 
         self.num_neighbors = self.k
 
@@ -261,9 +206,7 @@ class NonIIDIssueManager(IssueManager):
 
         self.summary = self.make_summary(score=self.p_value)
 
-        if knn_graph is None:
-            self.info = self.collect_info(knn=knn)
-        self.info = self.collect_info(knn_graph=knn_graph, knn=knn)
+        self.info = self.collect_info(knn_graph=knn_graph)
 
     def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
         """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
@@ -287,9 +230,7 @@ class NonIIDIssueManager(IssueManager):
             knn_graph = None
         return knn_graph
 
-    def collect_info(
-        self, knn_graph: Optional[csr_matrix] = None, knn: Optional[NearestNeighbors] = None
-    ) -> dict:
+    def collect_info(self, knn_graph: csr_matrix) -> dict:
         issues_dict = {
             "p-value": self.p_value,
         }
@@ -298,11 +239,7 @@ class NonIIDIssueManager(IssueManager):
             "metric": self.metric,
             "k": self.k,
         }
-        if knn_graph is None:
-            assert knn is not None, "If knn_graph is None, knn must be provided."
-            knn_graph = knn.kneighbors_graph(mode="distance")  # type: ignore[union-attr]
 
-        assert knn_graph is not None, "knn_graph must be provided or computed."
         statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
 
         info_dict = {
@@ -483,22 +420,13 @@ class NonIIDIssueManager(IssueManager):
         scores = np.tanh(-1 * scores) + 1
         return scores
 
-    def _get_neighbors(
-        self, knn: Optional[NearestNeighbors] = None, knn_graph: Optional[csr_matrix] = None
-    ) -> np.ndarray:
+    def _get_neighbors(self, knn_graph: csr_matrix) -> np.ndarray:
         """
-        Given a fitted knn object or a knn graph, returns an (N, k) array in
+        Given a knn graph, returns an (N, k) array in
         which j is in A[i] if item i and j are nearest neighbors.
         """
-        if knn_graph is not None:
-            N = knn_graph.shape[0]
-            kneighbors = knn_graph.indices.reshape(N, -1)
-        elif knn is not None:
-            _, kneighbors = knn.kneighbors()
-            N = kneighbors.shape[0]
-        else:
-            raise ValueError("Must provide either knn or knn_graph")
-        self.N = N
+        self.N = knn_graph.shape[0]
+        kneighbors = knn_graph.indices.reshape(self.N, -1)
         return kneighbors
 
     def _get_statistics(

@@ -23,8 +23,8 @@ import pytest
 import sklearn
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from hypothesis.strategies import composite
 from hypothesis.extra.numpy import arrays
+from hypothesis.strategies import composite
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 
@@ -755,6 +755,12 @@ def cleanlab_data_strategy(draw):
     flip_prob = 0.2
     noisy_labels = flip_labels(true_labels, flip_prob)
 
+    # Multilabel find_issues raises a ValueError if all values are the same
+    # To avoid that we flip the first two values if all values are equal.
+    for i in range(noisy_labels.shape[1]):
+        if np.all(noisy_labels[:, i] == noisy_labels[0, i]):
+            noisy_labels[:2, i] = 1 - noisy_labels[:2, i]
+
     # Generate predicted probabilities for each class for each sample
     pred_probs = draw(
         arrays(
@@ -779,7 +785,7 @@ class TestMultiLabel:
         true_labels, noisy_labels, pred_probs = data
         noisy_labels_list = onehot2int(noisy_labels)
         is_issue = filter.find_label_issues(
-            labels=onehot2int(noisy_labels_list), pred_probs=np.array(pred_probs)
+            labels=noisy_labels_list, pred_probs=np.array(pred_probs), n_jobs=1
         )
         threshold = 0.5
         predicted_labels = (pred_probs >= threshold).astype(int)

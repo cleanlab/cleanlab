@@ -152,13 +152,10 @@ Link to Cleanlab Studio docs: `help.cleanlab.ai <https://help.cleanlab.ai/>`_
    :caption: Tutorials
 
    Datalab Tutorials <tutorials/datalab/index>
+   CleanLearning Tutorials <tutorials/clean_learning/index>
    Workflows of Data-Centric AI <tutorials/indepth_overview>
-   Image Classification <tutorials/image>
-   Text Classification <tutorials/text>
-   Tabular Classification <tutorials/tabular>
-   Audio Classification <tutorials/audio>
-   Find Dataset-level Issues <tutorials/dataset_health>
-   Identifying Outliers <tutorials/outliers>
+   Analyze Dataset-level Issues <tutorials/dataset_health>
+   Outlier Detection <tutorials/outliers>
    Improving Consensus Labels for Multiannotator Data <tutorials/multiannotator>
    Multi-Label Classification <tutorials/multilabel_classification>
    Noisy Labels in Regression <tutorials/regression>
@@ -181,6 +178,7 @@ Link to Cleanlab Studio docs: `help.cleanlab.ai <https://help.cleanlab.ai/>`_
    cleanlab/dataset
    cleanlab/outlier
    cleanlab/multiannotator
+   cleanlab/data_valuation
    cleanlab/multilabel_classification/index
    cleanlab/regression/index
    cleanlab/token_classification/index

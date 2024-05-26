@@ -35,6 +35,7 @@ def display_issues(
     class_names: Optional[List[str]] = None,
     exclude: Optional[List[int]] = None,
     top: Optional[int] = None,
+    **kwargs,  # Accepting additional kwargs for plt.show()
 ) -> None:
     """
     Display semantic segmentation label issues, showing images with problematic pixels highlighted.
@@ -87,6 +88,8 @@ def display_issues(
     exclude:
         Optional list of label classes that can be ignored in the errors, each element must be 0, 1, ..., K-1
 
+    kwargs
+        Additional keyword arguments to pass to ``plt.show()`` (matplotlib.pyplot.show).
     """
     class_names, exclude, top = _get_summary_optional_params(class_names, exclude, top)
     if labels is None and len(exclude) > 0:
@@ -100,7 +103,7 @@ def display_issues(
         import matplotlib.pyplot as plt
         import matplotlib.patches as mpatches
         from matplotlib.colors import ListedColormap
-    except:
+    except ImportError:
         raise ImportError('try "pip install matplotlib"')
 
     output_plots = (pred_probs is not None) + (labels is not None) + 1
@@ -128,7 +131,7 @@ def display_issues(
             handles=patches, loc="center", ncol=len(class_names), facecolor="white", fontsize=20
         )  # adjust fontsize for larger text
         plt.axis("off")
-        plt.show()
+        plt.show(**kwargs)
 
     for i in correct_ordering:
         # Show images
@@ -158,7 +161,7 @@ def display_issues(
             mask = ~np.isin(labels[i], exclude)
         ax.imshow(issues[i] & mask, cmap=error_cmap, vmin=0, vmax=1)
         ax.set_title(f"Image {i}: Suggested Errors (in Red)")
-        plt.show()
+        plt.show(**kwargs)
 
     return None
 

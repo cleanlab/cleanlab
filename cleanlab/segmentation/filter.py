@@ -19,11 +19,12 @@ Methods to find label issues in image semantic segmentation datasets, where each
 
 """
 
-from cleanlab.experimental.label_issues_batched import LabelInspector
-import numpy as np
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
-from cleanlab.internal.segmentation_utils import _get_valid_optional_params, _check_input
+import numpy as np
+
+from cleanlab.experimental.label_issues_batched import LabelInspector
+from cleanlab.internal.segmentation_utils import _check_input, _get_valid_optional_params
 
 
 def find_label_issues(
@@ -102,13 +103,11 @@ def find_label_issues(
                 f"Height {h} and width {w} not divisible by downsample value of {downsample}. Set kwarg downsample to 1 to avoid downsampling."
             )
         small_labels = np.round(
-            labels.reshape((num_image, h // factor, factor, w // factor, factor)).mean(4).mean(2)
+            labels.reshape((num_image, h // factor, factor, w // factor, factor)).mean((4, 2))
         )
-        small_pred_probs = (
-            pred_probs.reshape((num_image, num_classes, h // factor, factor, w // factor, factor))
-            .mean(5)
-            .mean(3)
-        )
+        small_pred_probs = pred_probs.reshape(
+            (num_image, num_classes, h // factor, factor, w // factor, factor)
+        ).mean((5, 3))
 
         # We want to make sure that pred_probs are renormalized
         row_sums = small_pred_probs.sum(axis=1)
@@ -183,35 +182,53 @@ def find_label_issues(
     ranked_label_issues = lab.get_label_issues()
     ### End find_label_issues_batched() section
 
-    # Finding the right indicies
-    relative_index = ranked_label_issues % (h * w)
-    pixel_coor_i, pixel_coor_j = np.unravel_index(relative_index, (h, w))
-    image_number = ranked_label_issues // (h * w)
-
     # Upsample carefully maintaining indicies
     label_issues = np.full((num_image, h, w), False)
 
-    for num, ii, jj in zip(image_number, pixel_coor_i, pixel_coor_j):
-        # only want to call it an error if pred_probs doesnt match the label at that pixel
-        label_issues[num, ii, jj] = True
+    # only want to call it an error if pred_probs doesnt match the label at those pixels
+    for i in range(0, ranked_label_issues.shape[0], batch_size):
+        issues_batch = ranked_label_issues[i : i + batch_size]
+        # Finding the right indicies
+        image_batch, batch_coor_i, batch_coor_j = _get_indexes_from_ranked_issues(
+            issues_batch, h, w
+        )
+        label_issues[image_batch, batch_coor_i, batch_coor_j] = True
         if downsample == 1:
-            # check if pred_probs matches the label at that pixel
-            if np.argmax(pred_probs[num, :, ii, jj]) == labels[num, ii, jj]:
-                label_issues[num, ii, jj] = False
+            # check if pred_probs matches the label at those pixels
+            pred_argmax = np.argmax(pred_probs[image_batch, :, batch_coor_i, batch_coor_j], axis=1)
+            mask = pred_argmax == labels[image_batch, batch_coor_i, batch_coor_j]
+            label_issues[image_batch[mask], batch_coor_i[mask], batch_coor_j[mask]] = False
 
     if downsample != 1:
         label_issues = label_issues.repeat(downsample, axis=1).repeat(downsample, axis=2)
 
-        for num, ii, jj in zip(image_number, pixel_coor_i, pixel_coor_j):
+        for i in range(0, ranked_label_issues.shape[0], batch_size):
+            issues_batch = ranked_label_issues[i : i + batch_size]
+            image_batch, batch_coor_i, batch_coor_j = _get_indexes_from_ranked_issues(
+                issues_batch, h, w
+            )
             # Upsample the coordinates
-            upsampled_ii = ii * downsample
-            upsampled_jj = jj * downsample
+            upsampled_ii = batch_coor_i * downsample
+            upsampled_jj = batch_coor_j * downsample
             # Iterate over the upsampled region
-            for row in range(upsampled_ii, upsampled_ii + downsample):
-                for col in range(upsampled_jj, upsampled_jj + downsample):
+            for i in range(downsample):
+                for j in range(downsample):
+                    rows = upsampled_ii + i
+                    cols = upsampled_jj + j
+                    pred_argmax = np.argmax(pred_probs[image_batch, :, rows, cols], axis=1)
                     # Check if the predicted class (argmax) at the identified issue location matches the true label
-                    if np.argmax(pred_probs[num, :, row, col]) == labels[num, row, col]:
-                        # If they match, set the corresponding entry in the label_issues array to False
-                        label_issues[num, row, col] = False
+                    mask = pred_argmax == labels[image_batch, rows, cols]
+                    # If they match, set the corresponding entries in the label_issues array to False
+                    label_issues[image_batch[mask], rows[mask], cols[mask]] = False
 
     return label_issues
+
+
+def _get_indexes_from_ranked_issues(
+    ranked_label_issues: np.ndarray, h: int, w: int
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    hw = h * w
+    relative_index = ranked_label_issues % hw
+    pixel_coor_i, pixel_coor_j = np.unravel_index(relative_index, (h, w))
+    image_batch = ranked_label_issues // hw
+    return image_batch, pixel_coor_i, pixel_coor_j

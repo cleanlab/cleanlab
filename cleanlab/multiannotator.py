@@ -42,15 +42,12 @@ Variants of these functions are provided for settings where you have trained an 
 """
 
 import warnings
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
 
-from typing import List, Dict, Any, Union, Tuple, Optional
-
-from cleanlab.rank import get_label_quality_scores
-from cleanlab.internal.util import get_num_classes, value_counts
 from cleanlab.internal.constants import CLIPPING_LOWER_BOUND
-
 from cleanlab.internal.multiannotator_utils import (
     assert_valid_inputs_multiannotator,
     assert_valid_pred_probs,
@@ -58,6 +55,8 @@ from cleanlab.internal.multiannotator_utils import (
     find_best_temp_scaler,
     temp_scale_pred_probs,
 )
+from cleanlab.internal.util import get_num_classes, value_counts
+from cleanlab.rank import get_label_quality_scores
 
 
 def get_label_quality_multiannotator(
@@ -961,33 +960,38 @@ def get_majority_vote_label(
     else:
         num_classes = int(np.nanmax(labels_multiannotator) + 1)
 
-    def get_labels_mode(label_count, num_classes):
-        max_count_idx = np.where(label_count == np.nanmax(label_count))[0].astype(float)
-        return np.pad(
-            max_count_idx, (0, num_classes - len(max_count_idx)), "constant", constant_values=np.NaN
-        )
+    array_idx = np.arange(labels_multiannotator.shape[0])
+    label_count = np.zeros((labels_multiannotator.shape[0], num_classes))
+    for i in range(labels_multiannotator.shape[1]):
+        not_nan_mask = ~np.isnan(labels_multiannotator[:, i])
+        # Get the indexes where the label is not missing for the annotator i as int.
+        label_index = labels_multiannotator[not_nan_mask, i].astype(int)
+        # Increase the counts of those labels by 1.
+        label_count[array_idx[not_nan_mask], label_index] += 1
+
+    mode_labels_multiannotator = np.full(label_count.shape, np.nan)
+    modes_mask = label_count == np.max(label_count, axis=1).reshape(-1, 1)
+    insert_index = np.zeros(modes_mask.shape[0], dtype=int)
+    for i in range(modes_mask.shape[1]):
+        mode_index = np.where(modes_mask[:, i])[0]
+        mode_labels_multiannotator[mode_index, insert_index[mode_index]] = i
+        insert_index[mode_index] += 1
 
     majority_vote_label = np.full(len(labels_multiannotator), np.nan)
-    label_count = np.apply_along_axis(
-        lambda s: np.bincount(s[~np.isnan(s)].astype(int), minlength=num_classes),
-        axis=1,
-        arr=labels_multiannotator,
-    )
-    mode_labels_multiannotator = np.apply_along_axis(
-        get_labels_mode, axis=1, arr=label_count, num_classes=num_classes
-    )
-
-    nontied_idx = []
-    tied_idx = dict()
+    label_mode_count = (~np.isnan(mode_labels_multiannotator)).sum(axis=1)
 
     # obtaining consensus using annotator majority vote
-    for idx, label_mode in enumerate(mode_labels_multiannotator):
-        label_mode = label_mode[~np.isnan(label_mode)].astype(int)
-        if len(label_mode) == 1:
-            majority_vote_label[idx] = label_mode[0]
-            nontied_idx.append(idx)
-        else:
-            tied_idx[idx] = label_mode
+    mode_count_one_mask = label_mode_count == 1
+    majority_vote_label[mode_count_one_mask] = mode_labels_multiannotator[mode_count_one_mask, 0]
+    nontied_idx = array_idx[mode_count_one_mask]
+    tied_idx = {
+        i: label_mode[:count].astype(int)
+        for i, label_mode, count in zip(
+            array_idx[~mode_count_one_mask],
+            mode_labels_multiannotator[~mode_count_one_mask, :],
+            label_mode_count[~mode_count_one_mask],
+        )
+    }
 
     # tiebreak 1: using pred_probs (if provided)
     if pred_probs is not None and len(tied_idx) > 0:
@@ -1307,9 +1311,9 @@ def _get_annotator_agreement_with_consensus(
         An array of shape ``(N,)`` with the fraction of annotators that agree with each consensus label.
     """
     annotator_agreement = np.zeros(len(labels_multiannotator))
-    for i, labels in enumerate(labels_multiannotator):
-        annotator_agreement[i] = np.mean(labels[~np.isnan(labels)] == consensus_label[i])
-
+    for i in range(labels_multiannotator.shape[1]):
+        annotator_agreement += labels_multiannotator[:, i] == consensus_label
+    annotator_agreement /= (~np.isnan(labels_multiannotator)).sum(axis=1)
     return annotator_agreement
 
 
@@ -1384,24 +1388,22 @@ def _get_single_annotator_agreement(
     annotator_agreement : float
         An float repesenting the agreement of each annotator with other annotators that labeled the same examples.
     """
-    annotator_agreement_per_example = np.zeros(len(labels_multiannotator))
-
-    for i, labels in enumerate(labels_multiannotator):
-        labels_subset = labels[~np.isnan(labels)]
-        examples_num_annotators = len(labels_subset)
-        if examples_num_annotators > 1:
-            annotator_agreement_per_example[i] = (
-                np.sum(labels_subset == labels[annotator_idx]) - 1
-            ) / (examples_num_annotators - 1)
-
     adjusted_num_annotations = num_annotations - 1
     if np.sum(adjusted_num_annotations) == 0:
-        annotator_agreement = np.NaN
-    else:
-        annotator_agreement = np.average(
-            annotator_agreement_per_example, weights=num_annotations - 1
-        )
+        return np.NaN
 
+    multi_annotations_mask = num_annotations > 1
+    annotator_agreement_per_example = np.zeros(len(labels_multiannotator))
+    for i in range(labels_multiannotator.shape[1]):
+        annotator_agreement_per_example[multi_annotations_mask] += (
+            labels_multiannotator[multi_annotations_mask, annotator_idx]
+            == labels_multiannotator[multi_annotations_mask, i]
+        )
+    annotator_agreement_per_example[multi_annotations_mask] = (
+        annotator_agreement_per_example[multi_annotations_mask] - 1
+    ) / adjusted_num_annotations[multi_annotations_mask]
+
+    annotator_agreement = np.average(annotator_agreement_per_example, weights=num_annotations - 1)
     return annotator_agreement
 
 
@@ -1491,35 +1493,30 @@ def _get_post_pred_probs_and_weights(
         adjusted_annotator_agreement = np.clip(
             1 - (annotator_error / most_likely_class_error), a_min=CLIPPING_LOWER_BOUND, a_max=None
         )
-
         # compute model weight
         model_error = np.mean(np.argmax(prior_pred_probs_subset, axis=1) != consensus_label_subset)
         model_weight = np.max(
             [(1 - (model_error / most_likely_class_error)), CLIPPING_LOWER_BOUND]
         ) * np.sqrt(np.mean(num_annotations))
 
+        non_nan_mask = ~np.isnan(labels_multiannotator)
+        annotation_weight = np.zeros(labels_multiannotator.shape[0])
+        for i in range(labels_multiannotator.shape[1]):
+            annotation_weight[non_nan_mask[:, i]] += adjusted_annotator_agreement[i]
+        total_weight = annotation_weight + model_weight
+
         # compute weighted average
         post_pred_probs = np.full(prior_pred_probs.shape, np.nan)
-        for i, labels in enumerate(labels_multiannotator):
-            labels_mask = ~np.isnan(labels)
-            labels_subset = labels[labels_mask]
-            post_pred_probs[i] = [
-                np.average(
-                    [prior_pred_probs[i, true_label]]
-                    + [
-                        (
-                            consensus_likelihood
-                            if annotator_label == true_label
-                            else non_consensus_likelihood
-                        )
-                        for annotator_label in labels_subset
-                    ],
-                    weights=np.concatenate(
-                        ([model_weight], adjusted_annotator_agreement[labels_mask])
-                    ),
+        for i in range(prior_pred_probs.shape[1]):
+            post_pred_probs[:, i] = prior_pred_probs[:, i] * model_weight
+            for k in range(labels_multiannotator.shape[1]):
+                mask = ~np.isnan(labels_multiannotator[:, k])
+                post_pred_probs[mask, i] += np.where(
+                    labels_multiannotator[mask, k] == i,
+                    adjusted_annotator_agreement[k] * consensus_likelihood,
+                    adjusted_annotator_agreement[k] * non_consensus_likelihood,
                 )
-                for true_label in range(num_classes)
-            ]
+            post_pred_probs[:, i] /= total_weight
 
         return_model_weight = model_weight
         return_annotator_weight = adjusted_annotator_agreement

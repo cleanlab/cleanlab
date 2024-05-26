@@ -17,18 +17,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
+import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import OneHotEncoder
 
-import numpy as np
-
 from cleanlab.classification import CleanLearning
+from cleanlab.count import get_confident_thresholds
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.internal.validation import assert_valid_inputs
 
 if TYPE_CHECKING:  # pragma: no cover
-    import pandas as pd
     import numpy.typing as npt
+    import pandas as pd
+
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -79,17 +80,18 @@ class LabelIssueManager(IssueManager):
         self.health_summary_parameters: Dict[str, Any] = (
             health_summary_parameters.copy() if health_summary_parameters else {}
         )
+        self._find_issues_inputs: Dict[str, bool] = {"features": False, "pred_probs": False}
         self._reset()
 
     @staticmethod
-    def _process_find_label_issues_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_find_label_issues_kwargs(**kwargs) -> Dict[str, Any]:
         """Searches for keyword arguments that are meant for the
         CleanLearning.find_label_issues method call
 
         Examples
         --------
         >>> from cleanlab.datalab.internal.issue_manager.label import LabelIssueManager
-        >>> LabelIssueManager._process_clean_learning_kwargs(thresholds=[0.1, 0.9])
+        >>> LabelIssueManager._process_find_label_issues_kwargs(thresholds=[0.1, 0.9])
         {'thresholds': [0.1, 0.9]}
         """
         accepted_kwargs = [
@@ -141,7 +143,10 @@ class LabelIssueManager(IssueManager):
         features :
             The features for each example.
         """
+        if pred_probs is not None:
+            self._find_issues_inputs.update({"pred_probs": True})
         if pred_probs is None:
+            self._find_issues_inputs.update({"features": True})
             if features is None:
                 raise ValueError(
                     "Either pred_probs or features must be provided to find label issues."
@@ -170,10 +175,11 @@ class LabelIssueManager(IssueManager):
 
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
+        labels = self.datalab.labels
         self.issues = self.cl.find_label_issues(
-            labels=self.datalab.labels,
+            labels=labels,
             pred_probs=pred_probs,
-            **self._process_find_label_issues_kwargs(kwargs),
+            **self._process_find_label_issues_kwargs(**kwargs),
         )
         self.issues.rename(columns={"label_quality": self.issue_score_key}, inplace=True)
 
@@ -182,8 +188,13 @@ class LabelIssueManager(IssueManager):
         # Get a summarized dataframe of the label issues
         self.summary = self.make_summary(score=summary_dict["overall_label_health_score"])
 
+        confident_thresholds = get_confident_thresholds(labels=labels, pred_probs=pred_probs)
         # Collect info about the label issues
-        self.info = self.collect_info(issues=self.issues, summary_dict=summary_dict)
+        self.info = self.collect_info(
+            issues=self.issues,
+            summary_dict=summary_dict,
+            confident_thresholds=confident_thresholds,
+        )
 
         # Drop columns from issues that are in the info
         self.issues = self.issues.drop(columns=["given_label", "predicted_label"])
@@ -241,7 +252,9 @@ class LabelIssueManager(IssueManager):
             summary_parameters  # will be called in `dataset.health_summary(**summary_parameters)`
         )
 
-    def collect_info(self, issues: pd.DataFrame, summary_dict: dict) -> dict:
+    def collect_info(
+        self, issues: pd.DataFrame, summary_dict: dict, confident_thresholds: np.ndarray
+    ) -> dict:
         issues_info = {
             "num_label_issues": sum(issues[f"is_{self.issue_name}_issue"]),
             "average_label_quality": issues[self.issue_score_key].mean(),
@@ -265,6 +278,8 @@ class LabelIssueManager(IssueManager):
             **issues_info,
             **health_summary_info,
             **cl_info,
+            "confident_thresholds": confident_thresholds.tolist(),
+            "find_issues_inputs": self._find_issues_inputs,
         }
 
         return info_dict
