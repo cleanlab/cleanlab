@@ -22,7 +22,7 @@ Datalab produces three estimates for **each** type of issue (called say `<ISSUE_
 
 1. A numeric quality score `<ISSUE_NAME>_score` (between 0 and 1) estimating how severe this issue is exhibited in each example from a dataset. Examples with higher scores are less likely to suffer from this issue. Access these via: the :py:attr:`Datalab.issues <cleanlab.datalab.datalab.Datalab.issues>` attribute or the method :py:meth:`Datalab.get_issues(\<ISSUE_NAME\>) <cleanlab.datalab.datalab.Datalab.get_issues>`.
 2. A Boolean `is_<ISSUE_NAME>_issue` flag for each example from a dataset. Examples where this has value  `True` are those estimated to exhibit this issue. Access these via: the :py:attr:`Datalab.issues <cleanlab.datalab.datalab.Datalab.issues>` attribute or the method :py:meth:`Datalab.get_issues(\<ISSUE_NAME\>) <cleanlab.datalab.datalab.Datalab.get_issues>`.
-3. An overall dataset quality score (between 0 and 1), quantifying how severe this issue is overall across the entire dataset. Datasets with higher scores do not exhibit this issue as badly overall. Access these via: the :py:attr:`Datalab.issue_summary <cleanlab.datalab.datalab.Datalab.issue_summary>` attribute.
+3. An overall dataset quality score (between 0 and 1), quantifying how severe this issue is overall across the entire dataset. Datasets with higher scores do not exhibit this issue as badly overall. Access these via: the :py:attr:`Datalab.issue_summary <cleanlab.datalab.datalab.Datalab.issue_summary>` attribute or the method :py:meth:`Datalab.get_issue_summary(\<ISSUE_NAME\>) <cleanlab.datalab.datalab.Datalab.get_issue_summary>`.
 
 **Example (for the outlier issue type)**
 
@@ -277,15 +277,15 @@ Non-IID Issue
 
 Whether the dataset exhibits statistically significant violations of the IID assumption like:  changepoints or shift, drift, autocorrelation, etc. The specific form of violation considered is whether the examples are ordered such that almost adjacent examples tend to have more similar feature values. If you care about this check, do **not** first shuffle your dataset -- this check is entirely based on the sequential order of your data.
 
-The Non-IID issue is detected based on provided `features` or `knn_graph`. If you do not provide one of these arguments, this type of issue will not be considered.
+The Non-IID issue is detected based on provided `features` or `knn_graph`. If you do not provide one of these arguments, this type of issue will not be considered. While the Non-IID check produces per-example information, it is primarily about assessing the overall dataset rather than assessing individual examples. So pay more attention to the overall dataset Non-IID score obtained via :py:meth:`Datalab.get_issue_summary("non_iid") <cleanlab.datalab.datalab.Datalab.get_issue_summary>` than the per-example scores.
 
 Mathematically, the **overall** Non-IID score for the dataset is defined as the p-value of a statistical test for whether the distribution of *index-gap* values differs between group A vs. group B defined as follows. For a pair of examples in the dataset `x1, x2`, we define their *index-gap* as the distance between the indices of these examples in the ordering of the data (e.g. if `x1` is the 10th example and `x2` is the 100th example in the dataset, their index-gap is 90). We construct group A from pairs of examples which are amongst the K nearest neighbors of each other, where neighbors are defined based on the provided `knn_graph` or via distances in the space of the provided vector `features` . Group B is constructed from random pairs of examples in the dataset.
 
-The Non-IID quality score for each example `x` is defined via a similarly computed p-value but with Group A constructed from the K nearest neighbors of `x` and Group B constructed from  random examples from the dataset paired with `x`. Learn more about the math behind this method in our paper: `Detecting Dataset Drift and Non-IID Sampling via k-Nearest Neighbors <https://arxiv.org/abs/2305.15696>`_
+The Non-IID quality score for each example `x` is defined via a similarly computed p-value but with Group A constructed from the K nearest neighbors of `x` and Group B constructed from  random examples from the dataset paired with `x`. Learn more about this method in our paper: `Detecting Dataset Drift and Non-IID Sampling via k-Nearest Neighbors <https://arxiv.org/abs/2305.15696>`_ (or the associated `blogpost <https://cleanlab.ai/blog/non-iid-detection/>`_).
 
-The assumption that examples in a dataset are Independent and Identically Distributed (IID) is  fundamental to most proper modeling.  Detecting all possible violations of the IID assumption is statistically impossible. This issue type only considers specific forms of violation where examples that tend to be closer together in the dataset ordering also tend to have more similar feature values. This includes scenarios where:
+The assumption that examples in a dataset are Independent and Identically Distributed (IID) is fundamental to proper modeling.  Detecting all possible violations of the IID assumption is statistically impossible. This issue type only considers specific forms of violation where examples that tend to be closer together in the dataset ordering also tend to have more similar feature values. This includes scenarios where:
 
-- The underlying distribution from which examples stem is evolving over time (not identically distributed).
+- The underlying distribution from which examples stem is evolving/drifting over time (not identically distributed).
 - An example can influence the values of future examples in the dataset (not independent).
 
 For datasets with low non-IID score, you should consider why your data are not IID and act accordingly. For example, if the data distribution is drifting over time, consider employing a time-based train/test split instead of a random partition.  Note that shuffling the data ahead of time will ensure a good non-IID score, but this is not always a fix to the underlying problem (e.g. future deployment data may stem from a different distribution, or you may overlook the fact that examples influence each other). We thus recommend **not** shuffling your data to be able to diagnose this issue if it exists.
@@ -311,20 +311,21 @@ The output will look something like this:
 ``is_non_iid_issue``
 ~~~~~~~~~~~~~~~~~~~~
 
-A boolean column, where `True` indicates that the dataset exhibits statistically significant violations of the IID assumption.
-The specific violation considered is whether the examples are ordered such that almost adjacent examples tend to have more similar feature values.
+A boolean column, where `True` values indicate that the dataset exhibits statistically significant violations of the IID assumption.
+If the overall dataset does not appear to be Non-IID (p-value > 0.05), then all entries in this column will be `False`.
+If the dataset appears to be Non-IID (p-value < 0.05), then one entry will be `True`, specifically the example with the lowest `non_iid_score`.
+We do not recommend interpreting the per-example boolean values, as the Non-IID check is more about the overall dataset.
 
 ``non_iid_score``
 ~~~~~~~~~~~~~~~~~
 
-A numeric column with scores between 0 and 1.
-The score represents the variant of the Kolmogorov-Smirnov statistic for each example.
-It is used to compare the distribution of index-distances between an example and its nearest neighbors, and the distribution of index-distances between the example and its non-neighbors.
-A smaller score indicates that the index distance with the nearest neighbors of an example is significantly different from the index distance with the non-neighbors of the example.
+A numeric column with scores between 0 and 1, containing the Non-IID quality scores for each example.
+Learn more via our `blogpost <https://cleanlab.ai/blog/non-iid-detection/>`_.
 
 Be cautious when interpreting the non-IID issue score for individual examples.
-The dataset as a whole receives a p-value for the non-IID test, which is a more reliable indicator of whether the dataset exhibits non-IID behavior.
-When the p-value is low, you can use the per-example non-IID scores to identify which examples contribute the most to the non-IID behavior.
+The dataset as a whole receives a p-value for our non-IID test (obtained via :py:meth:`Datalab.get_issue_summary("non_iid") <cleanlab.datalab.datalab.Datalab.get_issue_summary>`), which better indicates whether the dataset exhibits non-IID behavior.
+
+When this p-value is low, you can use the per-example non-IID scores to identify which examples to look at for better understanding this non-IID behavior.
 
 .. jinja ::
 
