@@ -362,8 +362,8 @@ The output will look something like this:
 ``is_class_imbalance_issue``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A boolean column, where `True` indicates that the dataset suffers class imbalance. All examples belonging to the rarest class are flagged with this issue.
-But the dataset is considered to have class imbalance only if the proportion of examples belonging to the rarest class must be much lower than the inverse of the number of classes in the dataset.
+A boolean column, where `True` indicates which examples belong to the minority class (rarest class) in a classification dataset that exhibits severe class imbalance.  If the dataset is not considered to have severe class imbalance (i.e. proportion of examples in the rarest class is not to small relative to the number of classes in the dataset), then all values will be `False`.
+
 
 ``class_imbalance_score``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
