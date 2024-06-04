@@ -528,7 +528,7 @@ The output will look something like this:
 ``is_data_valuation_issue``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A boolean column, where `True` indicates that an example is contributes negatively to a model's training performance.
+A boolean column, where `True` indicates that an example does not appear to contribute positively to a model's training performance.
 
 ``data_valuation_score``
 ~~~~~~~~~~~~~~~~~~~~~~~~
