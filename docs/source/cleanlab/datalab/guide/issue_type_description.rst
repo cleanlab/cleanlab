@@ -376,7 +376,7 @@ All other examples are assigned a score of 1.
 ``given_label``
 ~~~~~~~~~~~~~~~
 
-A column of the actual labels as provided in the dataset.
+A column of the actual labels as provided in the original dataset.
 
 .. jinja ::
 
