@@ -487,10 +487,8 @@ Even if an example has a single non-null value, it is not flagged with this issu
 ``null_score``
 ~~~~~~~~~~~~~~
 
-A numeric column with scores between 0 and 1. The score represents the proportion of non-null values in the example.
-A lower score indicates that the example has more null/missing values.
-A score of 0 indicates that all feature values in the example are null. These examples are flagged with the null issue.
-A score of 1 indicates that none of the feature values in the example are null.
+A numeric column with scores between 0 and 1. The score represents the proportion of non-null (i.e. non-missing) values in each example.
+Lower scores indicate examples with more null/missing values.
 
 .. jinja ::
 
