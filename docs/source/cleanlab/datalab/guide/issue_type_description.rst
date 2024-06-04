@@ -190,7 +190,6 @@ A boolean column, where `True` indicates that an example is identified as an out
 A numeric column with scores between 0 and 1. 
 A smaller value for an example indicates that it is less common or typical in the dataset, suggesting that it is more likely to be an outlier.
 
-If most of the nearest-neighbors of an example are exact-duplicates, then the outlier score of the example is set to 1.0.
 
 .. jinja ::
 
