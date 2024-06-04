@@ -397,6 +397,8 @@ Underperforming Group Issue
 
 An underperforming group refers to a cluster of similar examples (i.e. a slice) in the dataset for which the ML model predictions are poor.  The examples in this underperforming group may have noisy labels or feature values, or the trained ML model may not have learned how to properly handle them (consider collecting more data from this subpopulation or up-weighting the existing data from this group).
 
+This issue-type is more about the overall dataset vs. individual data points. If an underperforming group is detected, Datalab will flag the individual data points from this group.
+
 Underperforming Group issues are detected based on one of:
 
 - provided `pred_probs` and `features`,
@@ -430,14 +432,15 @@ The output will look something like this:
 ``is_underperforming_group_issue``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A boolean column, where `True` indicates that the dataset has a cluster of "difficult" examples for which the model predictions are poor.
+A boolean column, where `True` indicates which examples belong to the subgroup (i.e. cluster/slice) for which model predictions are significantly worse than for the rest of the dataset.
+If there is no such underperforming subgroup detected, then all values will be `False`.
 
 ``underperforming_group_score``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A numeric column with scores between 0 and 1. Only examples belonging to the underperforming group have a score less than 1.
-Every score in the group receive the same score, which which is the ratio of group's label quality score and the mean label quality score across the dataset.
-The lower the score, the quality the group is considered to be worse than the rest of the dataset.
+A numeric column with scores between 0 and 1. Only examples belonging to a detected underperforming group receive a score less than 1.
+Every example in the underperforming group shares the same score, which is the ratio of group's label quality score vs. the mean label quality score across the dataset.
+The lower the score, the worse the model predictions are for this particular subgroup relative to the rest of the dataset.
 
 .. jinja ::
 
