@@ -371,6 +371,7 @@ But the dataset is considered to have class imbalance only if the proportion of 
 A numeric column with scores between 0 and 1.
 Any example belonging to the most under-represented class is assigned a score equal to the proportion of examples in the dataset belonging to that class.
 All other examples are assigned a score of 1.
+All examples sharing the same label also share the same score.
 
 ``given_label``
 ~~~~~~~~~~~~~~~
