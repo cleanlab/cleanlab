@@ -534,9 +534,8 @@ A boolean column, where `True` indicates that an example is contributes negative
 ``data_valuation_score``
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-A numeric column with scores between 0 and 1. The score reflects how valuable an example is in terms of improving or maintaining the performance of the model during training.
-A score below 0.5 indicates that the example contributes negatively to the model's performance. Such examples are flagged as having a data valuation issue.
-A score above 0.5 indicates that the example positively influences the model's performance, contributing to better learning and predictive accuracy.
+A numeric column with scores between 0 and 1. The score reflects how valuable each individual example is in terms of improving the performance of the ML model trained on this dataset.
+Examples with higher scores more positively influence the resulting model's predictive performance, contributing to better learning. One would expect the model to get worse if many such examples were removed from its training dataset.
 
 .. jinja ::
 
