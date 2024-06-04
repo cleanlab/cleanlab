@@ -341,6 +341,8 @@ In a dataset identified as having class imbalance, the class imbalance quality s
 
 Class imbalance in a dataset can lead to subpar model performance for the under-represented class. Consider collecting more data from the under-represented class, or at least take special care while modeling via techniques like over/under-sampling, SMOTE, asymmetric class weighting, etc.
 
+This issue-type is more about the overall dataset vs. individual data points. If severe class imbalance is detected, Datalab will flag the individual data points from the minority class.
+
 Some metadata about class imbalance issues is stored in the `issues` attribute of the Datalab object.
 Let's look at one way to access this information.
 
