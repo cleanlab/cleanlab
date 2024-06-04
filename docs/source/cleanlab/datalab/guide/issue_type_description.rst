@@ -482,7 +482,7 @@ The output will look something like this:
 ~~~~~~~~~~~~~~~~~
 
 A boolean column, where `True` indicates that an example is identified as having null/missing values across all feature columns.
-Even if an example has a single non-null value, it is not flagged with this issue.
+Examples that just have a single non-null value across multiple feature columns are not flagged with this issue.
 
 ``null_score``
 ~~~~~~~~~~~~~~
