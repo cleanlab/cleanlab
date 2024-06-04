@@ -126,7 +126,7 @@ The lower the score, the less likely the given label is to be correct.
 ``given_label``
 ~~~~~~~~~~~~~~~
 
-A column of the actual labels as provided in the dataset.
+A column of the actual labels as provided in the original dataset.
 
 ``predicted_label``
 ~~~~~~~~~~~~~~~~~~~
