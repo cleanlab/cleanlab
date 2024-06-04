@@ -243,7 +243,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self._default_clf = False
         if clf is None:
             # Use logistic regression if no classifier is provided.
-            clf = LogReg(multi_class="auto", solver="lbfgs")
+            clf = LogReg(solver="lbfgs")
             self._default_clf = True
 
         # Make sure the given classifier has the appropriate methods defined.

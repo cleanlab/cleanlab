@@ -32,7 +32,7 @@ from cleanlab.internal.label_quality_utils import (
     _subtract_confident_thresholds,
     get_normalized_entropy,
 )
-from cleanlab.internal.neighbor.knn_graph import features_to_knn
+from cleanlab.internal.neighbor.knn_graph import correct_knn_distances_and_indices, features_to_knn
 from cleanlab.internal.numerics import softmax
 from cleanlab.internal.outlier import correct_precision_errors, transform_distances_to_scores
 from cleanlab.internal.validation import assert_valid_inputs, labels_to_array
@@ -422,9 +422,11 @@ class OutOfDistribution:
         DEFAULT_K = 10
         # fit skip over (if knn is not None) then skipping fit and suggest score else fit.
         distance_metric = None
+        correct_knn = False
         if knn is None:  # setup default KNN estimator
             # Make sure both knn and features are not None
             knn = features_to_knn(features, n_neighbors=k)
+            correct_knn = True
             features = None  # features should be None in knn.kneighbors(features) to avoid counting duplicate data points
             # Log knn metric as string to ensure compatibility for score correction
             distance_metric = (
@@ -453,7 +455,18 @@ class OutOfDistribution:
         # Get distances to k-nearest neighbors Note that the knn object contains the specification of distance metric
         # and n_neighbors (k value) If our query set of features matches the training set used to fit knn, the nearest
         # neighbor of each point is the point itself, at a distance of zero.
-        distances, _ = knn.kneighbors(features)
+        distances, indices = knn.kneighbors(features)
+        if (
+            correct_knn
+        ):  # This should only happen if knn is None at the start of this function. Will NEVER happen for approximate KNN provided by user.
+            _features_for_correction = (
+                knn._fit_X if features is None else features
+            )  # Hacky way to get features (training or test). Storing np.unique results is a hassle. ONLY WORKS WITH sklearn NearestNeighbors object
+            distances, _ = correct_knn_distances_and_indices(
+                features=_features_for_correction,
+                distances=distances,
+                indices=indices,
+            )
 
         # Calculate average distance to k-nearest neighbors
         avg_knn_distances = distances[:, :k].mean(axis=1)
