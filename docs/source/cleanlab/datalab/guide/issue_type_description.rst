@@ -252,9 +252,7 @@ Exact duplicates are assigned a score of 0, while near-duplicates are assigned a
 ``near_duplicate_sets``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-A column of lists of integers, where each list contains the indices of examples that belong to the same set of near-duplicates (not including the example itself).
-Each set represents a group of examples that are extremely similar to each other, relative to the rest of the dataset.
-The examples in each set may be exactly duplicated or have very similar feature representations.
+A column of lists of integers. The i-th list contains the indices of examples that are considered near-duplicates of example i (not including example i).
 
 ``distance_to_nearest_neighbor``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
