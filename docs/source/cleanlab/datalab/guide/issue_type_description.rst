@@ -258,10 +258,8 @@ A column of lists of integers. The i-th list contains the indices of examples th
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A numeric column that represents the distance between each example and its nearest neighbor in the dataset.
-The distance is calculated based on the provided `features` or `knn_graph`.
-A smaller distance indicates that the example is more similar to its nearest neighbor.
-Examples that are (near) duplicates have smaller distances to their nearest neighbors compared to other examples in the dataset.
-Exact duplicates ideally have a distance of 0 to their nearest neighbor. However, due to floating point precision, especially when using certain distance metrics like Euclidean distance, this might not always be the case.
+The distance is calculated based on the provided `features` or `knn_graph`, and is directly related to the `near_duplicate_score`.
+A smaller distance indicates that the example is similar to another example in the dataset.
 
 .. jinja ::
 
