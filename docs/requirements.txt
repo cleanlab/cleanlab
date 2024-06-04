@@ -27,3 +27,5 @@ torchvision==0.16.2
 torchaudio==2.1.2
 timm==0.9.12
 datasets>=2.14.6
+seaborn==0.13.2
+faiss-cpu==1.8.0
