@@ -180,7 +180,7 @@ class Reporter:
         report_footer = (
             "\n\n"
             + "Learn about each issue: https://docs.cleanlab.ai/stable/cleanlab/datalab/guide/issue_type_description.html\n"
-            + "See which examples in your dataset exhibit each issue via: `datalab.get_issues(<ISSUE_NAME>)\n\n`
+            + "See which examples in your dataset exhibit each issue via: `datalab.get_issues(<ISSUE_NAME>)`\n\n"
             + "Data indices corresponding to top examples of each issue are shown below.\n\n\n"
         )
         
