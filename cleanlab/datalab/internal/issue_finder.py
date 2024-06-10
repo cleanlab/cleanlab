@@ -490,7 +490,11 @@ class IssueFinder:
             ("pred_probs", "cluster_ids"),
         ]
         drop_underperforming_group_check = "underperforming_group" in issue_types_copy and not any(
-            all(key in kwargs and kwargs.get(key) is not None for key in pair)
+            all(
+                key in issue_types_copy["underperforming_group"]
+                and issue_types_copy["underperforming_group"].get(key) is not None
+                for key in pair
+            )
             for pair in required_pairs_for_underperforming_group
         )
         if drop_underperforming_group_check:
