@@ -206,11 +206,14 @@ class TestReporter:
         monkeypatch.setattr(data_issues, "get_info", lambda *args, **kwargs: mock_statistics)
 
         expected_output = (
-            "Here is a summary of the different kinds of issues found in the data:\n\n"
+            "Dataset Information: num_examples: 100, num_classes: 5\n\n"
+            + "Here is a summary of various issues found in your data:\n\n"
             + self.expected_filtered_summary.to_string(index=False)
             + "\n\n"
             + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n"
-            + "Dataset Information: num_examples: 100, num_classes: 5\n\n\n"
+            + "Learn about each issue: https://docs.cleanlab.ai/stable/cleanlab/datalab/guide/issue_type_description.html\n"
+            + "See which examples in your dataset exhibit each issue via: `datalab.get_issues(<ISSUE_NAME>)`\n\n"
+            + "Data indices corresponding to top examples of each issue are shown below.\n\n\n"
         )
 
         reporter.show_summary_score = True
@@ -221,10 +224,13 @@ class TestReporter:
         monkeypatch.setattr(data_issues, "get_info", lambda *args, **kwargs: mock_statistics)
 
         expected_output = (
-            "Here is a summary of the different kinds of issues found in the data:\n\n"
+            "Dataset Information: num_examples: 100, num_classes: 5\n\n"
+            + "Here is a summary of various issues found in your data:\n\n"
             + self.expected_filtered_summary.drop(columns=["score"]).to_string(index=False)
             + "\n\n"
-            + "Dataset Information: num_examples: 100, num_classes: 5\n\n\n"
+            + "Learn about each issue: https://docs.cleanlab.ai/stable/cleanlab/datalab/guide/issue_type_description.html\n"
+            + "See which examples in your dataset exhibit each issue via: `datalab.get_issues(<ISSUE_NAME>)`\n\n"
+            + "Data indices corresponding to top examples of each issue are shown below.\n\n\n"
         )
 
         reporter.show_summary_score = False

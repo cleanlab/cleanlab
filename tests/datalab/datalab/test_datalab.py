@@ -1767,8 +1767,9 @@ class TestDatalabDefaultReporting:
             lab.report()
         report = f.getvalue()
         expected_header = (
-            "Here is a summary of the different kinds of issues found in the data:"
-            "\n\nissue_type  num_issues\n     label           1\n\n"
+            "Dataset Information: num_examples: 100, num_classes: 2\n\n"  # Starts with dataset info
+            "Here is a summary of various issues found in your data:"  # Then a preamble
+            "\n\nissue_type  num_issues\n     label           1\n\n"  # Then a summary of issues
         )
         assert report.startswith(
             expected_header
