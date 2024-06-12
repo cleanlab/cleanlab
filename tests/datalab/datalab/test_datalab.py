@@ -1669,11 +1669,9 @@ class TestDatalabDataValuation:
         assert data_valuation_issues["is_data_valuation_issue"].sum() == 0
 
         # For a full knn-graph, all data points have the same value. Here, they all contribute the same value.
-        # The score of 54/99 is a value that works for 11 identical data points.
-        # TODO: Find a reasonable test for larger dataset, with k much smaller than N. Hard to guarantee a score of 0.5.
-        np.testing.assert_allclose(
-            data_valuation_issues["data_valuation_score"].to_numpy(), 54 / 99
-        )
+        # The score of 1/11 is a value that works for 11 identical data points.
+        # TODO: Find a reasonable test for larger dataset, with k much smaller than N. Hard to guarantee a score of 0.0.
+        np.testing.assert_allclose(data_valuation_issues["data_valuation_score"].to_numpy(), 1 / 11)
 
 
 class TestIssueManagersReuseKnnGraph:

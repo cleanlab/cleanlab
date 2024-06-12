@@ -16,10 +16,14 @@
 
 import numpy as np
 import pytest
+from hypothesis import given, settings, strategies as st
+from hypothesis.strategies import composite
+from hypothesis.extra.numpy import arrays
 
 from sklearn.neighbors import NearestNeighbors
 
-from cleanlab.data_valuation import data_shapley_knn
+from cleanlab.data_valuation import _knn_shapley_score, data_shapley_knn
+from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 
 
 class TestDataValuation:
@@ -52,3 +56,55 @@ class TestDataValuation:
         assert shapley.shape == (100,)
         assert np.all(shapley >= 0)
         assert np.all(shapley <= 1)
+
+
+@composite
+def valid_data(draw):
+    """
+    A custom strategy to generate valid labels, features, and k such that:
+    - labels and features have the same length
+    - k is less than the length of labels and features
+    """
+    # Generate a valid length for labels and features
+    length = draw(st.integers(min_value=11, max_value=1000))
+
+    # Generate labels and features of the same length
+    labels = draw(
+        arrays(
+            dtype=np.int32,
+            shape=length,
+            elements=st.integers(min_value=0, max_value=length - 1),
+        )
+    )
+    features = draw(
+        arrays(
+            dtype=np.float64,
+            shape=(length, draw(st.integers(min_value=2, max_value=50))),
+            elements=st.floats(min_value=-1.0, max_value=1.0),
+        )
+    )
+
+    # Generate k such that it is less than the length of labels and features
+    k = draw(st.integers(min_value=1, max_value=length - 1))
+
+    return labels, features, k
+
+
+class TestDataShapleyKNNScore:
+    """This test class prioritizes testing the raw/untransformed outputs of the _knn_shapley_score function."""
+
+    @settings(
+        max_examples=1000, deadline=None
+    )  # Increase the number of examples to test more cases
+    @given(valid_data())
+    def test_knn_shapley_score_property(self, data):
+        labels, features, k = data
+
+        knn_graph, _ = create_knn_graph_and_index(features, n_neighbors=k)
+        neighbor_indices = knn_graph.indices.reshape(-1, k)
+
+        scores = _knn_shapley_score(neighbor_indices, labels, k)
+
+        assert scores.shape == (len(labels),)
+        assert np.all(scores >= 0), "Shapley scores should never be negative."
+        assert np.all(scores <= 1), "Shapley scores should be between 0 and 1."

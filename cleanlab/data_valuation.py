@@ -27,20 +27,19 @@ from scipy.sparse import csr_matrix
 from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 
 
-def _knn_shapley_score(knn_graph: csr_matrix, labels: np.ndarray, k: int) -> np.ndarray:
-    """Compute the Shapley values of data points based on a knn graph."""
+def _knn_shapley_score(neighbor_indices: np.ndarray, labels: np.ndarray, k: int) -> np.ndarray:
+    """Compute the Shapley values of data points based on neighbor indices in a knn graph."""
     N = labels.shape[0]
     scores = np.zeros((N, N))
-    dist = knn_graph.indices.reshape(N, -1)
 
-    for y, s, dist_i in zip(labels, scores, dist):
-        idx = dist_i[::-1]
+    for y, s, neighbors_i in zip(labels, scores, neighbor_indices):
+        idx = neighbors_i[::-1]
         ans = labels[idx]
         s[idx[k - 1]] = float(ans[k - 1] == y)
         ans_matches = (ans == y).flatten()
         for j in range(k - 2, -1, -1):
             s[idx[j]] = s[idx[j + 1]] + float(int(ans_matches[j]) - int(ans_matches[j + 1]))
-    return 0.5 * (np.mean(scores / k, axis=0) + 1)
+    return np.mean(scores / k, axis=0)
 
 
 def data_shapley_knn(
@@ -91,7 +90,7 @@ def data_shapley_knn(
         An array of transformed Data Shapley values for each data point, calibrated to indicate their relative importance.
         These scores have been adjusted to fall within 0 to 1.
         Values closer to 1 indicate data points that are highly influential and positively contribute to a trained ML model's performance.
-        Conversely, scores below 0.5 indicate data points estimated to  negatively impact model performance.
+        Conversely, scores below 0.0 indicate data points estimated to negatively impact model performance. This function clips negative scores to 0.0.
 
     Raises
     ------
@@ -113,4 +112,8 @@ def data_shapley_knn(
     # Use provided knn_graph or compute it from features
     if knn_graph is None:
         knn_graph, _ = create_knn_graph_and_index(features, n_neighbors=k, metric=metric)
-    return _knn_shapley_score(knn_graph, labels, k)
+
+    num_examples = labels.shape[0]
+    distances = knn_graph.indices.reshape(num_examples, -1)
+    scores = _knn_shapley_score(distances, labels, k)
+    return np.maximum(scores, 0)

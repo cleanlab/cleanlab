@@ -80,7 +80,7 @@ class DataValuationIssueManager(IssueManager):
     Since the original knn-shapley value is in [-1, 1], we transform it to [0, 1] by:
 
     .. math::
-        0.5 \times (\text{shapley} + 1)
+        max(\text{shapley}, 0)
 
     here shapley is the original knn-shapley value.
     """
@@ -94,7 +94,7 @@ class DataValuationIssueManager(IssueManager):
         3: ["average_data_valuation"],
     }
 
-    DEFAULT_THRESHOLD = 0.5
+    DEFAULT_THRESHOLD = 1e-6
 
     def __init__(
         self,
