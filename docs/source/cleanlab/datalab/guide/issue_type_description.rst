@@ -32,6 +32,13 @@ Datalab produces three estimates for **each** type of issue (called say `<ISSUE_
     issue_score = "outlier_score"  # name of column with quality scores for the outlier issue type, atypical datapoints receive lower scores
     is_issue = "is_outlier_issue"  # name of Boolean column flagging which datapoints are considered outliers in the dataset
 
+**Dataset vs. data point level issues**
+
+Some issues are primarily about the overall dataset (e.g. non-IID, class imbalance, underperforming group), whereas others are primarily about individual examples (e.g. label issue, outlier, near duplicate, null, etc). The former issue types should be first investigated via the global score from :py:meth:`Datalab.get_issue_summary <cleanlab.datalab.datalab.Datalab.get_issue_summary>`, as the per-example results for such issues from :py:meth:`Datalab.get_issues <cleanlab.datalab.datalab.Datalab.get_issues>` require more expertise to interpret.
+
+Inputs to Datalab
+-----------------
+
 Datalab estimates various issues based on the four inputs below.
 Each input is optional, if you do not provide it, Datalab will skip checks for those types of issues that require this input.
 
