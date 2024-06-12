@@ -43,6 +43,7 @@ from cleanlab.datalab.internal.issue_manager_factory import (
 )
 from cleanlab.datalab.internal.serialize import _Serializer
 from cleanlab.datalab.internal.task import Task
+from cleanlab.datalab.internal.spurious_correlation import SpuriousCorrelations
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -635,3 +636,17 @@ class Datalab:
         load_message = f"Datalab loaded from folder: {path}"
         print(load_message)
         return datalab
+
+    def _spurious_correlation(
+        self, properties_of_interest: Optional[List[str]] = None
+    ) -> pd.DataFrame:
+        self.find_issues()
+        issues = self.get_issues()
+        score_columns = [col for col in issues.columns if col.endswith("_score")]
+        issues_score_data = issues[score_columns]
+        property_correlations = SpuriousCorrelations(
+            data=issues_score_data,
+            labels=self._labels.labels,
+            properties_of_interest=properties_of_interest,
+        )
+        return property_correlations.calculate_correlations()
