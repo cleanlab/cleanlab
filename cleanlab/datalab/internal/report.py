@@ -183,7 +183,7 @@ class Reporter:
             + "See which examples in your dataset exhibit each issue via: `datalab.get_issues(<ISSUE_NAME>)`\n\n"
             + "Data indices corresponding to top examples of each issue are shown below.\n\n\n"
         )
-        
+
         if self.show_summary_score:
             return (
                 report_header
@@ -194,9 +194,7 @@ class Reporter:
             )
 
         return (
-            report_header
-            + summary.drop(columns=["score"]).to_string(index=False)
-            + report_footer
+            report_header + summary.drop(columns=["score"]).to_string(index=False) + report_footer
         )
 
     def _get_issue_types(self, issue_summary: pd.DataFrame) -> List[str]:
