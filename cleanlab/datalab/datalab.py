@@ -640,8 +640,51 @@ class Datalab:
     def _spurious_correlation(
         self, properties_of_interest: Optional[List[str]] = None
     ) -> pd.DataFrame:
-        self.find_issues()
-        issues = self.get_issues()
+        """
+        Calculate and return a DataFrame of spurious correlations for specified properties.
+
+        This method calculates the correlations for the issues identified in the dataset.
+        It assumes that the issues have already been identified using the `find_issues()` method.
+        If `find_issues()` has not been called, it raises a ValueError to prompt the user to do so.
+
+        Parameters:
+        -----------
+        `properties_of_interest` :
+            A list of specific properties to calculate correlations for. If None, all available properties are used.
+
+        Returns:
+        --------
+        `pd.DataFrame`
+            A DataFrame containing the calculated correlations for each property, excluding 'class_imbalance_score'.
+            The DataFrame has two columns:
+            - 'property': The name of the property.
+            - 'score': The correlation score for the property.
+
+        Raises:
+        -------
+        ValueError
+            If the issues have not been identified (i.e., `find_issues()` has not been called).
+
+        Example:
+        --------
+        >>> # Assuming `find_issues()` has already been called
+        >>> datalab._spurious_correlation()
+        property                score
+        odd_size_score          0.900000
+        low_information_score   0.742617
+        dark_score              0.855250
+        grayscale_score         0.900000
+        light_score             0.900000
+        blurry_score            0.747367
+        odd_aspect_ratio_score  0.900000
+        """
+        try:
+            issues = self.get_issues()
+        except ValueError:
+            raise ValueError(
+                "Please call find_issues() before proceeding with finding Spurious Correlation."
+            )
+
         score_columns = [col for col in issues.columns if col.endswith("_score")]
         issues_score_data = issues[score_columns]
         property_correlations = SpuriousCorrelations(
@@ -649,4 +692,8 @@ class Datalab:
             labels=self._labels.labels,
             properties_of_interest=properties_of_interest,
         )
-        return property_correlations.calculate_correlations()
+
+        correlations_df = property_correlations.calculate_correlations()
+        correlations_df = correlations_df[correlations_df["property"] != "class_imbalance_score"]
+        correlations_df.reset_index(drop=True, inplace=True)
+        return correlations_df
