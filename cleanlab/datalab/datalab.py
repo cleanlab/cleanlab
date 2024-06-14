@@ -637,63 +637,59 @@ class Datalab:
         print(load_message)
         return datalab
 
-    def _spurious_correlation(
-        self, properties_of_interest: Optional[List[str]] = None
-    ) -> pd.DataFrame:
+    def _spurious_correlation(self) -> pd.DataFrame:
         """
-        Calculate and return a DataFrame of spurious correlations for specified properties.
+        Assess potential spurious correlations in issue severity scores.
 
-        This method calculates the correlations for the issues identified in the dataset.
-        It assumes that the issues have already been identified using the `find_issues()` method.
-        If `find_issues()` has not been called, it raises a ValueError to prompt the user to do so.
+        This method calculates scores indicating the likelihood of spurious correlations
+        for various issue severity scores in the dataset, as estimated by the `find_issues()` method.
+        Currently, it focuses on severity scores related to image attributes.
+        If `find_issues()` has not been called, it raises a ValueError.
 
-        Parameters:
-        -----------
-        `properties_of_interest` :
-            A list of specific properties to calculate correlations for. If None, all available properties are used.
-
-        Returns:
-        --------
-        `pd.DataFrame`
-            A DataFrame containing the calculated correlations for each property, excluding 'class_imbalance_score'.
-            The DataFrame has two columns:
-            - 'property': The name of the property.
-            - 'score': The correlation score for the property.
-
-        Raises:
+        Returns
         -------
+        `correlations_df` : pandas.DataFrame
+            A DataFrame containing the calculated correlations for each property, excluding 'class_imbalance_score'.
+            The DataFrame includes:
+            - 'property' : str
+                The name of the property.
+            - 'score' : float
+                The spurious correlation score (between 0 and 1) for the property,
+                where a low score indicates a higher likelihood of spurious correlation,
+                and a high score indicates a lower likelihood.
+
+        Raises
+        ------
         ValueError
             If the issues have not been identified (i.e., `find_issues()` has not been called).
 
-        Example:
-        --------
-        >>> # Assuming `find_issues()` has already been called
-        >>> datalab._spurious_correlation()
-        property                score
-        odd_size_score          0.900000
-        low_information_score   0.742617
-        dark_score              0.855250
-        grayscale_score         0.900000
-        light_score             0.900000
-        blurry_score            0.747367
-        odd_aspect_ratio_score  0.900000
+        Notes
+        -----
+        This method currently focuses on image-related severity scores, with potential for future expansions.
         """
         try:
             issues = self.get_issues()
         except ValueError:
             raise ValueError(
-                "Please call find_issues() before proceeding with finding Spurious Correlation."
+                "Please call find_issues() before proceeding with finding Spurious Correlations"
             )
 
         score_columns = [col for col in issues.columns if col.endswith("_score")]
-        issues_score_data = issues[score_columns]
-        property_correlations = SpuriousCorrelations(
-            data=issues_score_data,
-            labels=self._labels.labels,
-            properties_of_interest=properties_of_interest,
-        )
-
+        cleanvision_issues_columns = [
+            col
+            for col in score_columns
+            if col.replace("_score", "") in DEFAULT_CLEANVISION_ISSUES.keys()
+        ]
+        issues_score_data = issues[cleanvision_issues_columns]
+        property_correlations = SpuriousCorrelations(data=issues_score_data, labels=self.labels)
         correlations_df = property_correlations.calculate_correlations()
-        correlations_df = correlations_df[correlations_df["property"] != "class_imbalance_score"]
-        correlations_df.reset_index(drop=True, inplace=True)
+
+        if not all(
+            vision_issue + "_score" in correlations_df["property"].values
+            for vision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
+        ):
+            raise ValueError(
+                "All vision issue scores are not computed by calculate_correlations() method"
+            )
+
         return correlations_df
