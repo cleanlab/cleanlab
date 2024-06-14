@@ -73,7 +73,7 @@ Mislabeled data is a particularly concerning issue plaguing real-world datasets.
     # This works with any sklearn-compatible model - just input data + labels and cleanlab will detect label issues ツ
     label_issues_info = CleanLearning(clf=sklearn_compatible_model).find_label_issues(data, labels)
 
-:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. `tensorflow/keras <tutorials/text.ipynb>`_ (using our KerasWrapperModel), `pytorch <tutorials/image.ipynb>`_ (using skorch package), etc.
+:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. pytorch (can use `skorch <https://github.com/skorch-dev/skorch>`_ package), tensorflow/keras (can use our :py:class:`KerasWrapperModel <cleanlab/models/keras>`_), etc.
 
 :py:meth:`find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` returns a boolean mask flagging which examples have label issues and a numeric label quality score for each example quantifying our confidence that its label is correct.
 
