@@ -674,22 +674,18 @@ class Datalab:
                 "Please call find_issues() before proceeding with finding Spurious Correlations"
             )
 
-        score_columns = [col for col in issues.columns if col.endswith("_score")]
+        if not all(
+            default_cleanvision_issue + "_score" in issues.columns.tolist()
+            for default_cleanvision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
+        ):
+            raise ValueError("All vision issue scores are not computed by get_issues() method")
+
         cleanvision_issues_columns = [
-            col
-            for col in score_columns
-            if col.replace("_score", "") in DEFAULT_CLEANVISION_ISSUES.keys()
+            default_cleanvision_issue + "_score"
+            for default_cleanvision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
         ]
         issues_score_data = issues[cleanvision_issues_columns]
         property_correlations = SpuriousCorrelations(data=issues_score_data, labels=self.labels)
         correlations_df = property_correlations.calculate_correlations()
-
-        if not all(
-            vision_issue + "_score" in correlations_df["property"].values
-            for vision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
-        ):
-            raise ValueError(
-                "All vision issue scores are not computed by calculate_correlations() method"
-            )
 
         return correlations_df
