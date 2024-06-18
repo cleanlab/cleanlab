@@ -114,7 +114,7 @@ def data_shapley_knn(
         An array of transformed Data Shapley values for each data point, calibrated to indicate their relative importance.
         These scores have been adjusted to fall within 0 to 1.
         Values closer to 1 indicate data points that are highly influential and positively contribute to a trained ML model's performance.
-        Conversely, scores below 0.0 indicate data points estimated to negatively impact model performance. This function clips negative scores to 0.0.
+        Conversely, scores below 0.5 indicate data points estimated to negatively impact model performance.
 
     Raises
     ------

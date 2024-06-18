@@ -80,7 +80,7 @@ class DataValuationIssueManager(IssueManager):
     Since the original knn-shapley value is in [-1, 1], we transform it to [0, 1] by:
 
     .. math::
-        max(\text{shapley}, 0)
+        0.5 \times (\text{shapley} + 1)
 
     here shapley is the original knn-shapley value.
     """
