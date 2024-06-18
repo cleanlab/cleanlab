@@ -105,6 +105,7 @@ class TestDataShapleyKNNScore:
 
         scores = _knn_shapley_score(neighbor_indices, labels, k)
 
+        # Shapley scores should be between -1 and 1
         assert scores.shape == (len(labels),)
-        assert np.all(scores >= 0), "Shapley scores should never be negative."
-        assert np.all(scores <= 1), "Shapley scores should be between 0 and 1."
+        assert np.all(scores >= -1)
+        assert np.all(scores <= 1)

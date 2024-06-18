@@ -28,6 +28,9 @@ import pandas as pd
 import pytest
 from datasets.dataset_dict import DatasetDict
 from scipy.sparse import csr_matrix
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestNeighbors
 from sklearn.datasets import make_blobs
 
@@ -1669,9 +1672,298 @@ class TestDatalabDataValuation:
         assert data_valuation_issues["is_data_valuation_issue"].sum() == 0
 
         # For a full knn-graph, all data points have the same value. Here, they all contribute the same value.
-        # The score of 1/11 is a value that works for 11 identical data points.
-        # TODO: Find a reasonable test for larger dataset, with k much smaller than N. Hard to guarantee a score of 0.0.
-        np.testing.assert_allclose(data_valuation_issues["data_valuation_score"].to_numpy(), 1 / 11)
+        np.testing.assert_allclose(data_valuation_issues["data_valuation_score"].to_numpy(), 0.5)
+
+    @pytest.mark.parametrize("N", [40, 100])
+    @pytest.mark.parametrize("M", [2, 3, 4])
+    def test_label_error_has_lower_data_valuation_score(self, N, M):
+        """Test that the for one point with a label error (in a binary classification task for a 2D blob dataset), its data valuation score is lower than the others."""
+        np.random.seed(SEED)  # Set seed for reproducibility
+
+        X, y_true = make_blobs(n_samples=N, centers=2, n_features=M, random_state=SEED)
+
+        # Add label error to one data point
+        idx = np.random.choice(N, 1)
+        y_noisy = np.copy(y_true)
+        y_noisy[idx] = 1 - y_noisy[idx]
+
+        # Run dataset through Datalab
+        lab = Datalab(data={"X": X, "y": y_noisy}, label_name="y")
+        lab.find_issues(features=X, issue_types={"data_valuation": {}})
+
+        data_valuation_issues = lab.get_issues("data_valuation")
+
+        # At least one point has a data valuation issue (the one with the label error)
+        issue_ids = data_valuation_issues.query("is_data_valuation_issue").index.tolist()
+        num_issues = len(issue_ids)
+        assert num_issues == 1
+
+        # The scores should be lower for points with label errors
+        scores = data_valuation_issues["data_valuation_score"].to_numpy()
+        np.testing.assert_array_less(
+            scores[idx], 0.5
+        )  # The point with the obvious label error should have a score lower than 0.5
+        # But any other example flagged as an issue may have the same score or greater
+        if num_issues > 1:
+            assert np.all(scores[idx][0] <= scores[issue_ids]) and np.all(scores[issue_ids] < 0.5)
+        np.testing.assert_array_less(
+            scores[idx][0], np.delete(scores, issue_ids)
+        )  # All other points should have a higher score
+
+    def test_outlier_has_lower_data_valuation_score(self):
+        """Test that for one point being an outlier (in a binary classification task for a 2D blob dataset), its data valuation score is lower than the others.
+
+        TODO: Figure out when we can assert that an outlier gets a data valuation score of 0.0 (while not necessarily being a label error).
+        """
+        np.random.seed(SEED)  # Set seed for reproducibility
+
+        N, M = 20, 10
+        X, y_true = make_blobs(n_samples=N, centers=2, n_features=M, random_state=SEED)
+
+        # Turn one data point into an outlier
+        idx = np.random.choice(N, 1)
+        X_outlier = np.copy(X)
+        X_outlier[idx] *= -1  # Making the point an outlier, by flipping the sign of all features
+
+        # Validate the outlier creation
+        assert not np.array_equal(X[idx], X_outlier[idx]), "Outlier creation failed."
+
+        # Run dataset through Datalab
+        lab = Datalab(data={"X": X_outlier, "y": y_true}, label_name="y")
+        lab.find_issues(features=X_outlier, issue_types={"data_valuation": {}})
+
+        data_valuation_issues = lab.get_issues("data_valuation")
+
+        # The scores should be lower for points with outliers
+        scores = data_valuation_issues["data_valuation_score"].to_numpy()
+
+        # Validate scores are within an expected range (if applicable)
+        assert np.all(scores >= 0) and np.all(
+            scores <= 1
+        ), "Scores are out of the expected range [0, 1]."
+
+        # Check the outlier's score
+        assert np.all(
+            scores[idx] == 0.5
+        ), "The outlier should have a score equal to 0.5."  # Only this particular random seed guarantees this
+        np.testing.assert_array_less(
+            scores[idx][0], np.delete(scores, idx)
+        )  # All other points should have a higher score
+
+    def test_duplicate_points_have_similar_scores(self):
+        """Test that duplicate points in the dataset have similar data valuation scores, which are higher compared to non-duplicate points."""
+        np.random.seed(SEED)  # Set seed for reproducibility
+
+        N, M = 50, 5
+        X, y = make_blobs(n_samples=N, centers=2, n_features=M, random_state=SEED)
+
+        # Introduce duplicate points
+        duplicate_indices = np.random.choice(N, 2, replace=False)
+        X[duplicate_indices[1]] = X[duplicate_indices[0]]
+        y[duplicate_indices[1]] = y[duplicate_indices[0]]
+
+        # Run dataset through Datalab
+        lab = Datalab(data={"X": X, "y": y}, label_name="y")
+        lab.find_issues(features=X, issue_types={"data_valuation": {}})
+
+        data_valuation_issues = lab.get_issues("data_valuation")
+
+        # The duplicate points don't have data valuation issues
+        assert data_valuation_issues["is_data_valuation_issue"][duplicate_indices].sum() == 0
+
+        # The scores for duplicate points should be similar
+        scores = data_valuation_issues["data_valuation_score"].to_numpy()
+
+        duplicate_scores = scores[duplicate_indices]
+        non_duplicate_scores = np.delete(scores, duplicate_indices)
+
+        # Check that duplicate points have identical scores
+        assert len(set(duplicate_scores)) == 1
+
+        # Check that duplicate points have higher scores than non-duplicate points
+        assert np.all(non_duplicate_scores <= duplicate_scores[0])
+
+        ### Now add label noise to one of the duplicates
+
+        y[duplicate_indices[0]] = 1 - y[duplicate_indices[0]]
+
+        # Run dataset through Datalab
+        lab = Datalab(data={"X": X, "y": y}, label_name="y")
+        lab.find_issues(features=X, issue_types={"data_valuation": {}})
+
+        data_valuation_issues = lab.get_issues("data_valuation")
+        is_issue = data_valuation_issues["is_data_valuation_issue"]
+        scores = data_valuation_issues["data_valuation_score"]
+
+        # Only one of the duplicates points should have a data valuation issue
+        assert is_issue.sum() == 1
+        assert is_issue[duplicate_indices].sum() == 1
+
+        # The scores should be as low as possible
+        assert scores[duplicate_indices[0]] == 0.491
+        assert scores[duplicate_indices[1]] == 0.500
+
+    def add_label_noise(self, y, noise_level=0.1):
+        """Introduce random label noise to the labels."""
+        np.random.seed(SEED)
+        n_samples = len(y)
+        n_noisy = int(noise_level * n_samples)
+        noisy_indices = np.random.choice(n_samples, n_noisy, replace=False)
+        y_noisy = np.copy(y)
+        y_noisy[noisy_indices] = 1 - y_noisy[noisy_indices]  # Flip the labels
+        return y_noisy, noisy_indices
+
+    @pytest.mark.parametrize("remove_percentage", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+    def test_removing_low_valuation_points_improves_classification_accuracy(
+        self, remove_percentage
+    ):
+        """Test that removing the bottom X% of data valuation scores improves ML performance compared to removing random points.
+
+        NOTES
+        -----
+        - This is applied to a binary classification task on a 2D dataset.
+        - This test does not consider filtering by the `is_data_valuation_issue` column before setting the threshold.
+        """
+        np.random.seed(SEED)  # Set seed for reproducibility
+
+        N, M = 300, 5
+
+        X, y_true = make_blobs(n_samples=N, centers=2, n_features=M, random_state=SEED)
+
+        # Split data into training and testing sets
+        X_train, X_test, y_train_true, y_test = train_test_split(
+            X, y_true, test_size=0.3, random_state=SEED
+        )
+
+        # Introduce random label noise
+        noise_level = 0.4
+        y_noisy, noisy_indices = self.add_label_noise(y_train_true, noise_level)
+
+        # Run dataset through Datalab
+        lab = Datalab(data={"X": X_train, "y": y_noisy}, label_name="y")
+        lab.find_issues(features=X_train, issue_types={"data_valuation": {}})
+
+        data_valuation_issues = lab.get_issues("data_valuation")
+        scores = data_valuation_issues["data_valuation_score"].to_numpy()
+
+        # Calculate the threshold for the bottom X% of scores
+        threshold = np.percentile(scores, remove_percentage * 100)
+
+        # Identify the indices to remove based on data valuation scores
+        indices_to_remove_valuation = np.where(scores <= threshold)[0]
+
+        # Create training set by removing the identified points
+        X_train_valuation_removed = np.delete(X_train, indices_to_remove_valuation, axis=0)
+        y_train_noisy_valuation_removed = np.delete(y_noisy, indices_to_remove_valuation, axis=0)
+
+        # Train a model on the reduced dataset
+        clf_valuation = LogisticRegression(random_state=SEED)
+        clf_valuation.fit(X_train_valuation_removed, y_train_noisy_valuation_removed)
+        y_pred_valuation = clf_valuation.predict(X_test)
+        accuracy_valuation = accuracy_score(y_test, y_pred_valuation)
+
+        # Randomly remove the same amount of data points
+        random_indices = np.random.choice(
+            len(X_train), len(indices_to_remove_valuation), replace=False
+        )
+        X_train_random_removed = np.delete(X_train, random_indices, axis=0)
+        y_train_noisy_random_removed = np.delete(y_noisy, random_indices, axis=0)
+
+        # Train a model on the randomly reduced dataset
+        clf_random = LogisticRegression(random_state=SEED)
+        clf_random.fit(X_train_random_removed, y_train_noisy_random_removed)
+        y_pred_random = clf_random.predict(X_test)
+        accuracy_random = accuracy_score(y_test, y_pred_random)
+
+        # Assert that removing low valuation points leads to better performance
+        assert (
+            accuracy_valuation > accuracy_random
+        ), f"Expected accuracy with valuation removal ({accuracy_valuation}) to be higher than random removal ({accuracy_random})"
+        if accuracy_valuation < 1.0:
+            assert (1 - accuracy_random) / (
+                1 - accuracy_valuation
+            ) >= 1.6, "Expected at least a 60% improvement in error rate after removing low valuation points"
+
+    def add_multi_class_noise(self, y, noise_level=0.1):
+        """Introduce random label noise to the labels."""
+        np.random.seed(SEED)
+        n_samples = len(y)
+        n_noisy = int(noise_level * n_samples)
+        noisy_indices = np.random.choice(n_samples, n_noisy, replace=False)
+        y_noisy = np.copy(y)
+        y_noisy[noisy_indices] = np.random.choice(
+            np.delete(np.unique(y), y[noisy_indices]), n_noisy
+        )
+        return y_noisy, noisy_indices
+
+    @pytest.mark.parametrize("remove_percentage", [0.2, 0.3, 0.4, 0.5])
+    def test_removing_low_valuation_points_improves_classification_accuracy_multi_class(
+        self, remove_percentage
+    ):
+        """Test that removing the bottom X% of data valuation scores improves ML performance compared to removing random points.
+
+        NOTES
+        -----
+        - This is applied to a multi-class classification task on a 2D dataset.
+        - This test does not consider filtering by the `is_data_valuation_issue` column before setting the threshold.
+        """
+        np.random.seed(SEED)
+
+        N, M = 300, 5
+        X, y_true = make_blobs(n_samples=N, centers=4, n_features=M, random_state=SEED)
+        # Split data into training and testing sets
+        X_train, X_test, y_train_true, y_test = train_test_split(
+            X, y_true, test_size=0.3, random_state=SEED
+        )
+
+        # Introduce random label noise
+        noise_level = 0.3
+        y_noisy, noisy_indices = self.add_label_noise(y_train_true, noise_level)
+
+        # Run dataset through Datalab
+        lab = Datalab(data={"X": X_train, "y": y_noisy}, label_name="y")
+        lab.find_issues(features=X_train, issue_types={"data_valuation": {}})
+
+        data_valuation_issues = lab.get_issues("data_valuation")
+        scores = data_valuation_issues["data_valuation_score"].to_numpy()
+
+        # Calculate the threshold for the bottom X% of scores
+        threshold = np.percentile(scores, remove_percentage * 100)
+
+        # Identify the indices to remove based on data valuation scores
+        indices_to_remove_valuation = np.where(scores <= threshold)[0]
+
+        # Create training set by removing the identified points
+        X_train_valuation_removed = np.delete(X_train, indices_to_remove_valuation, axis=0)
+        y_train_noisy_valuation_removed = np.delete(y_noisy, indices_to_remove_valuation, axis=0)
+
+        # Train a model on the reduced dataset
+        clf_valuation = LogisticRegression(random_state=SEED)
+        clf_valuation.fit(X_train_valuation_removed, y_train_noisy_valuation_removed)
+        y_pred_valuation = clf_valuation.predict(X_test)
+        accuracy_valuation = accuracy_score(y_test, y_pred_valuation)
+
+        # Randomly remove the same amount of data points
+        random_indices = np.random.choice(
+            len(X_train), len(indices_to_remove_valuation), replace=False
+        )
+        X_train_random_removed = np.delete(X_train, random_indices, axis=0)
+        y_train_noisy_random_removed = np.delete(y_noisy, random_indices, axis=0)
+
+        # Train a model on the randomly reduced dataset
+        clf_random = LogisticRegression(random_state=SEED)
+        clf_random.fit(X_train_random_removed, y_train_noisy_random_removed)
+        y_pred_random = clf_random.predict(X_test)
+        accuracy_random = accuracy_score(y_test, y_pred_random)
+
+        # Assert that removing low valuation points leads to better performance
+        assert (
+            accuracy_valuation > accuracy_random
+        ), f"Expected accuracy with valuation removal ({accuracy_valuation}) to be higher than random removal ({accuracy_random})"
+        if accuracy_valuation < 1.0:
+            assert (1 - accuracy_random) / (
+                1 - accuracy_valuation
+            ) >= 1.6, "Expected at least a 60% improvement in error rate after removing low valuation points"
 
 
 class TestIssueManagersReuseKnnGraph:

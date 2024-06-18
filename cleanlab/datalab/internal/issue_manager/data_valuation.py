@@ -94,7 +94,7 @@ class DataValuationIssueManager(IssueManager):
         3: ["average_data_valuation"],
     }
 
-    DEFAULT_THRESHOLD = 1e-6
+    DEFAULT_THRESHOLD = 0.5
 
     def __init__(
         self,

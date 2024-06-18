@@ -27,18 +27,42 @@ from scipy.sparse import csr_matrix
 from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 
 
-def _knn_shapley_score(neighbor_indices: np.ndarray, labels: np.ndarray, k: int) -> np.ndarray:
-    """Compute the Shapley values of data points based on neighbor indices in a knn graph."""
-    N = labels.shape[0]
+def _knn_shapley_score(neighbor_indices: np.ndarray, y: np.ndarray, k: int) -> np.ndarray:
+    """Compute the Data Shapley values of data points using neighbor indices in a K-Nearest Neighbors (KNN) graph.
+
+    This function leverages equations (18) and (19) from the paper available at https://arxiv.org/abs/1908.08619
+    for computational efficiency.
+
+    Parameters
+    ----------
+    neighbor_indices :
+        A 2D array where each row contains the indices of the k-nearest neighbors for each data point.
+    y :
+        A 1D array of target values corresponding to the data points.
+    k :
+        The number of nearest neighbors to consider for each data point.
+
+    Notes
+    -----
+    - The training set is used as its own test set for the KNN-Shapley value computation, meaning y_test is the same as y_train.
+    - `neighbor_indices` are assumed to be pre-sorted by distance, with the nearest neighbors appearing first, and with at least `k` neighbors.
+    - Unlike the referenced paper, this implementation does not account for an upper error bound epsilon.
+      Consequently, K* is treated as equal to K instead of K* = max(K, 1/epsilon).
+        - This simplification implies that the term min(K, j + 1) will always be j + 1, which is offset by the
+          corresponding denominator term in the inner loop.
+        - Dividing by K in the end achieves the same result as dividing by K* in the paper.
+    - The pre-allocated `scores` array incorporates equation (18) for j = k - 1, ensuring efficient computation.
+    """
+    N = y.shape[0]
     scores = np.zeros((N, N))
 
-    for y, s, neighbors_i in zip(labels, scores, neighbor_indices):
-        idx = neighbors_i[::-1]
-        ans = labels[idx]
-        s[idx[k - 1]] = float(ans[k - 1] == y)
-        ans_matches = (ans == y).flatten()
+    for y_alpha, s_alpha, idx in zip(y, scores, neighbor_indices):
+        y_neighbors = y[idx]
+        ans_matches = (y_neighbors == y_alpha).flatten()
         for j in range(k - 2, -1, -1):
-            s[idx[j]] = s[idx[j + 1]] + float(int(ans_matches[j]) - int(ans_matches[j + 1]))
+            s_alpha[idx[j]] = s_alpha[idx[j + 1]] + float(
+                int(ans_matches[j]) - int(ans_matches[j + 1])
+            )
     return np.mean(scores / k, axis=0)
 
 
@@ -115,5 +139,5 @@ def data_shapley_knn(
 
     num_examples = labels.shape[0]
     distances = knn_graph.indices.reshape(num_examples, -1)
-    scores = _knn_shapley_score(distances, labels, k)
-    return np.maximum(scores, 0)
+    scores = _knn_shapley_score(neighbor_indices=distances, y=labels, k=k)
+    return 0.5 * (scores + 1)
