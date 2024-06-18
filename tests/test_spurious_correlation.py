@@ -19,6 +19,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 import random
 from datasets import Dataset
+import pytest
 from cleanlab import Datalab
 
 seed = 42
@@ -366,32 +367,36 @@ def test_correlation_scores_against_standard():
     )
 
 
-def test_smallest_scores_with_filters():
+@pytest.mark.parametrize(
+    "test_attribute",
+    [
+        "dark",
+        pytest.param(
+            "blurry",
+            marks=pytest.mark.xfail(
+                reason="odd aspect ratio filter seems to score lower", strict=True
+            ),
+        ),
+        "odd_aspect_ratio",
+    ],
+)
+def test_smallest_scores_with_filters(test_attribute):
     """
     Tests that each specific filter has the smallest correlation score for its respective property.
 
     Asserts:
         AssertionError: If any specific filter score is not the smallest for its respective property.
     """
-    standard_correlation_scores = get_correlation_scores()
-    dark_filter_correlation_scores = get_correlation_scores(circle_filter="dark")
-    blurry_filter_correlation_scores = get_correlation_scores(circle_filter="blurry")
-    odd_aspect_ratio_filter_correlation_scores = get_correlation_scores(
-        circle_filter="odd_aspect_ratio"
-    )
 
-    assert dark_filter_correlation_scores["dark_score"] <= min(
-        standard_correlation_scores["dark_score"],
-        blurry_filter_correlation_scores["dark_score"],
-        odd_aspect_ratio_filter_correlation_scores["dark_score"],
+    attributes_to_score = ["dark", "blurry", "odd_aspect_ratio"]
+    standard_correlation_scores = get_correlation_scores()
+
+    score_key = f"{test_attribute}_score"
+    filtered_scores = {f: get_correlation_scores(circle_filter=f) for f in attributes_to_score}
+
+    # The attribute being tested should have the lowest score for the filtered dataset
+    test_scores = filtered_scores.pop(test_attribute)
+    assert test_scores[score_key] <= min(
+        standard_correlation_scores[score_key],
+        *[scores[score_key] for scores in filtered_scores.values()],
     )
-    # assert blurry_filter_correlation_scores["blurry_score"] <= min(
-    #     standard_correlation_scores["blurry_score"],
-    #     dark_filter_correlation_scores["blurry_score"],
-    #     odd_aspect_ratio_filter_correlation_scores["blurry_score"],
-    # )
-    # assert odd_aspect_ratio_filter_correlation_scores["odd_aspect_ratio_score"] <= min(
-    #     standard_correlation_scores["odd_aspect_ratio_score"],
-    #     dark_filter_correlation_scores["odd_aspect_ratio_score"],
-    #     blurry_filter_correlation_scores["odd_aspect_ratio_score"],
-    # )
