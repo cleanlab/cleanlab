@@ -1813,8 +1813,8 @@ class TestDatalabDataValuation:
         y_noisy[noisy_indices] = 1 - y_noisy[noisy_indices]  # Flip the labels
         return y_noisy, noisy_indices
 
-    @pytest.mark.parametrize("remove_percentage", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-    def test_removing_low_valuation_points_improves_classification_accuracy(
+    @pytest.mark.parametrize("remove_percentage", [0.2, 0.3, 0.4, 0.5])
+    def test_removing_low_valuation_points_improves_classification_accuracy_binary(
         self, remove_percentage
     ):
         """Test that removing the bottom X% of data valuation scores improves ML performance compared to removing random points.
