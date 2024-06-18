@@ -18,7 +18,8 @@
 Text classification with fastText models that are compatible with cleanlab.
 This module allows you to easily find label issues in your text datasets.
 
-You must have fastText installed: ``pip install fasttext``.
+You must have fastText installed: ``pip install "fasttext==0.9.2"`` or lower.
+Version 0.9.3 has a regression bug and the official package has been archived on GitHub.
 
 Tips:
 

@@ -18,7 +18,9 @@ def multiclass_dataset_strategy(draw):
     # Define strategies
     int_feature_strategy = st.integers(min_value=-10, max_value=10)
     float_feature_strategy = st.floats(min_value=-10, max_value=10)
-    column_name_strategy = st.text(min_size=5, max_size=5)
+    column_name_strategy = st.text(
+        alphabet=st.characters(blacklist_categories=["Cs", "Cc", "Cn"]), min_size=5, max_size=5
+    )
     column_data_strategy = st.one_of(int_feature_strategy, float_feature_strategy)
 
     # Draw values
