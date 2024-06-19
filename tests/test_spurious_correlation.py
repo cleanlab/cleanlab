@@ -342,7 +342,15 @@ def get_correlation_scores(circle_filter="identity", square_filter="identity"):
     return get_scores(correlation_scores)
 
 
-def test_correlation_scores_against_standard():
+@pytest.mark.parametrize(
+    "test_attribute",
+    [
+        "dark",
+        "blurry",
+        "odd_aspect_ratio",
+    ],
+)
+def test_correlation_scores_against_standard(test_attribute):
     """
     Tests that correlation scores for specific filters are lower than standard scores.
 
@@ -350,20 +358,10 @@ def test_correlation_scores_against_standard():
         AssertionError: If any of the specific filter scores are not lower than the standard scores.
     """
     standard_correlation_scores = get_correlation_scores()
-    dark_filter_correlation_scores = get_correlation_scores(circle_filter="dark")
-    blurry_filter_correlation_scores = get_correlation_scores(circle_filter="blurry")
-    odd_aspect_ratio_filter_correlation_scores = get_correlation_scores(
-        circle_filter="odd_aspect_ratio"
-    )
-
-    assert standard_correlation_scores["dark_score"] > dark_filter_correlation_scores["dark_score"]
+    attribute_filter_scores = get_correlation_scores(circle_filter=f"{test_attribute}")
     assert (
-        standard_correlation_scores["blurry_score"]
-        > blurry_filter_correlation_scores["blurry_score"]
-    )
-    assert (
-        standard_correlation_scores["odd_aspect_ratio_score"]
-        > odd_aspect_ratio_filter_correlation_scores["odd_aspect_ratio_score"]
+        standard_correlation_scores[f"{test_attribute}_score"]
+        > attribute_filter_scores[f"{test_attribute}_score"]
     )
 
 
