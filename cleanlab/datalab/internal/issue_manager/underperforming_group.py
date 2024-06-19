@@ -59,9 +59,9 @@ class UnderperformingGroupIssueManager(IssueManager):
 
     description: ClassVar[
         str
-    ] = """An underperforming group refers to a collection of “hard” examples
-    for which the model predictions are poor. The quality of predictions is
-    computed using the :py:func:`get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>` function.
+    ] = """An underperforming group refers to a cluster of similar examples
+    (i.e. a slice) in the dataset for which the ML model predictions
+    are particularly poor (loss evaluation over this subpopulation is high).
     """
     issue_name: ClassVar[str] = "underperforming_group"
     verbosity_levels = {
