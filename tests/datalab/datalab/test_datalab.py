@@ -38,7 +38,6 @@ import cleanlab
 from cleanlab.datalab.datalab import Datalab
 from cleanlab.datalab.internal.report import Reporter
 from cleanlab.datalab.internal.task import Task
-from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 
 
 SEED = 42

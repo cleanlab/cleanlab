@@ -2,9 +2,10 @@ import numpy.typing as npt
 from scipy.sparse import csr_matrix
 
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, cast
 
 from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
+from cleanlab.typing import Metric
 
 
 def num_neighbors_in_knn_graph(knn_graph: csr_matrix) -> int:
@@ -44,10 +45,10 @@ def knn_exists(kwargs: Dict[str, Any], statistics: Dict[str, Any], k_needed: int
 def set_knn_graph(
     features: Optional[npt.NDArray],
     find_issues_kwargs: Dict[str, Any],
-    metric: Optional[str],
+    metric: Optional[Metric],
     k: int,
     statistics: Dict[str, Any],
-) -> Tuple[csr_matrix, str]:
+) -> Tuple[csr_matrix, Metric]:
     # This only fetches graph (optionally)
     knn_graph = _process_knn_graph_from_inputs(
         find_issues_kwargs, statistics, k_for_recomputation=k
@@ -60,4 +61,4 @@ def set_knn_graph(
         assert features is not None, "Features must be provided to compute the knn graph."
         knn_graph, knn = create_knn_graph_and_index(features, n_neighbors=k, metric=metric)
         metric = knn.metric
-    return knn_graph, metric
+    return cast(csr_matrix, knn_graph), cast(Metric, metric)
