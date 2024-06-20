@@ -35,6 +35,7 @@ import cleanlab
 from cleanlab.datalab.datalab import Datalab
 from cleanlab.datalab.internal.report import Reporter
 from cleanlab.datalab.internal.task import Task
+from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 
 
 SEED = 42
@@ -623,7 +624,7 @@ class TestDatalabUsingKNNGraph:
     def test_data_valuation_issue_with_knn_graph(self, data_tuple):
         lab, knn_graph, features = data_tuple
         assert lab.get_info("statistics").get("weighted_knn_graph") is None
-        lab.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {}})
+        lab.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {"k": 3}})
         score = lab.get_issues().get(["data_valuation_score"])
         assert isinstance(score, pd.DataFrame)
         assert len(score) == len(lab.data)
@@ -631,14 +632,14 @@ class TestDatalabUsingKNNGraph:
     def test_data_valuation_issue_with_existing_knn_graph(self, data_tuple):
         lab, knn_graph, features = data_tuple
         lab.find_issues(features=features, issue_types={"outlier": {"k": 3}})
-        lab.find_issues(issue_types={"data_valuation": {}})
+        lab.find_issues(issue_types={"data_valuation": {"k": 3}})
         score = lab.get_issues().get(["data_valuation_score"])
         assert isinstance(score, pd.DataFrame)
         assert len(score) == len(lab.data)
 
         # Compare this with directly passing in a knn_graph
         lab_2 = Datalab(data=lab.data, label_name=lab.label_name)
-        lab_2.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {}})
+        lab_2.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {"k": 3}})
         score_2 = lab_2.get_issues().get(["data_valuation_score"])
         pd.testing.assert_frame_equal(score, score_2)
 

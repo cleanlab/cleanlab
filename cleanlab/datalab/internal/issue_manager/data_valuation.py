@@ -33,7 +33,10 @@ from scipy.sparse import csr_matrix
 
 from cleanlab.data_valuation import data_shapley_knn
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
+from cleanlab.datalab.internal.issue_manager.knn_graph_helpers import (
+    num_neighbors_in_knn_graph,
+    set_knn_graph,
+)
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -123,10 +126,6 @@ class DataValuationIssueManager(IssueManager):
         knn_graph : csr_matrix
             A sparse matrix representing the knn graph.
         """
-        self.k = kwargs.get("k", self.k)
-        knn_graph = self._process_knn_graph_from_inputs(kwargs)
-        old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
-        metric_changes = self.metric and self.metric != old_knn_metric
         labels = self.datalab.labels
         if not isinstance(labels, np.ndarray):
             error_msg = (
@@ -134,11 +133,22 @@ class DataValuationIssueManager(IssueManager):
                 f"but got {type(labels)} instead."
             )
             raise TypeError(error_msg)
-        if knn_graph is None or metric_changes:
-            knn_graph, knn = create_knn_graph_and_index(
-                features, n_neighbors=self.k, metric=self.metric
+
+        knn_graph, self.metric = set_knn_graph(
+            features=features,
+            find_issues_kwargs=kwargs,
+            metric=self.metric,
+            k=self.k,
+            statistics=self.datalab.get_info("statistics"),
+        )
+
+        # TODO: Check self.k against user-provided knn-graphs across all issue managers
+        num_neighbors = num_neighbors_in_knn_graph(knn_graph)
+        if self.k > num_neighbors:
+            raise ValueError(
+                f"The provided knn graph has {num_neighbors} neighbors, which is less than the required {self.k} neighbors. "
+                "Please ensure that the knn graph you provide has at least as many neighbors as the required value of k."
             )
-            self.metric = knn.metric
 
         scores = data_shapley_knn(labels, knn_graph=knn_graph, k=self.k)
 
@@ -151,24 +161,6 @@ class DataValuationIssueManager(IssueManager):
         self.summary = self.make_summary(score=scores.mean())
 
         self.info = self.collect_info(issues=self.issues, knn_graph=knn_graph)
-
-    def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
-        """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
-        knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
-        knn_graph_stats = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
-
-        knn_graph: Optional[csr_matrix] = None
-        if knn_graph_kwargs is not None:
-            knn_graph = knn_graph_kwargs
-        elif knn_graph_stats is not None:
-            knn_graph = knn_graph_stats
-
-        if isinstance(knn_graph, csr_matrix) and self.k > (knn_graph.nnz // knn_graph.shape[0]):
-            self.k = knn_graph.nnz // knn_graph.shape[0]
-            Warning(
-                f"k is larger than the number of neighbors in the knn graph. Using k={self.k} instead."
-            )
-        return knn_graph
 
     def collect_info(self, issues: pd.DataFrame, knn_graph: csr_matrix) -> dict:
         issues_info = {
