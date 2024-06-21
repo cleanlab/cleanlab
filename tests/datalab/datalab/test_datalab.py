@@ -36,6 +36,7 @@ from sklearn.datasets import make_blobs
 
 import cleanlab
 from cleanlab.datalab.datalab import Datalab
+from cleanlab.datalab.internal.issue_manager.knn_graph_helpers import num_neighbors_in_knn_graph
 from cleanlab.datalab.internal.report import Reporter
 from cleanlab.datalab.internal.task import Task
 
@@ -354,8 +355,7 @@ class TestDatalab:
         embedding_size = 2
         mock_embeddings = np.random.rand(dataset_size, embedding_size)
 
-        knn = NearestNeighbors(n_neighbors=k, metric=metric)
-        issue_types = {"outlier": {"knn": knn}}
+        issue_types = {"outlier": {"k": k, "metric": metric}}
         assert lab.get_info("statistics").get("weighted_knn_graph") is None
         lab.find_issues(
             pred_probs=pred_probs,
@@ -602,16 +602,27 @@ class TestDatalabUsingKNNGraph:
         """Test that the `knn_graph` argument to `find_issues` is used instead of computing a new
         one from the `features` argument."""
         lab, knn_graph, features = data_tuple
-        k = 4
-        lab.find_issues(knn_graph=knn_graph, features=features, issue_types={"outlier": {"k": k}})
+
+        assert lab.get_info("statistics").get("weighted_knn_graph") is None
+        lab.find_issues(knn_graph=knn_graph, features=features, issue_types={"outlier": {"k": 4}})
         knn_graph_stats = lab.get_info("statistics").get("weighted_knn_graph")
-        assert knn_graph_stats.nnz == k * len(
-            lab.data
-        ), f"Expected {k * len(lab.data)} nnz, got {knn_graph_stats.nnz}"
-        three_nn_dists = knn_graph_stats.data.reshape(len(lab.data), k)[:, :3]
-        knn_graph_three_nn_dists = knn_graph.data.reshape(len(lab.data), k - 1)
+
+        # expect_k is 3 because we're using the passed-in knn_graph, not the k specified in the issue_types
+        expect_k = 3
+        actual_k_stats = num_neighbors_in_knn_graph(knn_graph_stats)
+        assert (
+            actual_k_stats == expect_k
+        ), f"Expected {expect_k} neighbors in knn_graph, got {actual_k_stats}"
+
+        # Reshape to unknown number of columns (-1) to match the flexible nature of knn_graph
+        # But we still expect at least 3 columns for the nearest neighbors
+        three_nn_dists = knn_graph_stats.data.reshape(len(lab.data), -1)[:, :3]
+        knn_graph_three_nn_dists = knn_graph.data.reshape(len(lab.data), -1)
         np.testing.assert_array_equal(three_nn_dists, knn_graph_three_nn_dists)
-        assert lab.get_info("statistics").get("knn_metric") == "cosine"
+
+        # We no longer store knn_metric in statistics when a knn_graph is passed explicitly
+        # The user is responsible for tracking their own metrics in this case
+        assert lab.get_info("statistics").get("knn_metric") == None
 
     def test_without_features_or_knn_graph(self, data_tuple):
         """Test that only the class_imbalance issue is run

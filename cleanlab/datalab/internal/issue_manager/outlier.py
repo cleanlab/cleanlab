@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple
 
 from scipy.sparse import csr_matrix
 from scipy.stats import iqr
@@ -23,13 +23,14 @@ import numpy as np
 import pandas as pd
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.internal.neighbor.knn_graph import construct_knn_graph_from_index
+from cleanlab.datalab.internal.issue_manager.knn_graph_helpers import knn_exists, set_knn_graph
+from cleanlab.internal.outlier import correct_precision_errors
 from cleanlab.outlier import OutOfDistribution, transform_distances_to_scores
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
-    from sklearn.neighbors import NearestNeighbors
     from cleanlab.datalab.datalab import Datalab
+    from cleanlab.typing import Metric
 
 
 class OutlierIssueManager(IssueManager):
@@ -66,6 +67,9 @@ class OutlierIssueManager(IssueManager):
     def __init__(
         self,
         datalab: Datalab,
+        k: int = 10,
+        t: int = 1,
+        metric: Optional[Metric] = None,
         threshold: Optional[float] = None,
         **kwargs,
     ):
@@ -80,19 +84,27 @@ class OutlierIssueManager(IssueManager):
             if value is not None
         }
 
+        # Simplified API: directly specify k and metric instead of NearestNeighbors object
+        # This reduces dependency on OutOfDistribution and aligns with Datalab's approach
+        params["k"] = k
+        self.k = k
+        self.t = t
+        self.metric: Optional[Metric] = metric
+
         if params:
             ood_kwargs["params"] = params
 
+        # OutOfDistribution still used for pred-prob based outlier detection
         self.ood: OutOfDistribution = OutOfDistribution(**ood_kwargs)
 
-        self.threshold = threshold
-        self._embeddings: Optional[np.ndarray] = None
-        self._metric: str = None  # type: ignore
         self._find_issues_inputs: Dict[str, bool] = {
             "features": False,
             "pred_probs": False,
             "knn_graph": False,
         }
+
+        # Used for both methods of outlier detection
+        self.threshold = threshold
 
     def find_issues(
         self,
@@ -100,43 +112,23 @@ class OutlierIssueManager(IssueManager):
         pred_probs: Optional[np.ndarray] = None,
         **kwargs,
     ) -> None:
-        knn_graph = self._process_knn_graph_from_inputs(kwargs)
-        distances: Optional[np.ndarray] = None
+        statistics = self.datalab.get_info("statistics")
 
-        if knn_graph is not None:
-            N = knn_graph.shape[0]
-            k = knn_graph.nnz // N
-            t = cast(int, self.ood.params["t"])
-            distances = knn_graph.data.reshape(-1, k)
-            assert isinstance(distances, np.ndarray)
-            avg_distances = distances.mean(axis=1)
-            median_avg_distance = np.median(avg_distances)
-            self._find_issues_inputs.update({"knn_graph": True})
-            scores = transform_distances_to_scores(
-                avg_distances, t=t, scaling_factor=median_avg_distance
+        # Determine if we can use kNN-based outlier detection
+        knn_graph_works: bool = self._knn_graph_works(features, kwargs, statistics, self.k)
+        knn_graph = None
+        if knn_graph_works:
+            # Set up or retrieve the kNN graph
+            knn_graph, self.metric = set_knn_graph(
+                features=features,
+                find_issues_kwargs=kwargs,
+                metric=self.metric,
+                k=self.k,
+                statistics=statistics,
             )
-        elif features is not None:
-            scores = self._score_with_features(features, **kwargs)
-            self._find_issues_inputs.update({"features": True})
-        elif pred_probs is not None:
-            scores = self._score_with_pred_probs(pred_probs, **kwargs)
-            self._find_issues_inputs.update({"pred_probs": True})
-        else:
-            if kwargs.get("knn_graph", None) is not None:
-                raise ValueError(
-                    "knn_graph is provided, but not sufficiently large to compute the scores based on the provided hyperparameters."
-                )
-            raise ValueError(f"Either features pred_probs must be provided.")
 
-        if features is not None or knn_graph is not None:
-            if knn_graph is None:
-                assert (
-                    features is not None
-                ), "features must be provided so that we can compute the knn graph."
-                knn_graph = self._process_knn_graph_from_features(features, kwargs)
-
+            # Compute distances and thresholds for outlier detection
             distances = knn_graph.data.reshape(knn_graph.shape[0], -1)
-
             assert isinstance(distances, np.ndarray)
             (
                 self.threshold,
@@ -144,9 +136,28 @@ class OutlierIssueManager(IssueManager):
                 is_issue_column,
             ) = self._compute_threshold_and_issue_column_from_distances(distances, self.threshold)
 
-        else:
-            assert pred_probs is not None
-            # Threshold based on pred_probs, very small scores are outliers
+            # Calculate outlier scores based on average distances
+            avg_distances = distances.mean(axis=1)
+            median_avg_distance = np.median(avg_distances)
+            self._find_issues_inputs.update({"knn_graph": True})
+
+            # Ensure scaling factor is not too small to avoid numerical issues
+            scaling_factor = float(max(median_avg_distance, 100 * np.finfo(np.float_).eps))
+            scores = transform_distances_to_scores(
+                avg_distances, t=self.t, scaling_factor=scaling_factor
+            )
+
+            # Apply precision error correction if metric is available
+            _metric = self.metric
+            if _metric is not None:
+                _metric = _metric if isinstance(_metric, str) else _metric.__name__
+                scores = correct_precision_errors(scores, avg_distances, _metric)
+        elif pred_probs is not None:
+            # Fallback to prediction probabilities-based outlier detection
+            scores = self._score_with_pred_probs(pred_probs, **kwargs)
+            self._find_issues_inputs.update({"pred_probs": True})
+
+            # Set threshold for pred_probs-based detection
             if self.threshold is None:
                 self.threshold = self.DEFAULT_THRESHOLDS["pred_probs"]
             if not 0 <= self.threshold:
@@ -156,6 +167,15 @@ class OutlierIssueManager(IssueManager):
             )  # Useful info for detecting issues in test data
             is_issue_column = scores < issue_threshold
 
+        else:
+            # Handle case where neither kNN nor pred_probs-based detection is possible
+            if kwargs.get("knn_graph", None) is not None:
+                raise ValueError(
+                    "knn_graph is provided, but not sufficiently large to compute the scores based on the provided hyperparameters."
+                )
+            raise ValueError(f"Either features pred_probs must be provided.")
+
+        # Store results
         self.issues = pd.DataFrame(
             {
                 f"is_{self.issue_name}_issue": is_issue_column,
@@ -167,24 +187,10 @@ class OutlierIssueManager(IssueManager):
 
         self.info = self.collect_info(issue_threshold=issue_threshold, knn_graph=knn_graph)
 
-    def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
-        """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
-        knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
-        knn_graph_stats = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
-
-        knn_graph: Optional[csr_matrix] = None
-        if knn_graph_kwargs is not None:
-            knn_graph = knn_graph_kwargs
-        elif knn_graph_stats is not None:
-            knn_graph = knn_graph_stats
-
-        if isinstance(knn_graph, csr_matrix) and kwargs.get("k", 0) > (
-            knn_graph.nnz // knn_graph.shape[0]
-        ):
-            # If the provided knn graph is insufficient, then we need to recompute the knn graph
-            # with the provided features
-            knn_graph = None
-        return knn_graph
+    def _knn_graph_works(self, features, kwargs, statistics, k: int) -> bool:
+        """Decide whether to skip the knn-based outlier detection and rely on pred_probs instead."""
+        sufficient_knn_graph_available = knn_exists(kwargs, statistics, k)
+        return (features is not None) or sufficient_knn_graph_available
 
     def _compute_threshold_and_issue_column_from_distances(
         self, distances: np.ndarray, threshold: Optional[float] = None
@@ -207,30 +213,11 @@ class OutlierIssueManager(IssueManager):
         issue_threshold = compute_issue_threshold(avg_distances, threshold)
         return threshold, issue_threshold, avg_distances > issue_threshold
 
-    def _process_knn_graph_from_features(self, features: np.ndarray, kwargs: Dict) -> csr_matrix:
-        # Check if the weighted knn graph exists in info
-        knn_graph = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
-
-        # Used to check if the knn graph needs to be recomputed, already set in the knn object
-        k: int = 0
-        if knn_graph is not None:
-            k = knn_graph.nnz // knn_graph.shape[0]
-
-        knn: NearestNeighbors = self.ood.params["knn"]  # type: ignore
-        if kwargs.get("knn", None) is not None or knn.n_neighbors > k:  # type: ignore[union-attr]
-            # If the pre-existing knn graph has fewer neighbors than the knn object,
-            # then we need to recompute the knn graph
-            assert knn == self.ood.params["knn"]  # type: ignore[union-attr]
-            knn_graph = construct_knn_graph_from_index(knn, correction_features=features)
-            self._metric = knn.metric  # type: ignore[union-attr]
-
-        return knn_graph
-
     def collect_info(
         self,
         *,
         issue_threshold: float,
-        knn_graph: Optional[csr_matrix] = None,
+        knn_graph: Optional[csr_matrix],
     ) -> dict:
         issues_dict = {
             "average_ood_score": self.issues[self.issue_score_key].mean(),
@@ -241,7 +228,6 @@ class OutlierIssueManager(IssueManager):
         feature_issues_dict = {}
 
         if knn_graph is not None:
-            knn = self.ood.params["knn"]  # type: ignore
             N = knn_graph.shape[0]
             k = knn_graph.nnz // N
             dists = knn_graph.data.reshape(N, -1)[:, 0]
@@ -249,14 +235,13 @@ class OutlierIssueManager(IssueManager):
 
             feature_issues_dict.update(
                 {
-                    "k": k,  # type: ignore[union-attr]
+                    "k": self.k,  # type: ignore[union-attr]
                     "nearest_neighbor": nn_ids.tolist(),
                     "distance_to_nearest_neighbor": dists.tolist(),
+                    "metric": self.metric,  # type: ignore[union-attr]
+                    "t": self.t,
                 }
             )
-            if self.ood.params["knn"] is not None:
-                knn = self.ood.params["knn"]
-                feature_issues_dict.update({"metric": knn.metric})  # type: ignore[union-attr]
 
         if self.ood.params["confident_thresholds"] is not None:
             pass  #
@@ -290,13 +275,13 @@ class OutlierIssueManager(IssueManager):
         prefer_new_graph = (
             not old_graph_exists
             or (isinstance(knn_graph, csr_matrix) and knn_graph.nnz > old_knn_graph.nnz)
-            or self._metric != self.datalab.get_info("statistics").get("knn_metric", None)
+            or self.metric != self.datalab.get_info("statistics").get("knn_metric", None)
         )
         if prefer_new_graph:
             if knn_graph is not None:
                 statistics_dict["statistics"][graph_key] = knn_graph
-        if self._metric is not None:
-            statistics_dict["statistics"]["knn_metric"] = self._metric
+        if self.metric is not None:
+            statistics_dict["statistics"]["knn_metric"] = self.metric
 
         return statistics_dict
 
