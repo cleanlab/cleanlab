@@ -23,7 +23,6 @@ def _process_knn_graph_from_inputs(
     knn_graph: Optional[csr_matrix] = None
     if provided_knn_graph is not None:
         knn_graph = provided_knn_graph
-        needs_recompute = False
     elif existing_knn_graph is not None:
         knn_graph = existing_knn_graph
         num_neighbors = num_neighbors_in_knn_graph(knn_graph) if knn_graph is not None else -1
