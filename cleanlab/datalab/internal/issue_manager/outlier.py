@@ -300,7 +300,3 @@ class OutlierIssueManager(IssueManager):
             raise TypeError(error_msg)
         scores = self.ood.fit_score(pred_probs=pred_probs, labels=labels, **kwargs)
         return scores
-
-    def _score_with_features(self, features: npt.NDArray, **kwargs) -> npt.NDArray:
-        scores = self.ood.fit_score(features=features)
-        return scores
