@@ -14,18 +14,18 @@ def num_neighbors_in_knn_graph(knn_graph: csr_matrix) -> int:
 
 
 def _process_knn_graph_from_inputs(
-    kwargs: Dict[str, Any], statistics: Dict[str, Any], k_for_recomputation: int
+    user_find_issues_kwargs: Dict[str, Any], statistics: Dict[str, Any], k_for_recomputation: int
 ) -> Optional[csr_matrix]:
     """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
-    knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
-    knn_graph_stats = statistics.get("weighted_knn_graph", None)
+    provided_knn_graph: Optional[csr_matrix] = user_find_issues_kwargs.get("knn_graph", None)
+    existing_knn_graph = statistics.get("weighted_knn_graph", None)
 
     knn_graph: Optional[csr_matrix] = None
-    if knn_graph_kwargs is not None:
-        knn_graph = knn_graph_kwargs
+    if provided_knn_graph is not None:
+        knn_graph = provided_knn_graph
         needs_recompute = False
-    elif knn_graph_stats is not None:
-        knn_graph = knn_graph_stats
+    elif existing_knn_graph is not None:
+        knn_graph = existing_knn_graph
         num_neighbors = num_neighbors_in_knn_graph(knn_graph) if knn_graph is not None else -1
         needs_recompute = k_for_recomputation > num_neighbors
         if needs_recompute:
