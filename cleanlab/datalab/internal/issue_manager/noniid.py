@@ -169,7 +169,11 @@ class NonIIDIssueManager(IssueManager):
     ) -> None:
         statistics = self.datalab.get_info("statistics")
 
-        self._check_pred_probs(features, pred_probs, kwargs, statistics, self.k)
+        # Crucial when building knn graphs with pred_probs instead of features, where only the
+        # latter is preferred for storage.
+        self._determine_if_knn_graph_storage_should_be_skipped(
+            features, pred_probs, kwargs, statistics, self.k
+        )
 
         knn_graph, self.metric = set_knn_graph(
             features=self._determine_optional_features(features, pred_probs),
@@ -205,7 +209,9 @@ class NonIIDIssueManager(IssueManager):
 
         self.info = self.collect_info(knn_graph=knn_graph)
 
-    def _check_pred_probs(self, features, pred_probs, kwargs, statistics, k) -> None:
+    def _determine_if_knn_graph_storage_should_be_skipped(
+        self, features, pred_probs, kwargs, statistics, k
+    ) -> None:
         """Decide whether to skip storing the knn graph based on the availability of pred_probs.
 
         Should only happend when a new knn graph needs to be computed, and that it
