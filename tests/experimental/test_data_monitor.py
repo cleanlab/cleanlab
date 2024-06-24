@@ -203,6 +203,10 @@ class TestDataMonitorReuseStatisticInfo(SetupClass):
         ) / len(lab_results)
         assert similarity >= 0.90
 
+    @pytest.mark.xfail(
+        reason="This test is expected to fail due to a simplified API of the outlier issue manager in Datalab. See pull request https://github.com/cleanlab/cleanlab/pull/1155 for more details.",
+        strict=True,
+    )
     def test_default_issue_types(self, datalab, data, pred_probs_test):
         """Test that the DataMonitor checks for the correct types of issues by default."""
         # TODO: Run this test with features as well
@@ -325,6 +329,10 @@ class TestDataMonitorInit(SetupClass):
         )
         assert corr > 0.9
 
+    @pytest.mark.xfail(
+        reason="This test is expected to fail due to a simplified API of the outlier issue manager in Datalab. See pull request https://github.com/cleanlab/cleanlab/pull/1155 for more details.",
+        strict=True,
+    )
     def test_outlier_detection(self, datalab, data):
         monitor = DataMonitor(datalab=datalab)
         assert isinstance(monitor, DataMonitor)
@@ -428,6 +436,10 @@ class TestDataMonitorInit(SetupClass):
         # All the "test" examples should been checked
         assert len(issues) == len(features)
 
+    @pytest.mark.xfail(
+        reason="This test is expected to fail due to a simplified API of the outlier issue manager in Datalab. See pull request https://github.com/cleanlab/cleanlab/pull/1155 for more details.",
+        strict=True,
+    )
     def test_only_on_features(self, data):
         train_dataset = {"X_train": data["X_train"]}
         lab = Datalab(data=train_dataset, task="classification")

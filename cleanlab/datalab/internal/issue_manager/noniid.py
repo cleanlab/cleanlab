@@ -9,7 +9,7 @@ import pandas as pd
 from scipy.sparse import csr_matrix
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
-from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
+from cleanlab.datalab.internal.issue_manager.knn_graph_helpers import knn_exists, set_knn_graph
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -126,12 +126,13 @@ class NonIIDIssueManager(IssueManager):
         self._skip_storing_knn_graph_for_pred_probs: bool = False
 
     @staticmethod
-    def _determine_features(
+    def _determine_optional_features(
         features: Optional[npt.NDArray],
         pred_probs: Optional[np.ndarray],
-    ) -> npt.NDArray:
+    ) -> Optional[npt.NDArray]:
         """
-        Determines the feature array to be used for the non-IID check. Prioritizing the original features array over pred_probs.
+        Determines the feature array to be used for constructing a knn-graph. Prioritizing the original features array over pred_probs.
+        If neither are provided, returns None.
 
         Parameters
         ----------
@@ -145,12 +146,12 @@ class NonIIDIssueManager(IssueManager):
         -------
         features_to_use :
             Either the original feature array or the predicted probabilities array,
-            intended to be used for the non-IID check.
+            intended for constructing the knn-graph.
 
-        Raises
-        ------
-        ValueError :
-            If both `features` and `pred_probs` are None.
+        Notes
+        -----
+        A knn-graph constructed from predicted probabilities should not be stored in the statistics. But this kind
+        of knn-graph is allowed for the purpose of running a non-IID check.
         """
         if features is not None:
             return features
@@ -158,9 +159,7 @@ class NonIIDIssueManager(IssueManager):
         if pred_probs is not None:
             return pred_probs
 
-        raise ValueError(
-            "If a knn_graph is not provided, either 'features' or 'pred_probs' must be provided to fit a new knn."
-        )
+        return None
 
     def find_issues(
         self,
@@ -168,19 +167,21 @@ class NonIIDIssueManager(IssueManager):
         pred_probs: Optional[np.ndarray] = None,
         **kwargs,
     ) -> None:
-        knn_graph = self._process_knn_graph_from_inputs(kwargs)
-        old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
-        metric_changes = bool(self.metric and self.metric != old_knn_metric)
+        statistics = self.datalab.get_info("statistics")
 
-        if knn_graph is None or metric_changes:
-            if features is None and pred_probs is not None:
-                self._skip_storing_knn_graph_for_pred_probs = True
+        # Crucial when building knn graphs with pred_probs instead of features, where only the
+        # latter is preferred for storage.
+        self._determine_if_knn_graph_storage_should_be_skipped(
+            features, pred_probs, kwargs, statistics, self.k
+        )
 
-            features_to_use = self._determine_features(features, pred_probs)
-            knn_graph, knn = create_knn_graph_and_index(
-                features=features_to_use, n_neighbors=self.k, metric=self.metric
-            )
-            self.metric = knn.metric  # Update the metric to the one used in the KNN object.
+        knn_graph, self.metric = set_knn_graph(
+            features=self._determine_optional_features(features, pred_probs),
+            find_issues_kwargs=kwargs,
+            metric=self.metric,
+            k=self.k,
+            statistics=statistics,
+        )
 
         self.neighbor_index_choices = self._get_neighbors(knn_graph=knn_graph)
 
@@ -208,27 +209,20 @@ class NonIIDIssueManager(IssueManager):
 
         self.info = self.collect_info(knn_graph=knn_graph)
 
-    def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
-        """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
-        knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
-        knn_graph_stats = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
+    def _determine_if_knn_graph_storage_should_be_skipped(
+        self, features, pred_probs, kwargs, statistics, k
+    ) -> None:
+        """Decide whether to skip storing the knn graph based on the availability of pred_probs.
 
-        knn_graph: Optional[csr_matrix] = None
-        if knn_graph_kwargs is not None:
-            knn_graph = knn_graph_kwargs
-        elif knn_graph_stats is not None:
-            knn_graph = knn_graph_stats
-
-        need_to_recompute_knn = isinstance(knn_graph, csr_matrix) and (
-            kwargs.get("k", 0) > knn_graph.nnz // knn_graph.shape[0]
-            or self.k > knn_graph.nnz // knn_graph.shape[0]
+        Should only happend when a new knn graph needs to be computed, and that it
+        can only be computed from pred_probs.
+        """
+        sufficient_knn_graph_available = knn_exists(kwargs, statistics, k)
+        pred_probs_needed = (
+            not sufficient_knn_graph_available and features is None and pred_probs is not None
         )
-
-        if need_to_recompute_knn:
-            # If the provided knn graph is insufficient, then we need to recompute the knn graph
-            # with the provided features
-            knn_graph = None
-        return knn_graph
+        if pred_probs_needed:
+            self._skip_storing_knn_graph_for_pred_probs = True
 
     def collect_info(self, knn_graph: csr_matrix) -> dict:
         issues_dict = {
