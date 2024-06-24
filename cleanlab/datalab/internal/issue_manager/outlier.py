@@ -169,7 +169,10 @@ class OutlierIssueManager(IssueManager):
 
         else:
             # Handle case where neither kNN nor pred_probs-based detection is possible
-            if kwargs.get("knn_graph", None) is not None:
+            if (
+                kwargs.get("knn_graph", None) is not None
+                or statistics.get("weighted_knn_graph", None) is not None
+            ):
                 raise ValueError(
                     "knn_graph is provided, but not sufficiently large to compute the scores based on the provided hyperparameters."
                 )
