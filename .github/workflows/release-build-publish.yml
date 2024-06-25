@@ -81,7 +81,9 @@ jobs:
           python-version: 3.11
 
       - name: Install dependencies
-        run: pip install --upgrade setuptools wheel twine
+        run: |
+          pip install --upgrade setuptools wheel twine
+          pip install importlib_metadata==7.2.1
 
       - name: Perform some tests on the metadata of the package
         run: |
