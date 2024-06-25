@@ -71,6 +71,7 @@ class OutlierIssueManager(IssueManager):
         k: int = 10,
         t: int = 1,
         metric: Optional[Metric] = None,
+        scaling_factor: Optional[float] = None,
         threshold: Optional[float] = None,
         **kwargs,
     ):
@@ -91,6 +92,7 @@ class OutlierIssueManager(IssueManager):
         self.k = k
         self.t = t
         self.metric: Optional[Metric] = metric
+        self.scaling_factor = scaling_factor
 
         if params:
             ood_kwargs["params"] = params
@@ -144,9 +146,10 @@ class OutlierIssueManager(IssueManager):
             self._find_issues_inputs.update({"knn_graph": True})
 
             # Ensure scaling factor is not too small to avoid numerical issues
-            scaling_factor = float(max(median_avg_distance, 100 * np.finfo(np.float_).eps))
+            if self.scaling_factor is None:
+                self.scaling_factor = float(max(median_avg_distance, 100 * np.finfo(np.float_).eps))
             scores = transform_distances_to_scores(
-                avg_distances, t=self.t, scaling_factor=scaling_factor
+                avg_distances, t=self.t, scaling_factor=self.scaling_factor
             )
 
             # Apply precision error correction if metric is available
@@ -245,6 +248,7 @@ class OutlierIssueManager(IssueManager):
                     "nearest_neighbor": nn_ids.tolist(),
                     "distance_to_nearest_neighbor": dists.tolist(),
                     "metric": self.metric,  # type: ignore[union-attr]
+                    "scaling_factor": self.scaling_factor,
                     "t": self.t,
                     "knn": knn,
                 }
