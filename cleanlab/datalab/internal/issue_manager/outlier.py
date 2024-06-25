@@ -28,6 +28,7 @@ from cleanlab.internal.outlier import correct_precision_errors
 from cleanlab.outlier import OutOfDistribution, transform_distances_to_scores
 
 if TYPE_CHECKING:  # pragma: no cover
+    from sklearn.neighbors import NearestNeighbors
     import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
     from cleanlab.typing import Metric
@@ -117,9 +118,10 @@ class OutlierIssueManager(IssueManager):
         # Determine if we can use kNN-based outlier detection
         knn_graph_works: bool = self._knn_graph_works(features, kwargs, statistics, self.k)
         knn_graph = None
+        knn = None
         if knn_graph_works:
             # Set up or retrieve the kNN graph
-            knn_graph, self.metric = set_knn_graph(
+            knn_graph, self.metric, knn = set_knn_graph(
                 features=features,
                 find_issues_kwargs=kwargs,
                 metric=self.metric,
@@ -188,7 +190,7 @@ class OutlierIssueManager(IssueManager):
 
         self.summary = self.make_summary(score=scores.mean())
 
-        self.info = self.collect_info(issue_threshold=issue_threshold, knn_graph=knn_graph)
+        self.info = self.collect_info(issue_threshold=issue_threshold, knn_graph=knn_graph, knn=knn)
 
     def _knn_graph_works(self, features, kwargs, statistics, k: int) -> bool:
         """Decide whether to skip the knn-based outlier detection and rely on pred_probs instead."""
@@ -221,6 +223,7 @@ class OutlierIssueManager(IssueManager):
         *,
         issue_threshold: float,
         knn_graph: Optional[csr_matrix],
+        knn: Optional["NearestNeighbors"],
     ) -> dict:
         issues_dict = {
             "average_ood_score": self.issues[self.issue_score_key].mean(),
@@ -243,6 +246,7 @@ class OutlierIssueManager(IssueManager):
                     "distance_to_nearest_neighbor": dists.tolist(),
                     "metric": self.metric,  # type: ignore[union-attr]
                     "t": self.t,
+                    "knn": knn,
                 }
             )
 
