@@ -107,7 +107,7 @@ class UnderperformingGroupIssueManager(IssueManager):
             raise TypeError(error_msg)
         if cluster_ids is None:
             statistics = self.datalab.get_info("statistics")
-            knn_graph, self.metric = set_knn_graph(
+            knn_graph, self.metric, _ = set_knn_graph(
                 features, kwargs, self.metric, self.k, statistics
             )
             cluster_ids = self.perform_clustering(knn_graph)
