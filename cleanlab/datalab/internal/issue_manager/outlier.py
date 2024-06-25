@@ -28,6 +28,7 @@ from cleanlab.internal.outlier import correct_precision_errors
 from cleanlab.outlier import OutOfDistribution, transform_distances_to_scores
 
 if TYPE_CHECKING:  # pragma: no cover
+    from sklearn.neighbors import NearestNeighbors
     import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
     from cleanlab.typing import Metric
@@ -70,6 +71,7 @@ class OutlierIssueManager(IssueManager):
         k: int = 10,
         t: int = 1,
         metric: Optional[Metric] = None,
+        scaling_factor: Optional[float] = None,
         threshold: Optional[float] = None,
         **kwargs,
     ):
@@ -90,6 +92,7 @@ class OutlierIssueManager(IssueManager):
         self.k = k
         self.t = t
         self.metric: Optional[Metric] = metric
+        self.scaling_factor = scaling_factor
 
         if params:
             ood_kwargs["params"] = params
@@ -117,9 +120,10 @@ class OutlierIssueManager(IssueManager):
         # Determine if we can use kNN-based outlier detection
         knn_graph_works: bool = self._knn_graph_works(features, kwargs, statistics, self.k)
         knn_graph = None
+        knn = None
         if knn_graph_works:
             # Set up or retrieve the kNN graph
-            knn_graph, self.metric = set_knn_graph(
+            knn_graph, self.metric, knn = set_knn_graph(
                 features=features,
                 find_issues_kwargs=kwargs,
                 metric=self.metric,
@@ -142,9 +146,10 @@ class OutlierIssueManager(IssueManager):
             self._find_issues_inputs.update({"knn_graph": True})
 
             # Ensure scaling factor is not too small to avoid numerical issues
-            scaling_factor = float(max(median_avg_distance, 100 * np.finfo(np.float_).eps))
+            if self.scaling_factor is None:
+                self.scaling_factor = float(max(median_avg_distance, 100 * np.finfo(np.float_).eps))
             scores = transform_distances_to_scores(
-                avg_distances, t=self.t, scaling_factor=scaling_factor
+                avg_distances, t=self.t, scaling_factor=self.scaling_factor
             )
 
             # Apply precision error correction if metric is available
@@ -188,7 +193,7 @@ class OutlierIssueManager(IssueManager):
 
         self.summary = self.make_summary(score=scores.mean())
 
-        self.info = self.collect_info(issue_threshold=issue_threshold, knn_graph=knn_graph)
+        self.info = self.collect_info(issue_threshold=issue_threshold, knn_graph=knn_graph, knn=knn)
 
     def _knn_graph_works(self, features, kwargs, statistics, k: int) -> bool:
         """Decide whether to skip the knn-based outlier detection and rely on pred_probs instead."""
@@ -221,6 +226,7 @@ class OutlierIssueManager(IssueManager):
         *,
         issue_threshold: float,
         knn_graph: Optional[csr_matrix],
+        knn: Optional["NearestNeighbors"],
     ) -> dict:
         issues_dict = {
             "average_ood_score": self.issues[self.issue_score_key].mean(),
@@ -242,7 +248,9 @@ class OutlierIssueManager(IssueManager):
                     "nearest_neighbor": nn_ids.tolist(),
                     "distance_to_nearest_neighbor": dists.tolist(),
                     "metric": self.metric,  # type: ignore[union-attr]
+                    "scaling_factor": self.scaling_factor,
                     "t": self.t,
+                    "knn": knn,
                 }
             )
 

@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
+from sklearn.neighbors import NearestNeighbors
 from cleanlab.datalab.internal.issue_manager.knn_graph_helpers import (
     _process_knn_graph_from_inputs as _test_fn_1,  # Rename for testing purposes
     num_neighbors_in_knn_graph as _get_num_neighbors,
@@ -125,7 +126,7 @@ class TestSetKNNGraph:
         features = np.random.random((10, 5))
         find_issues_kwargs = {"knn_graph": small_knn_graph}
         statistics = {"weighted_knn_graph": None}
-        result_graph, result_metric = _test_fn_2(
+        result_graph, result_metric, _ = _test_fn_2(
             features, find_issues_kwargs, metric="euclidean", k=5, statistics=statistics
         )
         assert isinstance(result_graph, csr_matrix)
@@ -140,7 +141,7 @@ class TestSetKNNGraph:
         features = np.random.random((10, 5))
         find_issues_kwargs = {"knn_graph": None}
         statistics = {"weighted_knn_graph": small_knn_graph, "knn_metric": "euclidean"}
-        result_graph, result_metric = _test_fn_2(
+        result_graph, result_metric, _ = _test_fn_2(
             features, find_issues_kwargs, metric="euclidean", k=5, statistics=statistics
         )
         assert isinstance(result_graph, csr_matrix)
@@ -149,7 +150,7 @@ class TestSetKNNGraph:
 
         # Even if k is smaller than what is in statitics, the metric will cause a recompute
         statistics = {"weighted_knn_graph": small_knn_graph, "knn_metric": "euclidean_outdated"}
-        result_graph, result_metric = _test_fn_2(
+        result_graph, result_metric, _ = _test_fn_2(
             features, find_issues_kwargs, metric="euclidean", k=4, statistics=statistics
         )
         assert _get_num_neighbors(result_graph) == 4
@@ -157,7 +158,7 @@ class TestSetKNNGraph:
 
         # If the metric hasn't changed, but the value of k is larger than the stored knn_graph, the knn_graph is recomputed
         statistics = {"weighted_knn_graph": small_knn_graph, "knn_metric": "euclidean"}
-        result_graph, result_metric = _test_fn_2(
+        result_graph, result_metric, _ = _test_fn_2(
             features, find_issues_kwargs, metric="euclidean", k=6, statistics=statistics
         )
         assert _get_num_neighbors(result_graph) == 6
@@ -174,7 +175,7 @@ class TestSetKNNGraph:
         features = np.random.random((10, 5))
         find_issues_kwargs = {"knn_graph": mid_knn_graph}
         statistics = {"weighted_knn_graph": small_knn_graph, "knn_metric": "euclidean"}
-        result_graph, result_metric = _test_fn_2(
+        result_graph, result_metric, _ = _test_fn_2(
             features, find_issues_kwargs, metric="euclidean", k=5, statistics=statistics
         )
         assert isinstance(result_graph, csr_matrix)
@@ -183,14 +184,14 @@ class TestSetKNNGraph:
 
         # Even if the statistics knn_graph is larger, the user-provided knn_graph is preferred
         statistics = {"weighted_knn_graph": large_knn_graph, "knn_metric": "euclidean"}
-        result_graph, result_metric = _test_fn_2(
+        result_graph, result_metric, _ = _test_fn_2(
             features, find_issues_kwargs, metric="euclidean", k=5, statistics=statistics
         )
         assert _get_num_neighbors(result_graph) == 7
         assert result_metric == "euclidean"
 
         # Even if k is larger than the user-provided knn_graph, the user-provided knn_graph is preferred
-        result_graph, result_metric = _test_fn_2(
+        result_graph, result_metric, _ = _test_fn_2(
             features, find_issues_kwargs, metric="euclidean", k=8, statistics=statistics
         )
         assert _get_num_neighbors(result_graph) == 7
@@ -204,7 +205,7 @@ class TestSetKNNGraph:
         features = np.random.random((10, 5))
         find_issues_kwargs = {"knn_graph": None}
         statistics = {"weighted_knn_graph": None}
-        result_graph, result_metric = _test_fn_2(
+        result_graph, result_metric, _ = _test_fn_2(
             features, find_issues_kwargs, metric="cosine", k=3, statistics=statistics
         )
         assert _get_num_neighbors(result_graph) == 3
@@ -222,7 +223,7 @@ class TestSetKNNGraph:
         features = np.random.random((10, 5))
         find_issues_kwargs = {"knn_graph": None}
         statistics = {"weighted_knn_graph": manhattan_knn_graph, "knn_metric": "manhattan"}
-        result_graph, result_metric = _test_fn_2(
+        result_graph, result_metric, _ = _test_fn_2(
             features, find_issues_kwargs, metric="euclidean", k=2, statistics=statistics
         )
         assert _get_num_neighbors(result_graph) == 2
@@ -237,7 +238,7 @@ class TestSetKNNGraph:
         k = 8
         find_issues_kwargs = {"knn_graph": small_knn_graph}
         statistics = {"weighted_knn_graph": None}
-        result_graph, result_metric = _test_fn_2(
+        result_graph, result_metric, _ = _test_fn_2(
             features, find_issues_kwargs, metric="euclidean", k=k, statistics=statistics
         )
         assert _get_num_neighbors(result_graph) == 5
@@ -246,7 +247,7 @@ class TestSetKNNGraph:
         # The small graph doesn't have enough neighbors, so it should be recomputed
         find_issues_kwargs = {"knn_graph": None}
         statistics = {"weighted_knn_graph": small_knn_graph}
-        result_graph, result_metric = _test_fn_2(
+        result_graph, result_metric, _ = _test_fn_2(
             features, find_issues_kwargs, metric="euclidean", k=k, statistics=statistics
         )
         assert _get_num_neighbors(result_graph) == 8
@@ -254,8 +255,36 @@ class TestSetKNNGraph:
 
         # The large graph has more than enough neighbors, so it should be used
         statistics = {"weighted_knn_graph": large_knn_graph}
-        result_graph, result_metric = _test_fn_2(
+        result_graph, result_metric, _ = _test_fn_2(
             features, find_issues_kwargs, metric="euclidean", k=k, statistics=statistics
         )
         assert _get_num_neighbors(result_graph) == 9
         assert result_metric is "euclidean"
+
+    def test_knn_returned(self, small_knn_graph):
+        features = np.random.random((10, 5))
+        k = 3
+        result_graph, result_metric, result_knn = _test_fn_2(
+            features, {"knn_graph": None}, metric="cosine", k=k, statistics={}
+        )
+        assert isinstance(result_knn, NearestNeighbors)
+        assert result_knn.n_neighbors == k
+        assert result_knn.metric == "cosine"
+
+        result_graph, result_metric, result_knn = _test_fn_2(
+            features, {"knn_graph": small_knn_graph}, metric="euclidean", k=k, statistics={}
+        )
+        assert result_knn == None
+        assert result_metric == "euclidean"
+        np.testing.assert_array_equal(result_graph.toarray(), small_knn_graph.toarray())
+
+        result_graph, result_metric, result_knn = _test_fn_2(
+            features,
+            {"knn_graph": None},
+            metric="euclidean",
+            k=k,
+            statistics={"weighted_knn_graph": small_knn_graph, "knn_metric": "euclidean"},
+        )
+        assert result_knn == None
+        assert result_metric == "euclidean"
+        np.testing.assert_array_equal(result_graph.toarray(), small_knn_graph.toarray())

@@ -134,7 +134,7 @@ class DataValuationIssueManager(IssueManager):
             )
             raise TypeError(error_msg)
 
-        knn_graph, self.metric = set_knn_graph(
+        knn_graph, self.metric, _ = set_knn_graph(
             features=features,
             find_issues_kwargs=kwargs,
             metric=self.metric,

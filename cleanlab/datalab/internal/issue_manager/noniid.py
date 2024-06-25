@@ -175,7 +175,7 @@ class NonIIDIssueManager(IssueManager):
             features, pred_probs, kwargs, statistics, self.k
         )
 
-        knn_graph, self.metric = set_knn_graph(
+        knn_graph, self.metric, _ = set_knn_graph(
             features=self._determine_optional_features(features, pred_probs),
             find_issues_kwargs=kwargs,
             metric=self.metric,
