@@ -18,13 +18,15 @@
 Methods to display images and their label issues in a semantic segmentation dataset, as well as summarize the overall types of issues identified.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
-from tqdm.auto import tqdm
 
-from cleanlab.internal.segmentation_utils import _get_summary_optional_params
+from cleanlab.internal.segmentation_utils import (
+    _get_summary_optional_params,
+    _get_valid_optional_params,
+)
 
 
 def display_issues(
@@ -100,8 +102,8 @@ def display_issues(
     correct_ordering = np.argsort(-np.sum(issues, axis=(1, 2)))[:top]
 
     try:
-        import matplotlib.pyplot as plt
         import matplotlib.patches as mpatches
+        import matplotlib.pyplot as plt
         from matplotlib.colors import ListedColormap
     except ImportError:
         raise ImportError('try "pip install matplotlib"')
@@ -174,6 +176,7 @@ def common_label_issues(
     class_names: Optional[List[str]] = None,
     exclude: Optional[List[int]] = None,
     top: Optional[int] = None,
+    batch_size: Optional[int] = None,
     verbose: bool = True,
 ) -> pd.DataFrame:
     """
@@ -220,6 +223,10 @@ def common_label_issues(
     top:
       Optional maximum number of tokens to print information for. If not provided, a good default is used.
 
+    batch_size:
+      Optional size of image mini-batches used for computing the number of potentially misslabeled classes (does not affect results, just the runtime and memory requirements).
+      To maximize efficiency, try to use the largest `batch_size` your memory allows. If not provided, a good default is used.
+
     verbose:
       Set to ``False`` to suppress all print statements.
 
@@ -230,37 +237,53 @@ def common_label_issues(
       where each row contains information about a particular given/predicted label swap.
       Rows are ordered by the number of label issues inferred to exhibit this type of label swap.
     """
-    try:
-        N, K, H, W = pred_probs.shape
-    except:
+    pred_probs_shape = pred_probs.shape
+    if len(pred_probs_shape) != 4:
         raise ValueError("pred_probs must be of shape (N, K, H, W)")
+    N, K, H, W = pred_probs_shape
 
     assert labels.shape == (N, H, W), "labels must be of shape (N, H, W)"
 
     class_names, exclude, top = _get_summary_optional_params(class_names, exclude, top)
+    batch_size, _ = _get_valid_optional_params(batch_size)
+
     # Find issues by pixel coordinates
-    issue_coords = np.column_stack(np.where(issues))
+    image_issues, h_issues, w_issues = np.where(issues)
+    total_issues = image_issues.shape[0]
+    unique_labels = np.unique(labels)
+
+    if verbose:
+        from tqdm.auto import tqdm
+
+        pbar = tqdm(desc="number of batches processed", total=total_issues // batch_size)
 
     # Count issues per class (given label)
-    count: Dict[int, Any] = {}
-    for i, j, k in tqdm(issue_coords):
-        label = labels[i, j, k]
-        pred = pred_probs[i, :, j, k].argmax()
-        if label not in count:
-            count[label] = np.zeros(K, dtype=int)
-        if pred not in exclude:
-            count[label][pred] += 1
+    count = {label: np.zeros(K, dtype=int) for label in unique_labels}
+    for i in range(0, total_issues, batch_size):
+        ib = i + batch_size
+        label_issues_batch = labels[image_issues[i:ib], h_issues[i:ib], w_issues[i:ib]]
+        preds = pred_probs[image_issues[i:ib], :, h_issues[i:ib], w_issues[i:ib]].argmax(axis=1)
+        mask = ~np.isin(preds, exclude)
+        for label in unique_labels:
+            label_mask = mask & (label_issues_batch == label)
+            label_preds, pred_counts = np.unique(preds[label_mask], return_counts=True)
+            for pred, pred_count in zip(label_preds, pred_counts):
+                count[label][pred] = pred_count
+
+        if verbose:
+            pbar.update(1)
+    if verbose:
+        pbar.close()
 
     # Prepare output DataFrame
     if class_names is None:
         class_names = [str(i) for i in range(K)]
 
     info = []
-    for given_label, class_name in enumerate(class_names):
-        if given_label in count:
-            for pred_label, num_issues in enumerate(count[given_label]):
-                if num_issues > 0:
-                    info.append([class_name, class_names[pred_label], num_issues])
+    for given_label, num_issues_array in count.items():
+        for pred_label, num_issues in enumerate(num_issues_array):
+            if num_issues > 0:
+                info.append([class_names[given_label], class_names[pred_label], num_issues])
 
     info = sorted(info, key=lambda x: x[2], reverse=True)[:top]
     issues_df = pd.DataFrame(info, columns=["given_label", "predicted_label", "num_pixel_issues"])
