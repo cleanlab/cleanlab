@@ -5,6 +5,7 @@ Tutorials
    :maxdepth: 1
 
    datalab/
+   improving_ml_performance
    clean_learning/
    indepth_overview
    dataset_health
