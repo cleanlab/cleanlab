@@ -383,7 +383,10 @@ class DataIssues:
                 self.issue_summary["issue_type"] != issue_manager.issue_name
             ]
         issue_column_name: str = f"is_{issue_manager.issue_name}_issue"
-        num_issues: int = int(issue_manager.issues[issue_column_name].sum())
+        if not issue_manager.issues.empty:
+            num_issues: int = int(issue_manager.issues[issue_column_name].sum())
+        else:
+            num_issues = 1 if (issue_manager.summary.score).any() == 0 else 0
         self.issue_summary = pd.concat(
             [
                 self.issue_summary,
