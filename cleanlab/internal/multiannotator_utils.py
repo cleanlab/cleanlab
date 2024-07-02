@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 
 from cleanlab.internal.numerics import softmax
-from cleanlab.internal.util import get_num_classes, value_counts
+from cleanlab.internal.util import get_num_classes
 from cleanlab.internal.validation import assert_valid_class_labels
 from cleanlab.typing import LabelLike
 
@@ -275,12 +275,15 @@ def compute_soft_cross_entropy(
     """Compute soft cross entropy between the annotators' empirical label distribution and model pred_probs"""
     num_classes = get_num_classes(pred_probs=pred_probs)
 
-    empirical_label_distribution = np.full((len(labels_multiannotator), num_classes), np.NaN)
-    for i, labels in enumerate(labels_multiannotator):
-        labels_subset = labels[~np.isnan(labels)]
-        empirical_label_distribution[i, :] = value_counts(
-            labels_subset, num_classes=num_classes
-        ) / len(labels_subset)
+    empirical_label_distribution = np.zeros((len(labels_multiannotator), num_classes), dtype=float)
+    length = np.zeros(len(labels_multiannotator), dtype=float)
+    for i in range(labels_multiannotator.shape[1]):
+        mask = ~np.isnan(labels_multiannotator[:, i])
+        empirical_label_distribution[mask, labels_multiannotator[mask, i].astype(int)] += 1
+        length += mask
+
+    for k in range(num_classes):
+        empirical_label_distribution[:, k] /= length
 
     clipped_pred_probs = np.clip(pred_probs, a_min=SMALL_CONST, a_max=None)
     soft_cross_entropy = -np.sum(
