@@ -29,7 +29,7 @@ from cleanlab.internal.validation import labels_to_array
 from cleanlab.typing import DatasetLike, LabelLike
 
 
-def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
+def remove_noise_from_class(noise_matrix: np.ndarray, class_without_noise: int) -> np.ndarray:
     """A helper function in the setting of PU learning.
     Sets all P(label=class_without_noise|true_label=any_other_class) = 0
     in noise_matrix for pulearning setting, where we have
@@ -54,17 +54,16 @@ def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
     x = np.copy(noise_matrix)
 
     # Set P( labels = cwn | y != cwn) = 0 (no noise)
-    x[cwn, [i for i in range(K) if i != cwn]] = 0.0
+    class_arange = np.arange(K)
+    x[cwn, class_arange[class_arange != cwn]] = 0.0
 
     # Normalize columns by increasing diagonal terms
     # Ensures noise_matrix is a valid probability matrix
-    for i in range(K):
-        x[i][i] = 1 - float(np.sum(x[:, i]) - x[i][i])
-
+    np.fill_diagonal(x, 1 - (np.sum(x, axis=0) - np.diag(x)))
     return x
 
 
-def clip_noise_rates(noise_matrix) -> np.ndarray:
+def clip_noise_rates(noise_matrix: np.ndarray) -> np.ndarray:
     """Clip all noise rates to proper range [0,1), but
     do not modify the diagonal terms because they are not
     noise rates.
@@ -79,19 +78,11 @@ def clip_noise_rates(noise_matrix) -> np.ndarray:
         Diagonal terms are not noise rates, but are consistency P(label=k|true_label=k)
         Assumes columns of noise_matrix sum to 1"""
 
-    def clip_noise_rate_range(noise_rate) -> float:
-        """Clip noise rate P(label=k'|true_label=k) or P(true_label=k|label=k')
-        into proper range [0,1)"""
-        return min(max(noise_rate, 0.0), 0.9999)
-
-    # Vectorize clip_noise_rate_range for efficiency with np.ndarrays.
-    vectorized_clip = np.vectorize(clip_noise_rate_range)
-
     # Preserve because diagonal entries are not noise rates.
     diagonal = np.diagonal(noise_matrix)
 
     # Clip all noise rates (efficiently).
-    noise_matrix = vectorized_clip(noise_matrix)
+    noise_matrix = np.clip(noise_matrix, 0, 0.9999)
 
     # Put unmodified diagonal back.
     np.fill_diagonal(noise_matrix, diagonal)
