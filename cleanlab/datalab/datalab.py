@@ -419,6 +419,7 @@ class Datalab:
             show_summary_score=show_summary_score,
             show_all_issues=show_all_issues,
             imagelab=self._imagelab,
+            correlations_df=self._spurious_correlation(),
         )
         reporter.report(num_examples=num_examples)
 
