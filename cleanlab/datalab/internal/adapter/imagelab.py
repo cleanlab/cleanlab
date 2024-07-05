@@ -165,7 +165,7 @@ class ImagelabReporterAdapter(Reporter):
         )
         self.imagelab = imagelab
         self.correlations_df = correlations_df
-        self.threshold = 0.86
+        self.threshold = 0.01
 
     def report(self, num_examples: int) -> None:
         super().report(num_examples)
