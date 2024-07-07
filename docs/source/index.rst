@@ -1,5 +1,5 @@
-:og:title: Cleanlab Open-Source Documentation
-:og:description: Get started, learn about capabilities, and follow tutorials to improve your own Data and Models.
+:og:title: Open-Source Documentation | Cleanlab
+:og:description: Get started with Cleanlab Open-Source, learn about capabilities, and follow tutorials to improve your own Data and Models.
 
 cleanlab open-source documentation
 ==================================
