@@ -64,7 +64,7 @@ cleanlab automatically detects various issues in *any dataset that a classifier 
 3. Handle label errors and train robust models with noisy labels
 ----------------------------------------------------------------
 
-Mislabeled data is a particularly concerning issue plaguing real-world datasets. To use a scikit-learn-compatible model for classification with noisy labels, you don't need to train a model to find label issues -- you can pass the untrained model object, data, and labels into :py:meth:`CleanLearning.find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` and cleanlab will handle model training for you.
+Mislabeled data is a particularly concerning issue plaguing real-world datasets. To use a scikit-learn-compatible model for classification with noisy labels, you don't need to train a model to find label issues -- you can pass the untrained model object, data, and labels into :py:meth:`CleanLearning.find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` and cleanlab will handle model training for you.
 
 .. code-block:: python
 
@@ -152,6 +152,7 @@ Link to Cleanlab Studio docs: `help.cleanlab.ai <https://help.cleanlab.ai/>`_
    :caption: Tutorials
 
    Datalab Tutorials <tutorials/datalab/index>
+   Improving ML Performance <tutorials/improving_ml_performance>
    CleanLearning Tutorials <tutorials/clean_learning/index>
    Workflows of Data-Centric AI <tutorials/indepth_overview>
    Analyze Dataset-level Issues <tutorials/dataset_health>
