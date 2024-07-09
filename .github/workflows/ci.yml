@@ -34,8 +34,6 @@ jobs:
           pip install tensorflow-cpu<2.16
       - name: Test with coverage
         run: pytest --verbose --maxfail=3 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
-        env:
-          TEST_FASTTEXT: true
       - uses: codecov/codecov-action@v3
   test-macos-linux:
     name: "Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
@@ -63,13 +61,8 @@ jobs:
         run: pip install -e ".[all]"
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
-      - name: Install fasttext for non-Windows machines
-        run: |
-          pip install "fasttext==0.9.2"
       - name: Test with coverage
         run: pytest --verbose --maxfail=3 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
-        env:
-          TEST_FASTTEXT: true
       - uses: codecov/codecov-action@v3
   test-without-extras-min-versions:
     name: Test without optional dependencies and with minimum compatible versions of dependencies
