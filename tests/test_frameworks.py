@@ -27,7 +27,6 @@ warnings.filterwarnings(action="ignore", category=DeprecationWarning)
 
 import sys
 import os
-import wget
 from copy import deepcopy
 import random
 import numpy as np
@@ -45,7 +44,6 @@ from sklearn.model_selection import GridSearchCV
 
 from cleanlab.classification import CleanLearning
 from cleanlab.models.keras import KerasWrapperSequential, KerasWrapperModel
-from cleanlab.internal.util import format_labels
 
 
 def python_version_ok():  # tensorflow and torch do not play nice with older Python
