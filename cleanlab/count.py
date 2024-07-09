@@ -616,7 +616,8 @@ def compute_confident_joint(
         y_true=true_labels_confident,
         y_pred=labels_confident,
         labels=range(pred_probs.shape[1]),
-    ).T  # Guarantee at least one correctly labeled example is represented in every class
+    ).T
+    # Guarantee at least one correctly labeled example is represented in every class
     np.fill_diagonal(confident_joint, confident_joint.diagonal().clip(min=1))
     if calibrate:
         confident_joint = calibrate_confident_joint(confident_joint, labels)
