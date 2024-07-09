@@ -597,6 +597,7 @@ def compute_confident_joint(
     # size num_classes, with True if the example confidently belongs to that class and False if not.
     pred_probs_bool = pred_probs >= thresholds - 1e-6
     num_confident_bins = pred_probs_bool.sum(axis=1)
+    # The indices where this is false, are often outliers (not confident of any label)
     at_least_one_confident = num_confident_bins > 0
     more_than_one_confident = num_confident_bins > 1
     pred_probs_argmax = pred_probs.argmax(axis=1)
