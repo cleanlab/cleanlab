@@ -18,11 +18,12 @@
 Methods to display images and their label issues in a semantic segmentation dataset, as well as summarize the overall types of issues identified.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union, cast
 
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
+
 
 from cleanlab.internal.segmentation_utils import _get_summary_optional_params
 
@@ -102,6 +103,7 @@ def display_issues(
     try:
         import matplotlib.pyplot as plt
         import matplotlib.patches as mpatches
+        from matplotlib.axes import Axes
         from matplotlib.colors import ListedColormap
     except ImportError:
         raise ImportError('try "pip install matplotlib"')
@@ -135,32 +137,36 @@ def display_issues(
 
     for i in correct_ordering:
         # Show images
-        fig, axes = plt.subplots(1, output_plots, figsize=(5 * output_plots, 5))
+        _, axes = plt.subplots(1, output_plots, figsize=(5 * output_plots, 5))
         plot_index = 0
 
+        # Handle the different possible types of axes
+        if output_plots == 1:
+            axes_list = [cast(Axes, axes)]
+        else:
+            axes_list = cast(List[Axes], axes) if isinstance(axes, np.ndarray) else [axes]
+
         # First image - Given truth labels
-        if labels is not None:
-            axes[plot_index].imshow(cmap[labels[i]])
-            axes[plot_index].set_title("Given Labels")
+        if labels is not None and plot_index < len(axes_list):
+            axes_list[plot_index].imshow(cmap[labels[i]])
+            axes_list[plot_index].set_title("Given Labels")
             plot_index += 1
 
         # Second image - Argmaxed pred_probs
-        if pred_probs is not None:
-            axes[plot_index].imshow(cmap[np.argmax(pred_probs[i], axis=0)])
-            axes[plot_index].set_title("Argmaxed Prediction Probabilities")
+        if pred_probs is not None and plot_index < len(axes_list):
+            axes_list[plot_index].imshow(cmap[np.argmax(pred_probs[i], axis=0)])
+            axes_list[plot_index].set_title("Argmaxed Prediction Probabilities")
             plot_index += 1
 
         # Third image - Errors
-        if output_plots == 1:
-            ax = axes
-        else:
-            ax = axes[plot_index]
+        if plot_index < len(axes_list):
+            ax = axes_list[plot_index]
+            mask = np.full((h, w), True)
+            if labels is not None and len(exclude) != 0:
+                mask = ~np.isin(labels[i], exclude)
+            ax.imshow(issues[i] & mask, cmap=error_cmap, vmin=0, vmax=1)
+            ax.set_title(f"Image {i}: Suggested Errors (in Red)")
 
-        mask = np.full((h, w), True)
-        if labels is not None and len(exclude) != 0:
-            mask = ~np.isin(labels[i], exclude)
-        ax.imshow(issues[i] & mask, cmap=error_cmap, vmin=0, vmax=1)
-        ax.set_title(f"Image {i}: Suggested Errors (in Red)")
         plt.show(**kwargs)
 
     return None
