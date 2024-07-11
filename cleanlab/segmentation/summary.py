@@ -18,7 +18,7 @@
 Methods to display images and their label issues in a semantic segmentation dataset, as well as summarize the overall types of issues identified.
 """
 
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, cast
 
 import numpy as np
 import pandas as pd
