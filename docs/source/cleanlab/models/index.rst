@@ -17,4 +17,3 @@ Some of these files include various models that can be used with cleanlab to fin
 
 .. toctree::
     keras
-    fasttext

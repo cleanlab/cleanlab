@@ -16,7 +16,7 @@
 
 """
 Scripts to test cleanlab usage with various ML frameworks:
-pytorch, skorch, tensorflow, keras, fasttext
+pytorch, skorch, tensorflow, keras
 """
 
 import pytest
@@ -27,7 +27,6 @@ warnings.filterwarnings(action="ignore", category=DeprecationWarning)
 
 import sys
 import os
-import wget
 from copy import deepcopy
 import random
 import numpy as np
@@ -45,17 +44,11 @@ from sklearn.model_selection import GridSearchCV
 
 from cleanlab.classification import CleanLearning
 from cleanlab.models.keras import KerasWrapperSequential, KerasWrapperModel
-from cleanlab.internal.util import format_labels
 
 
 def python_version_ok():  # tensorflow and torch do not play nice with older Python
     version = sys.version_info
     return (version.major >= 3) and (version.minor >= 7)
-
-
-def run_fasttext_test():
-    # run test only if os enviroment is set of true and os is not Windows
-    return os.environ.get("TEST_FASTTEXT") == "true" and os.name != "nt"
 
 
 def dataset_w_errors():
@@ -364,56 +357,3 @@ def test_torch_rarelabel(data=DATA_RARE_LABEL, hidden_units=8):
     cl = CleanLearning(net)
     cl.fit(dataset, data["y"], clf_kwargs={"epochs": 2})
     pred_probs = cl.predict(dataset)
-
-
-# test fasttext only if not on windows and environment variable TEST_FASTTEXT has been set to "true"
-@pytest.mark.skipif(
-    "not run_fasttext_test()", reason="fasttext is not easily pip install-able on windows"
-)
-def test_fasttext():
-    from cleanlab.models.fasttext import FastTextClassifier, data_loader
-
-    dir = "tests/fasttext_data"
-    if not os.path.isdir(dir):
-        os.makedirs(dir)
-
-    try:
-        if not os.path.isfile("tests/fasttext_data/tweets_train.txt"):
-            wget.download(
-                "http://s.cleanlab.ai/tweets_fasttext/tweets_train.txt", "tests/fasttext_data"
-            )
-        if not os.path.isfile("tests/fasttext_data/tweets_test.txt"):
-            wget.download(
-                "http://s.cleanlab.ai/tweets_fasttext/tweets_test.txt", "tests/fasttext_data"
-            )
-    except:
-        raise RuntimeError(
-            "Download failed (potentially due to lack of internet connection or invalid url). "
-            "To skip this unittest, set the env variable TEST_FASTTEXT = false."
-        )
-
-    labels = np.ravel([x[0] for x in data_loader("tests/fasttext_data/tweets_train.txt")])
-    labels = [lab[9:] for lab in labels]
-    labels, label_map = format_labels(labels)
-    X = np.array(range(len(labels)))
-
-    # test basic fasttext methods
-    ftc = FastTextClassifier(
-        train_data_fn="tests/fasttext_data/tweets_train.txt",
-        test_data_fn="tests/fasttext_data/tweets_test.txt",
-    )
-    ftc.fit()
-    pred_labels = ftc.predict()
-    pred_probs = ftc.predict_proba()
-
-    # test CleanLearning
-    ftc = FastTextClassifier(
-        train_data_fn="tests/fasttext_data/tweets_train.txt",
-        test_data_fn="tests/fasttext_data/tweets_test.txt",
-    )
-    cl = CleanLearning(ftc)
-
-    issues = cl.find_label_issues(X=X, labels=labels)
-    cl.fit(X=X, labels=labels, label_issues=issues)
-    pred_labels = cl.predict()
-    pred_probs = cl.predict_proba()
