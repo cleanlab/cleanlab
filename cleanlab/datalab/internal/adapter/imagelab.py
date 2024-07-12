@@ -149,7 +149,7 @@ class ImagelabReporterAdapter(Reporter):
         data_issues: "DataIssues",
         imagelab: "Imagelab",
         task: Task,
-        correlations_df: pd.DataFrame,
+        correlations_df: Optional[pd.DataFrame],
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
@@ -275,5 +275,6 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             self.datalab.data_issues.collect_issues_from_imagelab(
                 self.imagelab, issue_types_copy.keys()
             )
+            self.datalab._correlations_df = self.datalab._spurious_correlation()
         except Exception as e:
             print(f"Error in checking for image issues: {e}")
