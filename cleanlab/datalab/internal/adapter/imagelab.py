@@ -149,7 +149,7 @@ class ImagelabReporterAdapter(Reporter):
         data_issues: "DataIssues",
         imagelab: "Imagelab",
         task: Task,
-        correlations_df: Optional[pd.DataFrame],
+        correlations_df: pd.DataFrame,
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
@@ -207,17 +207,13 @@ class ImagelabReporterAdapter(Reporter):
             )
 
     def _get_correlated_properties(self) -> List:
-        return self.correlations_df[self.correlations_df["score"] < self.threshold][
-            "property"
-        ].tolist()
+        if self.correlations_df.empty:
+            return []
+        return self.correlations_df.query("score >= @self.threshold")["property"].tolist()
 
     def _get_filtered_correlated_properties(self, correlated_properties: List) -> pd.DataFrame:
-        filtered_correlations_df = self.correlations_df[
-            self.correlations_df["property"].isin(correlated_properties)
-        ]
-        filtered_correlations_df["property"] = filtered_correlations_df["property"].str.replace(
-            "_score", ""
-        )
+        filtered_correlations_df = self.correlations_df.query("property in @correlated_properties")
+        filtered_correlations_df["property"].apply(lambda x: x.replace("_score", ""))
         return filtered_correlations_df
 
 
@@ -275,6 +271,7 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             self.datalab.data_issues.collect_issues_from_imagelab(
                 self.imagelab, issue_types_copy.keys()
             )
-            self.datalab._correlations_df = self.datalab._spurious_correlation()
+            if self.datalab.has_labels:
+                self.datalab._correlations_df = self.datalab._spurious_correlation()
         except Exception as e:
             print(f"Error in checking for image issues: {e}")
