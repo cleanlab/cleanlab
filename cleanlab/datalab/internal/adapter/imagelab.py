@@ -171,11 +171,16 @@ class ImagelabReporterAdapter(Reporter):
         super().report(num_examples)
         print("\n\n")
         self.imagelab.report(
-            num_images=num_examples, print_summary=False, verbosity=0, show_id=True
+            num_images=num_examples,
+            max_prevalence=IMAGELAB_ISSUES_MAX_PREVALENCE,
+            print_summary=False,
+            verbosity=0,
+            show_id=True,
         )
 
         correlated_properties = self._get_correlated_properties()
         if correlated_properties:
+            print("\n\n")
             report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
             report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
             print(report_correlation_header + report_correlation_metric)
@@ -209,7 +214,7 @@ class ImagelabReporterAdapter(Reporter):
     def _get_correlated_properties(self) -> List:
         if self.correlations_df.empty:
             return []
-        return self.correlations_df.query("score >= @self.threshold")["property"].tolist()
+        return self.correlations_df.query("score < @self.threshold")["property"].tolist()
 
     def _get_filtered_correlated_properties(self, correlated_properties: List) -> pd.DataFrame:
         filtered_correlations_df = self.correlations_df.query("property in @correlated_properties")
