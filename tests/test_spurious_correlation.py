@@ -481,26 +481,27 @@ class TestImagelabReporterAdapter:
     def test_report(self, lab):
         with patch("builtins.print") as mock_print:
             lab.report()
-            report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
-            report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
-            expected_calls = [
-                call("\n\n"),
-                call(report_correlation_header),
-                call(report_correlation_metric),
-            ]
 
-            # Get the actual calls made
-            actual_calls = mock_print.call_args_list
+        report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
+        report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
+        report_correlation_combined = report_correlation_header + report_correlation_metric
+        expected_calls = [
+            call("\n\n"),
+            call(report_correlation_combined),
+        ]
 
-            def check_subset_of_calls(expected, actual):
-                if len(expected) > len(actual):
-                    return False
-                for i in range(len(actual) - len(expected) + 1):
-                    if expected[i : i + len(expected)] == expected:
-                        return True
+        # Get the actual calls made
+        actual_calls = mock_print.call_args_list
+
+        def check_subset_of_calls(expected, actual):
+            if len(expected) > len(actual):
                 return False
+            for i in range(len(actual) - len(expected) + 1):
+                if actual[i : i + len(expected)] == expected:
+                    return True
+            return False
 
-            if self.test_attribute == "identity":
-                assert check_subset_of_calls(expected_calls, actual_calls) == True
-            else:
-                assert check_subset_of_calls(expected_calls, actual_calls) == True
+        if self.test_attribute == "identity":
+            assert check_subset_of_calls(expected_calls, actual_calls) == False
+        else:
+            assert check_subset_of_calls(expected_calls, actual_calls) == True
