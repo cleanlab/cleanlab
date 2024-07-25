@@ -345,7 +345,21 @@ def get_correlation_scores(circle_filter="identity", square_filter="identity"):
 
 
 def get_correlated_properties(attribute_filter_scores):
-    threshold = 0.05
+    """
+    Identifies image-specific properties with correlation scores below a specified threshold.
+
+    Parameters:
+    -----------
+    attribute_filter_scores : dict
+        A dictionary where keys are property names (strings) and values are their
+        corresponding correlation scores (floats).
+
+    Returns:
+    --------
+    list
+        A list of property names (strings) that have correlation scores below the threshold.
+    """
+    threshold = 0.20
     return [
         prop for prop in attribute_filter_scores.keys() if attribute_filter_scores[prop] < threshold
     ]
