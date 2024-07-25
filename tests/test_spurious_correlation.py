@@ -15,6 +15,8 @@ of machine learning models trained on such data.
 The test is implemented using the cleanlab library using Datalab module, which helps identify and quantify these spurious correlations.
 """
 
+from unittest.mock import patch, call
+
 import numpy as np
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 import random
@@ -342,6 +344,13 @@ def get_correlation_scores(circle_filter="identity", square_filter="identity"):
     return get_scores(correlation_scores)
 
 
+def get_correlated_properties(attribute_filter_scores):
+    threshold = 0.05
+    return [
+        prop for prop in attribute_filter_scores.keys() if attribute_filter_scores[prop] < threshold
+    ]
+
+
 @pytest.mark.parametrize(
     "test_attribute",
     [
@@ -398,3 +407,100 @@ def test_smallest_scores_with_filters(test_attribute):
         standard_correlation_scores[score_key],
         *[scores[score_key] for scores in filtered_scores.values()],
     )
+
+
+@pytest.mark.parametrize(
+    "test_attribute",
+    [
+        "dark",
+        "blurry",
+        "odd_aspect_ratio",
+    ],
+)
+def test_report_spurious_correlations(test_attribute):
+    """
+    Tests that `lab.report()` shows spurious correlations for an attribute only when
+    spurious correlations is detected by 'lab.find_issues' for that attribute.
+
+    Parameters:
+        test_attribute (str): The attribute to test for spurious correlations, e.g., 'dark', 'blurry', or 'odd_aspect_ratio'.
+
+    Asserts:
+        AssertionError: If the attribute is not found in the correlated properties.
+    """
+    attribute_filter_scores = get_correlation_scores(circle_filter=f"{test_attribute}")
+    correlated_properties = get_correlated_properties(attribute_filter_scores)
+    assert test_attribute + "_score" in correlated_properties
+    assert len(correlated_properties) >= 1
+
+
+def test_report_no_spurious_correlations():
+    """
+    Tests that `lab.report()` shows no spurious correlations when using standard correlation scores.
+
+    Asserts:
+        AssertionError: If any correlated properties are found in the standard dataset without any filters.
+    """
+    standard_correlation_scores = get_correlation_scores()
+    correlated_properties = get_correlated_properties(standard_correlation_scores)
+    assert len(correlated_properties) == 0
+
+
+@pytest.mark.parametrize(
+    "test_attribute",
+    [
+        "dark",
+        "blurry",
+        "odd_aspect_ratio",
+        "identity",
+    ],
+)
+class TestImagelabReporterAdapter:
+    """
+    Test class for `ImagelabReporterAdapter` to verify the behavior of the `lab.report()` method
+    when handling different image attributes.
+
+    This class uses parameterized testing to check the following:
+
+    1. Output Verification: Ensures that the `report` method prints the expected output based on the `test_attribute` value.
+    2. Spurious Correlations: Confirms that spurious correlations are shown or hidden appropriately:
+    - When `test_attribute` is set to 'identity', the report should not display any spurious correlations.
+    - When `test_attribute` is set to 'dark', 'blurry', or 'odd_aspect_ratio', the report should display the relevant spurious correlations.
+
+    Each test run verifies that the output matches the expected print statements and that the report behaves as expected for each attribute scenario.
+    """
+
+    @pytest.fixture(autouse=True)
+    def lab(self, test_attribute):
+        self.test_attribute = test_attribute
+        dataset = generate_dataset(circle_filter=test_attribute)
+        lab = Datalab(data=dataset, label_name="label", image_key="image")
+        lab.find_issues()
+        return lab
+
+    def test_report(self, lab):
+        with patch("builtins.print") as mock_print:
+            lab.report()
+            report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
+            report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
+            expected_calls = [
+                call("\n\n"),
+                call(report_correlation_header),
+                call(report_correlation_metric),
+            ]
+
+            # Get the actual calls made
+            actual_calls = mock_print.call_args_list
+
+            def check_subset_of_calls(expected, actual):
+                if len(expected) > len(actual):
+                    return False
+                for i in range(len(actual) - len(expected) + 1):
+                    if expected[i : i + len(expected)] == expected:
+                        return True
+                return False
+
+            if self.test_attribute == "identity":
+                assert check_subset_of_calls(expected_calls, actual_calls) == True
+            else:
+                assert check_subset_of_calls(expected_calls, actual_calls) == True
