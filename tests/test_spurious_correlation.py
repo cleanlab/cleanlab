@@ -130,9 +130,9 @@ def apply_dark(image):
     return enhancer.enhance(0.3)
 
 
-def apply_blurry(image):
+def apply_blurry(image, radius=20):
     """Applies Gaussian blur to the image."""
-    return image.filter(ImageFilter.GaussianBlur(radius=5))
+    return image.filter(ImageFilter.GaussianBlur(radius=radius))
 
 
 def apply_identity(image):
