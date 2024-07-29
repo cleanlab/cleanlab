@@ -218,7 +218,9 @@ class ImagelabReporterAdapter(Reporter):
 
     def _get_filtered_correlated_properties(self, correlated_properties: List) -> pd.DataFrame:
         filtered_correlations_df = self.correlations_df.query("property in @correlated_properties")
-        filtered_correlations_df["property"].apply(lambda x: x.replace("_score", ""))
+        filtered_correlations_df.loc[:, "property"] = filtered_correlations_df["property"].apply(
+            lambda x: x.replace("_score", "")
+        )
         return filtered_correlations_df
 
 

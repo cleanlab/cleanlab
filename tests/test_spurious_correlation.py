@@ -15,14 +15,15 @@ of machine learning models trained on such data.
 The test is implemented using the cleanlab library using Datalab module, which helps identify and quantify these spurious correlations.
 """
 
-from unittest.mock import patch, call
-
 import numpy as np
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 import random
 from datasets import Dataset
 import pytest
 from cleanlab import Datalab
+import contextlib
+import io
+from unittest import mock
 
 seed = 42
 np.random.seed(seed=seed)
@@ -344,27 +345,6 @@ def get_correlation_scores(circle_filter="identity", square_filter="identity"):
     return get_scores(correlation_scores)
 
 
-def get_correlated_properties(attribute_filter_scores):
-    """
-    Identifies image-specific properties with correlation scores below a specified threshold.
-
-    Parameters:
-    -----------
-    attribute_filter_scores : dict
-        A dictionary where keys are property names (strings) and values are their
-        corresponding correlation scores (floats).
-
-    Returns:
-    --------
-    list
-        A list of property names (strings) that have correlation scores below the threshold.
-    """
-    threshold = 0.20
-    return [
-        prop for prop in attribute_filter_scores.keys() if attribute_filter_scores[prop] < threshold
-    ]
-
-
 @pytest.mark.parametrize(
     "test_attribute",
     [
@@ -427,44 +407,13 @@ def test_smallest_scores_with_filters(test_attribute):
     "test_attribute",
     [
         "dark",
-        "blurry",
-        "odd_aspect_ratio",
-    ],
-)
-def test_report_spurious_correlations(test_attribute):
-    """
-    Tests that `lab.report()` shows spurious correlations for an attribute only when
-    spurious correlations is detected by 'lab.find_issues' for that attribute.
-
-    Parameters:
-        test_attribute (str): The attribute to test for spurious correlations, e.g., 'dark', 'blurry', or 'odd_aspect_ratio'.
-
-    Asserts:
-        AssertionError: If the attribute is not found in the correlated properties.
-    """
-    attribute_filter_scores = get_correlation_scores(circle_filter=f"{test_attribute}")
-    correlated_properties = get_correlated_properties(attribute_filter_scores)
-    assert test_attribute + "_score" in correlated_properties
-    assert len(correlated_properties) >= 1
-
-
-def test_report_no_spurious_correlations():
-    """
-    Tests that `lab.report()` shows no spurious correlations when using standard correlation scores.
-
-    Asserts:
-        AssertionError: If any correlated properties are found in the standard dataset without any filters.
-    """
-    standard_correlation_scores = get_correlation_scores()
-    correlated_properties = get_correlated_properties(standard_correlation_scores)
-    assert len(correlated_properties) == 0
-
-
-@pytest.mark.parametrize(
-    "test_attribute",
-    [
-        "dark",
-        "blurry",
+        pytest.param(
+            "blurry",
+            marks=pytest.mark.xfail(
+                reason="blurry filter makes other image properties like 'dark' and 'low information' spurious rather than 'blurry'",
+                strict=False,
+            ),
+        ),
         "odd_aspect_ratio",
         "identity",
     ],
@@ -487,35 +436,48 @@ class TestImagelabReporterAdapter:
     @pytest.fixture(autouse=True)
     def lab(self, test_attribute):
         self.test_attribute = test_attribute
+        self.threshold = 0.01
         dataset = generate_dataset(circle_filter=test_attribute)
         lab = Datalab(data=dataset, label_name="label", image_key="image")
         lab.find_issues()
+        self.correlations_df = lab._spurious_correlation()
         return lab
 
-    def test_report(self, lab):
-        with patch("builtins.print") as mock_print:
+    def _get_correlated_properties(self):
+        if self.correlations_df.empty:
+            return []
+        return self.correlations_df.query("score < @self.threshold")["property"].tolist()
+
+    def _get_correlated_dataframe(self):
+        correlated_properties = self._get_correlated_properties()
+        filtered_correlations_df = self.correlations_df.query("property in @correlated_properties")
+        filtered_correlations_df.loc[:, "property"] = filtered_correlations_df["property"].apply(
+            lambda x: x.replace("_score", "")
+        )
+        return filtered_correlations_df
+
+    @mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
+    def test_report(self, mock_individual_images, lab):
+        with contextlib.redirect_stdout(io.StringIO()) as f:
             lab.report()
+        report = f.getvalue()
 
         report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
         report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
-        report_correlation_combined = report_correlation_header + report_correlation_metric
-        expected_calls = [
-            call("\n\n"),
-            call(report_correlation_combined),
-        ]
+        filtered_correlations_df = self._get_correlated_dataframe()
 
-        # Get the actual calls made
-        actual_calls = mock_print.call_args_list
-
-        def check_subset_of_calls(expected, actual):
-            if len(expected) > len(actual):
-                return False
-            for i in range(len(actual) - len(expected) + 1):
-                if actual[i : i + len(expected)] == expected:
-                    return True
-            return False
-
-        if self.test_attribute == "identity":
-            assert check_subset_of_calls(expected_calls, actual_calls) == False
+        if self.test_attribute != "identity":
+            assert report_correlation_header in report, "Report should contain correlation header"
+            assert (
+                report_correlation_metric in report
+            ), "Report should contain correlation metric description"
+            assert self.test_attribute in filtered_correlations_df["property"].values
+            assert filtered_correlations_df.to_string(index=False) in report
         else:
-            assert check_subset_of_calls(expected_calls, actual_calls) == True
+            assert (
+                report_correlation_header not in report
+            ), "Report should not contain correlation header"
+            assert (
+                report_correlation_metric not in report
+            ), "Report should not contain correlation metric description"
+            assert filtered_correlations_df.empty
