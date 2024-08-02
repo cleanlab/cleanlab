@@ -142,6 +142,11 @@ class ImagelabDataIssuesAdapter(DataIssues):
         for issue_type in issue_types:
             self._update_issue_info(issue_type, imagelab.info[issue_type])
 
+    def get_info(self, issue_name: Optional[str] = None):
+        if issue_name == "spurious_correlation":
+            return self.get_correlation_scores()
+        return super().get_info(issue_name)
+
 
 class ImagelabReporterAdapter(Reporter):
     def __init__(
@@ -149,7 +154,6 @@ class ImagelabReporterAdapter(Reporter):
         data_issues: "DataIssues",
         imagelab: "Imagelab",
         task: Task,
-        correlations_df: pd.DataFrame,
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
@@ -164,7 +168,7 @@ class ImagelabReporterAdapter(Reporter):
             show_all_issues=show_all_issues,
         )
         self.imagelab = imagelab
-        self.correlations_df = correlations_df
+        self.correlations_df = self.data_issues.get_correlation_scores()
         self.threshold = 0.01
 
     def report(self, num_examples: int) -> None:
@@ -279,6 +283,6 @@ class ImagelabIssueFinderAdapter(IssueFinder):
                 self.imagelab, issue_types_copy.keys()
             )
             if self.datalab.has_labels:
-                self.datalab._correlations_df = self.datalab._spurious_correlation()
+                self.datalab.data_issues.info["correlation"] = self.datalab._spurious_correlation()
         except Exception as e:
             print(f"Error in checking for image issues: {e}")

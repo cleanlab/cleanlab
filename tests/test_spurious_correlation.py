@@ -341,7 +341,7 @@ def get_correlation_scores(circle_filter="identity", square_filter="identity"):
     dataset = generate_dataset(circle_filter=circle_filter, square_filter=square_filter)
     lab = Datalab(data=dataset, label_name="label", image_key="image")
     lab.find_issues()
-    correlation_scores = lab._spurious_correlation()
+    correlation_scores = lab.get_info("correlation")
     return get_scores(correlation_scores)
 
 
@@ -440,7 +440,7 @@ class TestImagelabReporterAdapter:
         dataset = generate_dataset(circle_filter=test_attribute)
         lab = Datalab(data=dataset, label_name="label", image_key="image")
         lab.find_issues()
-        self.correlations_df = lab._spurious_correlation()
+        self.correlations_df = lab.get_info("correlation")
         return lab
 
     def _get_correlated_properties(self):
@@ -481,3 +481,40 @@ class TestImagelabReporterAdapter:
                 report_correlation_metric not in report
             ), "Report should not contain correlation metric description"
             assert filtered_correlations_df.empty
+            correlation_key = "correlation"
+            spurious_key = "spurious"
+            assert correlation_key not in report.lower()
+            assert spurious_key not in report.lower()
+
+
+@mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
+def test_report_image_key(mock_individual_images):
+    X = np.random.rand(100, 2)
+    y = np.sum(X, axis=1)
+    data = {"X": X, "y": y}
+    lab_without_image_key = Datalab(data, label_name="y")
+    lab_without_image_key.find_issues()
+
+    dataset = generate_dataset(circle_filter="dark")
+    lab = Datalab(data=dataset, label_name="label", image_key="image")
+    lab.find_issues()
+
+    with contextlib.redirect_stdout(io.StringIO()) as f:
+        lab_without_image_key.report()
+    report_without_image_key = f.getvalue()
+
+    with contextlib.redirect_stdout(io.StringIO()) as f:
+        lab.report()
+    report = f.getvalue()
+
+    report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
+    report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
+    assert report_correlation_header not in report_without_image_key
+    assert report_correlation_metric not in report_without_image_key
+    assert report_correlation_header in report
+    assert report_correlation_metric in report
+
+    correlation_key = "correlation"
+    spurious_key = "spurious"
+    assert correlation_key not in report_without_image_key.lower()
+    assert spurious_key not in report_without_image_key.lower()
