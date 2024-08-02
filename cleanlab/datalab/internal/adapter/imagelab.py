@@ -25,8 +25,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from cleanvision import Imagelab
     from datasets.arrow_dataset import Dataset
 
-from cleanvision.utils.viz_manager import VizManager
-
 
 def create_imagelab(dataset: "Dataset", image_key: Optional[str]) -> Optional["Imagelab"]:
     """Creates Imagelab instance for running CleanVision checks. CleanVision checks are only supported for
@@ -149,7 +147,6 @@ class ImagelabReporterAdapter(Reporter):
         data_issues: "DataIssues",
         imagelab: "Imagelab",
         task: Task,
-        correlations_df: pd.DataFrame,
         verbosity: int = 1,
         include_description: bool = True,
         show_summary_score: bool = False,
@@ -164,64 +161,13 @@ class ImagelabReporterAdapter(Reporter):
             show_all_issues=show_all_issues,
         )
         self.imagelab = imagelab
-        self.correlations_df = correlations_df
-        self.threshold = 0.01
 
     def report(self, num_examples: int) -> None:
         super().report(num_examples)
         print("\n\n")
         self.imagelab.report(
-            num_images=num_examples,
-            max_prevalence=IMAGELAB_ISSUES_MAX_PREVALENCE,
-            print_summary=False,
-            verbosity=0,
-            show_id=True,
+            num_images=num_examples, print_summary=False, verbosity=0, show_id=True
         )
-
-        correlated_properties = self._get_correlated_properties()
-        if correlated_properties:
-            print("\n\n")
-            report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
-            report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
-            print(report_correlation_header + report_correlation_metric)
-            filtered_correlations_df = self._get_filtered_correlated_properties(
-                correlated_properties
-            )
-            print(filtered_correlations_df.to_string(index=False) + "\n")
-
-            report_extremal_images = "Here are the images corresponding to the extreme (minimum and maximum) individual scores for each of the detected correlated properties:\n\n"
-            print(report_extremal_images)
-            issues = self.data_issues.get_issues()
-            correlated_indices = {
-                prop: [issues[prop].idxmin(), issues[prop].idxmax()]
-                for prop in correlated_properties
-            }
-            self._visualize(correlated_indices, issues)
-
-    def _visualize(self, correlated_indices, issues) -> None:
-        for prop, image_ids in correlated_indices.items():
-            print(
-                f"{'Images with minimum and maximum individual scores for ' + prop.replace('_score', '') + ' issue:'}\n"
-            )
-            title_info = {"scores": [f"score: {issues.loc[id, prop]:.4f}" for id in image_ids]}
-            VizManager.individual_images(
-                images=[self.imagelab._dataset[id] for id in image_ids],
-                title_info=title_info,
-                ncols=2,
-                cell_size=(2, 2),
-            )
-
-    def _get_correlated_properties(self) -> List:
-        if self.correlations_df.empty:
-            return []
-        return self.correlations_df.query("score < @self.threshold")["property"].tolist()
-
-    def _get_filtered_correlated_properties(self, correlated_properties: List) -> pd.DataFrame:
-        filtered_correlations_df = self.correlations_df.query("property in @correlated_properties")
-        filtered_correlations_df.loc[:, "property"] = filtered_correlations_df["property"].apply(
-            lambda x: x.replace("_score", "")
-        )
-        return filtered_correlations_df
 
 
 class ImagelabIssueFinderAdapter(IssueFinder):
@@ -278,7 +224,5 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             self.datalab.data_issues.collect_issues_from_imagelab(
                 self.imagelab, issue_types_copy.keys()
             )
-            if self.datalab.has_labels:
-                self.datalab._correlations_df = self.datalab._spurious_correlation()
         except Exception as e:
             print(f"Error in checking for image issues: {e}")

@@ -21,9 +21,6 @@ import random
 from datasets import Dataset
 import pytest
 from cleanlab import Datalab
-import contextlib
-import io
-from unittest import mock
 
 seed = 42
 np.random.seed(seed=seed)
@@ -131,9 +128,9 @@ def apply_dark(image):
     return enhancer.enhance(0.3)
 
 
-def apply_blurry(image, radius=20):
+def apply_blurry(image):
     """Applies Gaussian blur to the image."""
-    return image.filter(ImageFilter.GaussianBlur(radius=radius))
+    return image.filter(ImageFilter.GaussianBlur(radius=5))
 
 
 def apply_identity(image):
@@ -401,83 +398,3 @@ def test_smallest_scores_with_filters(test_attribute):
         standard_correlation_scores[score_key],
         *[scores[score_key] for scores in filtered_scores.values()],
     )
-
-
-@pytest.mark.parametrize(
-    "test_attribute",
-    [
-        "dark",
-        pytest.param(
-            "blurry",
-            marks=pytest.mark.xfail(
-                reason="blurry filter makes other image properties like 'dark' and 'low information' spurious rather than 'blurry'",
-                strict=False,
-            ),
-        ),
-        "odd_aspect_ratio",
-        "identity",
-    ],
-)
-class TestImagelabReporterAdapter:
-    """
-    Test class for `ImagelabReporterAdapter` to verify the behavior of the `lab.report()` method
-    when handling different image attributes.
-
-    This class uses parameterized testing to check the following:
-
-    1. Output Verification: Ensures that the `report` method prints the expected output based on the `test_attribute` value.
-    2. Spurious Correlations: Confirms that spurious correlations are shown or hidden appropriately:
-    - When `test_attribute` is set to 'identity', the report should not display any spurious correlations.
-    - When `test_attribute` is set to 'dark', 'blurry', or 'odd_aspect_ratio', the report should display the relevant spurious correlations.
-
-    Each test run verifies that the output matches the expected print statements and that the report behaves as expected for each attribute scenario.
-    """
-
-    @pytest.fixture(autouse=True)
-    def lab(self, test_attribute):
-        self.test_attribute = test_attribute
-        self.threshold = 0.01
-        dataset = generate_dataset(circle_filter=test_attribute)
-        lab = Datalab(data=dataset, label_name="label", image_key="image")
-        lab.find_issues()
-        self.correlations_df = lab._spurious_correlation()
-        return lab
-
-    def _get_correlated_properties(self):
-        if self.correlations_df.empty:
-            return []
-        return self.correlations_df.query("score < @self.threshold")["property"].tolist()
-
-    def _get_correlated_dataframe(self):
-        correlated_properties = self._get_correlated_properties()
-        filtered_correlations_df = self.correlations_df.query("property in @correlated_properties")
-        filtered_correlations_df.loc[:, "property"] = filtered_correlations_df["property"].apply(
-            lambda x: x.replace("_score", "")
-        )
-        return filtered_correlations_df
-
-    @mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
-    def test_report(self, mock_individual_images, lab):
-        with contextlib.redirect_stdout(io.StringIO()) as f:
-            lab.report()
-        report = f.getvalue()
-
-        report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
-        report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
-        filtered_correlations_df = self._get_correlated_dataframe()
-
-        if self.test_attribute != "identity":
-            assert report_correlation_header in report, "Report should contain correlation header"
-            assert (
-                report_correlation_metric in report
-            ), "Report should contain correlation metric description"
-            assert self.test_attribute in filtered_correlations_df["property"].values
-            assert filtered_correlations_df.to_string(index=False) in report
-        else:
-            assert (
-                report_correlation_header not in report
-            ), "Report should not contain correlation header"
-            assert (
-                report_correlation_metric not in report
-            ), "Report should not contain correlation metric description"
-            assert filtered_correlations_df.empty
