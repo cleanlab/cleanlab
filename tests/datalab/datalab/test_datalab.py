@@ -1377,6 +1377,64 @@ class TestDataLabUnderperformingIssue:
         info = lab.get_info("underperforming_group")
         assert info["clustering"]["stats"]["underperforming_cluster_id"] not in cluster_ids
 
+    def test_underperforming_clusters_scores(self):
+        """
+        Test that the issue manager assigns the cluster quality score for each underperforming cluster
+        """
+        np.random.seed(SEED)
+        N = 200
+        K = 5
+        n_clusters = 4
+        bad_cluster_ids = [2, 3]
+        worst_cluster_id = 2
+        flip_rates = [0.95, 0.5]
+        cluster_ids = np.random.choice(np.arange(n_clusters), size=N)
+        labels = np.random.choice(np.arange(K), size=N)
+        pred_probs = np.full((N, K), 0.001)
+        pred_probs[np.arange(N), labels] = 0.99  # Set any high value
+        pred_probs = pred_probs / np.sum(pred_probs, axis=-1, keepdims=True)
+        pred_probs_correct = np.copy(pred_probs)
+        # Flip prediction probabilities of samples belonging to bad clusters
+        for i, bad_cluster_id in enumerate(bad_cluster_ids):
+            bad_cluster_indices = np.where(cluster_ids == bad_cluster_id)[0]
+            flip_indices = np.random.choice(
+                bad_cluster_indices,
+                size=int(flip_rates[i] * len(bad_cluster_indices)),
+                replace=False,
+            )
+            pred_probs[flip_indices] = 1 - pred_probs[flip_indices]  # Incorrect predictions
+        features = np.random.rand(len(labels), 2)
+        lab = Datalab(data={"labels": labels}, label_name="labels")
+        lab.find_issues(
+            features=features,
+            pred_probs=pred_probs,
+            issue_types={"underperforming_group": {"cluster_ids": cluster_ids}},
+        )
+        issues = lab.get_issues("underperforming_group")
+        cluster_ids_to_score = {2: 0.097, 3: 0.8208}
+        expected_scores = np.ones(N)
+        for cluster_id, cluster_score in cluster_ids_to_score.items():
+            expected_scores[cluster_ids == cluster_id] = cluster_score
+
+        np.testing.assert_allclose(
+            issues["underperforming_group_score"],
+            expected_scores,
+            err_msg="Scores should be correct",
+            rtol=1e-3,
+        )
+        info = lab.get_info("underperforming_group")
+        assert info["clustering"]["stats"]["underperforming_cluster_id"] == worst_cluster_id
+        assert lab.get_issue_summary()["score"].values[0] == pytest.approx(
+            cluster_ids_to_score[worst_cluster_id], rel=1e-3
+        )
+        # Check that all scores are 1.0 for correct predictions
+        lab.find_issues(
+            features=features,
+            pred_probs=pred_probs_correct,
+            issue_types={"underperforming_group": {"cluster_ids": cluster_ids}},
+        )
+        assert lab.get_issue_summary()["score"].values[0] == 1.0
+
     def test_features_and_knn_graph(self, data):
         """
         Test that if the pre-computed knn graph is passed as an argument to `find_issues`,
