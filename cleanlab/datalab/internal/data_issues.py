@@ -205,11 +205,10 @@ class DataIssues:
         ).astype({"score": np.float64, "num_issues": np.int64})
         self.info: Dict[str, Dict[str, Any]] = {
             "statistics": get_data_statistics(data),
-            "correlation": pd.DataFrame(columns=["property", "score"]),
+            "spurious_correlations": pd.DataFrame(columns=["property", "score"]),
         }
         self._data = data
         self._strategy = strategy
-        # self._correlations_df = pd.DataFrame(columns=["property", "score"])
 
     def get_info(self, issue_name: Optional[str] = None) -> Dict[str, Any]:
         return self._strategy.get_info(data=self._data, info=self.info, issue_name=issue_name)
@@ -407,7 +406,7 @@ class DataIssues:
         self.info["statistics"]["health_score"] = self.issue_summary["score"].mean()
 
     def get_correlation_scores(self) -> pd.DataFrame:
-        return self.info["correlation"]
+        return self.info["spurious_correlations"]
 
 
 def get_data_statistics(data: Data) -> Dict[str, Any]:

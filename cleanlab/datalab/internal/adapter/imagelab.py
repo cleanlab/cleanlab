@@ -143,7 +143,7 @@ class ImagelabDataIssuesAdapter(DataIssues):
             self._update_issue_info(issue_type, imagelab.info[issue_type])
 
     def get_info(self, issue_name: Optional[str] = None):
-        if issue_name == "spurious_correlation":
+        if issue_name == "spurious_correlations":
             return self.get_correlation_scores()
         return super().get_info(issue_name)
 
@@ -283,6 +283,8 @@ class ImagelabIssueFinderAdapter(IssueFinder):
                 self.imagelab, issue_types_copy.keys()
             )
             if self.datalab.has_labels:
-                self.datalab.data_issues.info["correlation"] = self.datalab._spurious_correlation()
+                self.datalab.data_issues.info["spurious_correlations"] = (
+                    self.datalab._spurious_correlation()
+                )
         except Exception as e:
             print(f"Error in checking for image issues: {e}")
