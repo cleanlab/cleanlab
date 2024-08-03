@@ -11,3 +11,4 @@ Datalab Tutorials
    Image Data <image>
    Audio Data <audio>
    Guide to Datalab Issue Types </cleanlab/datalab/guide/issue_type_description>
+   Miscellaneous workflows with Datalab <workflows>

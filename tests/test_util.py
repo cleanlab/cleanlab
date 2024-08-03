@@ -1,4 +1,5 @@
 # coding: utf-8
+from collections import namedtuple
 
 from cleanlab.internal import util
 import numpy as np
@@ -60,6 +61,28 @@ def test_pu_f1():
 def test_value_counts_str():
     r = util.value_counts(["a", "b", "a"])
     assert all(np.array([2, 1]) - r < 1e-4)
+
+
+TestCase = namedtuple("TestCase", ["labels", "id"])
+
+value_counts_missing_classes_test_cases = [
+    TestCase([0, 1, 0, 2], "integers"),
+    TestCase(["a", "b", "a", "c"], "strings"),
+    TestCase([[0], [0, 1], [2]], "multilabel_integers"),
+    TestCase([["c"], ["a", "b"], ["a"]], "multilabel_strings"),
+]
+
+
+@pytest.mark.parametrize(
+    "test_case",
+    value_counts_missing_classes_test_cases,
+    ids=lambda x: str(x.id),
+)
+def test_value_counts_fill_missing_classes(test_case):
+    labels = test_case.labels
+    is_multi_label = isinstance(labels[0], list)
+    r = util.value_counts_fill_missing_classes(labels, num_classes=4, multi_label=is_multi_label)
+    assert np.array_equal(r, [2, 1, 1, 0])
 
 
 def test_pu_remove_noise():

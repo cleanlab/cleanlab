@@ -19,16 +19,17 @@ Ancillary helper methods used internally throughout this package; mostly related
 """
 
 import warnings
+from typing import Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
-from typing import Union, Tuple
 
-from cleanlab.typing import DatasetLike, LabelLike
-from cleanlab.internal.validation import labels_to_array
 from cleanlab.internal.constants import FLOATING_POINT_COMPARISON, TINY_VALUE
+from cleanlab.internal.validation import labels_to_array
+from cleanlab.typing import DatasetLike, LabelLike
 
 
-def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
+def remove_noise_from_class(noise_matrix: np.ndarray, class_without_noise: int) -> np.ndarray:
     """A helper function in the setting of PU learning.
     Sets all P(label=class_without_noise|true_label=any_other_class) = 0
     in noise_matrix for pulearning setting, where we have
@@ -53,17 +54,16 @@ def remove_noise_from_class(noise_matrix, class_without_noise) -> np.ndarray:
     x = np.copy(noise_matrix)
 
     # Set P( labels = cwn | y != cwn) = 0 (no noise)
-    x[cwn, [i for i in range(K) if i != cwn]] = 0.0
+    class_arange = np.arange(K)
+    x[cwn, class_arange[class_arange != cwn]] = 0.0
 
     # Normalize columns by increasing diagonal terms
     # Ensures noise_matrix is a valid probability matrix
-    for i in range(K):
-        x[i][i] = 1 - float(np.sum(x[:, i]) - x[i][i])
-
+    np.fill_diagonal(x, 1 - (np.sum(x, axis=0) - np.diag(x)))
     return x
 
 
-def clip_noise_rates(noise_matrix) -> np.ndarray:
+def clip_noise_rates(noise_matrix: np.ndarray) -> np.ndarray:
     """Clip all noise rates to proper range [0,1), but
     do not modify the diagonal terms because they are not
     noise rates.
@@ -78,19 +78,11 @@ def clip_noise_rates(noise_matrix) -> np.ndarray:
         Diagonal terms are not noise rates, but are consistency P(label=k|true_label=k)
         Assumes columns of noise_matrix sum to 1"""
 
-    def clip_noise_rate_range(noise_rate) -> float:
-        """Clip noise rate P(label=k'|true_label=k) or P(true_label=k|label=k')
-        into proper range [0,1)"""
-        return min(max(noise_rate, 0.0), 0.9999)
-
-    # Vectorize clip_noise_rate_range for efficiency with np.ndarrays.
-    vectorized_clip = np.vectorize(clip_noise_rate_range)
-
     # Preserve because diagonal entries are not noise rates.
     diagonal = np.diagonal(noise_matrix)
 
     # Clip all noise rates (efficiently).
-    noise_matrix = vectorized_clip(noise_matrix)
+    noise_matrix = np.clip(noise_matrix, 0, 0.9999)
 
     # Put unmodified diagonal back.
     np.fill_diagonal(noise_matrix, diagonal)
@@ -100,7 +92,7 @@ def clip_noise_rates(noise_matrix) -> np.ndarray:
     return noise_matrix
 
 
-def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
+def clip_values(x, low=0.0, high=1.0, new_sum: Optional[float] = None) -> np.ndarray:
     """Clip all values in p to range [low,high].
     Preserves sum of x.
 
@@ -123,22 +115,19 @@ def clip_values(x, low=0.0, high=1.0, new_sum=None) -> np.ndarray:
     x : np.ndarray
         A list of clipped values, summing to the same sum as x."""
 
-    def clip_range(a, low=low, high=high):
-        """Clip a into range [low,high]"""
-        return min(max(a, low), high)
-
-    vectorized_clip = np.vectorize(
-        clip_range
-    )  # Vectorize clip_range for efficiency with np.ndarrays
-    prev_sum = sum(x) if new_sum is None else new_sum  # Store previous sum
-    x = vectorized_clip(x)  # Clip all values (efficiently)
+    if len(x.shape) > 1:
+        raise TypeError(
+            f"only size-1 arrays can be converted to Python scalars but 'x' had shape {x.shape}"
+        )
+    prev_sum = np.sum(x) if new_sum is None else new_sum  # Store previous sum
+    x = np.clip(x, low, high)  # Clip all values (efficiently)
     x = (
-        x * prev_sum / np.clip(float(sum(x)), a_min=TINY_VALUE, a_max=None)
+        x * prev_sum / np.clip(np.sum(x), a_min=TINY_VALUE, a_max=None)
     )  # Re-normalized values to sum to previous sum
     return x
 
 
-def value_counts(x, *, num_classes=None, multi_label=False) -> np.ndarray:
+def value_counts(x, *, num_classes: Optional[int] = None, multi_label=False) -> np.ndarray:
     """Returns an np.ndarray of shape (K, 1), with the
     value counts for every unique item in the labels list/array,
     where K is the number of unique entries in labels.
@@ -173,17 +162,27 @@ def value_counts(x, *, num_classes=None, multi_label=False) -> np.ndarray:
     if multi_label:
         x = [z for lst in x for z in lst]  # Flatten
     unique_classes, counts = np.unique(x, return_counts=True)
+
+    # Early exit if num_classes is not provided or redundant
     if num_classes is None or num_classes == len(unique_classes):
         return counts
+
     # Else, there are missing classes
-    if num_classes <= max(unique_classes):
-        raise ValueError(f"Required: num_classes > max(x), but {num_classes} <= {max(x)}.")
+    labels_are_integers = np.issubdtype(np.array(x).dtype, np.integer)
+    if labels_are_integers and num_classes <= np.max(unique_classes):
+        raise ValueError(f"Required: num_classes > max(x), but {num_classes} <= {np.max(x)}.")
+
     # Add zero counts for all missing classes in [0, 1,..., num_classes-1]
-    # multi_label=False regardless because x was flattened.
-    missing_classes = get_missing_classes(x, num_classes=num_classes, multi_label=False)
-    missing_counts = [(z, 0) for z in missing_classes]
+    total_counts = np.zeros(num_classes, dtype=int)
+    # Fill in counts for classes that are present.
+    # If labels are integers, unique_classes can be used directly as indices to place counts
+    # into the correct positions in total_counts array.
+    # If labels are strings, use a slice to fill counts sequentially since strings do not map to indices.
+    count_ids = unique_classes if labels_are_integers else slice(len(unique_classes))
+    total_counts[count_ids] = counts
+
     # Return counts with zeros for all missing classes.
-    return np.array(list(zip(*sorted(list(zip(unique_classes, counts)) + missing_counts)))[1])
+    return total_counts
 
 
 def value_counts_fill_missing_classes(x, num_classes, *, multi_label=False) -> np.ndarray:
@@ -580,9 +579,7 @@ def unshuffle_tensorflow_dataset(X) -> tuple:
         or ``len(pre_X)`` if buffer_size cannot be determined, or None if no ShuffleDataset found.
     """
     try:
-        from tensorflow.python.data.ops.dataset_ops import (
-            ShuffleDataset,
-        )
+        from tensorflow.python.data.ops.dataset_ops import ShuffleDataset
 
         X_inputs = [X]
         while len(X_inputs) == 1:

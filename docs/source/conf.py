@@ -46,6 +46,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "nbsphinx",
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosectionlabel",
     "autodocsumm",
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
@@ -72,6 +73,9 @@ templates_path = ["_templates"]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build"]
+
+# Adding notebook patterns to exclude
+exclude_patterns += ["tutorials/datalab/data_monitor.ipynb"]
 
 autosummary_generate = True
 
@@ -172,6 +176,9 @@ html_context = {
     # Add new tags to RELEASE_VERSIONS before release
     # fmt: off
     "RELEASE_VERSIONS": [
+        "v2.6.6",
+        "v2.6.5",
+        "v2.6.4",
         "v2.6.3",
         "v2.6.2",
         "v2.6.1",

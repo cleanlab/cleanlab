@@ -90,20 +90,22 @@ def display_issues(
     ...     ["An", "sentence", "with", "a", "typo"],
     ... ]
     >>> display_issues(issues, tokens)
-    Sentence 2, token 0:
+    Sentence index: 2, Token index: 0
+    Token: An
     ----
     An sentence with a typo
-    ...
-    ...
-    Sentence 0, token 1:
+    <BLANKLINE>
+    <BLANKLINE>
+    Sentence index: 0, Token index: 1
+    Token: ?weird
     ----
     A ?weird sentence
     """
-    if not class_names:
+    if not class_names and (labels or pred_probs):
         print(
-            "Classes will be printed in terms of their integer index since `class_names` was not provided. "
+            "Classes will be printed in terms of their integer index since `class_names` was not provided.\n"
+            "Specify this argument to see the string names of each class.\n"
         )
-        print("Specify this argument to see the string names of each class. \n")
 
     top = min(top, len(issues))
     shown = 0
@@ -223,6 +225,10 @@ def common_label_issues(
     ...     ["An", "sentence", "with", "a", "typo"],
     ... ]
     >>> df = common_label_issues(issues, tokens)
+    Token '?weird' is potentially mislabeled 1 times throughout the dataset
+    <BLANKLINE>
+    Token 'An' is potentially mislabeled 1 times throughout the dataset
+    <BLANKLINE>
     >>> df
         token  num_label_issues
     0      An                 1

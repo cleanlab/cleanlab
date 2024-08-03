@@ -173,8 +173,8 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
       * ``clf.predict(X)``
       * ``clf.score(X, y, sample_weight=None)``
 
-      See :py:mod:`cleanlab.experimental` for examples of sklearn wrappers,
-      e.g. around PyTorch and FastText.
+      See :py:mod:`cleanlab.models`, the tutorials, and examples/ repo
+      for examples of sklearn wrappers, e.g. around PyTorch, Keras, or FastText.
 
       If the model is not sklearn-compatible by default, it might be the case that
       standard packages can adapt the model. For example, you can adapt PyTorch
@@ -243,7 +243,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self._default_clf = False
         if clf is None:
             # Use logistic regression if no classifier is provided.
-            clf = LogReg(multi_class="auto", solver="lbfgs")
+            clf = LogReg(solver="lbfgs")
             self._default_clf = True
 
         # Make sure the given classifier has the appropriate methods defined.

@@ -7,5 +7,3 @@ Some of these files include various models that can be used with cleanlab to fin
 The dependencies are as follows:
 * keras.py - a wrapper to make any Keras model compatible with cleanlab and sklearn
     - tensorflow
-* fasttext.py - a cleanlab-compatible FastText classifier for text data
-	- fasttext

@@ -1,5 +1,5 @@
-:og:title: Cleanlab Open-Source Documentation
-:og:description: Get started, learn about capabilities, and follow tutorials to improve your own Data and Models.
+:og:title: Open-Source Documentation | Cleanlab
+:og:description: Get started with Cleanlab Open-Source, learn about capabilities, and follow tutorials to improve your own Data and Models.
 
 cleanlab open-source documentation
 ==================================
@@ -64,7 +64,7 @@ cleanlab automatically detects various issues in *any dataset that a classifier 
 3. Handle label errors and train robust models with noisy labels
 ----------------------------------------------------------------
 
-Mislabeled data is a particularly concerning issue plaguing real-world datasets. To use a scikit-learn-compatible model for classification with noisy labels, you don't need to train a model to find label issues -- you can pass the untrained model object, data, and labels into :py:meth:`CleanLearning.find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` and cleanlab will handle model training for you.
+Mislabeled data is a particularly concerning issue plaguing real-world datasets. To use a scikit-learn-compatible model for classification with noisy labels, you don't need to train a model to find label issues -- you can pass the untrained model object, data, and labels into :py:meth:`CleanLearning.find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` and cleanlab will handle model training for you.
 
 .. code-block:: python
 
@@ -73,7 +73,7 @@ Mislabeled data is a particularly concerning issue plaguing real-world datasets.
     # This works with any sklearn-compatible model - just input data + labels and cleanlab will detect label issues ツ
     label_issues_info = CleanLearning(clf=sklearn_compatible_model).find_label_issues(data, labels)
 
-:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. `tensorflow/keras <tutorials/text.ipynb>`_ (using our KerasWrapperModel), `pytorch <tutorials/image.ipynb>`_ (using skorch package), etc.
+:py:class:`CleanLearning <cleanlab.classification.CleanLearning>` also works with models from most standard ML frameworks by wrapping the model for scikit-learn compliance, e.g. pytorch (can use `skorch <https://github.com/skorch-dev/skorch>`_ package), tensorflow/keras (can use our :py:class:`KerasWrapperModel <cleanlab/models/keras>`_), etc.
 
 :py:meth:`find_label_issues <cleanlab.classification.CleanLearning.find_label_issues>` returns a boolean mask flagging which examples have label issues and a numeric label quality score for each example quantifying our confidence that its label is correct.
 
@@ -152,6 +152,7 @@ Link to Cleanlab Studio docs: `help.cleanlab.ai <https://help.cleanlab.ai/>`_
    :caption: Tutorials
 
    Datalab Tutorials <tutorials/datalab/index>
+   Improving ML Performance <tutorials/improving_ml_performance>
    CleanLearning Tutorials <tutorials/clean_learning/index>
    Workflows of Data-Centric AI <tutorials/indepth_overview>
    Analyze Dataset-level Issues <tutorials/dataset_health>

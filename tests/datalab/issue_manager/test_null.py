@@ -1,8 +1,9 @@
 import numpy as np
+import pandas as pd
 import pytest
-from hypothesis.extra.numpy import arrays, array_shapes
-from hypothesis.strategies import floats, just
 from hypothesis import HealthCheck, given, settings
+from hypothesis.extra.numpy import array_shapes, arrays
+from hypothesis.strategies import floats, just
 
 from cleanlab.datalab.internal.issue_manager.null import NullIssueManager
 
@@ -139,6 +140,21 @@ class TestNullIssueManager:
         assert info["most_common_issue"]["count"] == 2
         assert info["most_common_issue"]["rows_affected"] == [0, 3]
         assert info["column_impact"] == [0.75, 0.25, 0.25]
+
+    def test_can_work_with_different_dtypes(self, issue_manager):
+        features = pd.DataFrame(
+            {
+                "bool": [True, False, True, False],
+                "object": [True, False, True, np.nan],
+                "uint8": np.array([0, 1, 3, 4], dtype=np.uint8),
+                "int8": np.array([0, -1, 3, -4], dtype=np.int8),
+                "float": [0.1, np.nan, 0.3, 0.4],
+            }
+        )
+        issue_manager.find_issues(features=features)
+        info = issue_manager.info
+        assert info["average_null_score"] == pytest.approx(expected=18 / 20, abs=1e-7)
+        assert info["column_impact"] == [0, 0.25, 0, 0, 0.25]
 
     # Strategy for generating NaN values
     nan_strategy = just(np.nan)

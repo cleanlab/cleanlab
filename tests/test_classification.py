@@ -15,10 +15,11 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 from copy import deepcopy
-import warnings
+import sys
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import GridSearchCV
+import sklearn
 import scipy
 import pytest
 import numpy as np
@@ -155,9 +156,7 @@ DATA_FORMATS = {
 
 @pytest.mark.parametrize("data", list(DATA_FORMATS.values()))
 def test_cl(data):
-    cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED)
-    )
+    cl = CleanLearning(clf=LogisticRegression(solver="lbfgs", random_state=SEED))
     X_train_og = deepcopy(data["X_train"])
     cl.fit(data["X_train"], data["labels"])
     score = cl.score(data["X_test"], data["true_labels_test"])
@@ -214,7 +213,7 @@ def test_invalid_inputs():
         raise Exception("expected test to raise Exception")
     try:
         cl = CleanLearning(
-            clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+            clf=LogisticRegression(solver="lbfgs", random_state=SEED),
             find_label_issues_kwargs={"return_indices_ranked_by": "self_confidence"},
         )
         cl.fit(
@@ -238,7 +237,7 @@ def test_aux_inputs():
         "min_examples_per_class": 2,
     }
     cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED),
+        clf=LogisticRegression(solver="lbfgs", random_state=SEED),
         find_label_issues_kwargs=find_label_issues_kwargs,
         verbose=1,
     )
@@ -274,21 +273,15 @@ def test_aux_inputs():
     assert cl.label_issues_df is None
 
     # Verbose off
-    cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=0
-    )
+    cl = CleanLearning(clf=LogisticRegression(solver="lbfgs", random_state=SEED), verbose=0)
     cl.save_space()  # dummy call test
 
-    cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=0
-    )
+    cl = CleanLearning(clf=LogisticRegression(solver="lbfgs", random_state=SEED), verbose=0)
     cl.find_label_issues(
         labels=data["true_labels_test"], pred_probs=pred_probs_test, save_space=True
     )
 
-    cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=1
-    )
+    cl = CleanLearning(clf=LogisticRegression(solver="lbfgs", random_state=SEED), verbose=1)
 
     # Test with label_issues_mask input
     label_issues_mask = find_label_issues(
@@ -325,9 +318,7 @@ def test_aux_inputs():
     assert "label_quality" in label_issues_df.columns
 
     # Test with sample_weight input:
-    cl = CleanLearning(
-        clf=LogisticRegression(multi_class="auto", solver="lbfgs", random_state=SEED), verbose=1
-    )
+    cl = CleanLearning(clf=LogisticRegression(solver="lbfgs", random_state=SEED), verbose=1)
     cl.fit(
         data["X_test"],
         data["true_labels_test"],
@@ -757,6 +748,33 @@ def test_1D_formats():
     cl.score(X, labels)
 
 
+# Check if the current Python version is 3.11
+is_python_311 = sys.version_info.major == 3 and sys.version_info.minor == 11
+
+# This warning should be ignored as in Python 3.11, the sre_constants module has been deprecated.
+# At the time of writing this, cleanlab supports Python 3.8-3.11. This warning is raised by
+# tensorflow <2.14.0, which imports sre_constants. This warning is not relevant to cleanlab.
+# Once Python 3.8 reaches EOL, we may remove this warning filter as we can set the tensorflow
+# dev-dependency to a version that does not raise this warning (2.14 or higher).
+if is_python_311:
+    sre_deprecation_pytestmark = pytest.mark.filterwarnings(
+        "ignore:module 'sre_constants' is deprecated"
+    )
+else:
+    sre_deprecation_pytestmark = pytest.mark.filterwarnings("default")
+
+# Check if the installed version of sklearn is 1.5.0.
+# The test_sklearn_gridsearchcv test fails due to a regression introduced in 1.5.0.
+# This issue will be fixed in sklearn version 1.5.1.
+uses_sklearn_1_5_0 = sklearn.__version__ == "1.5.0"
+
+
+@sre_deprecation_pytestmark  # Allow sre_constants deprecation warning for Python 3.11
+@pytest.mark.filterwarnings("error")  # All other warnings are treated as errors
+@pytest.mark.skipif(
+    uses_sklearn_1_5_0,
+    reason="Test is skipped because sklearn 1.5.0 is installed, which has a regression for GridSearchCV.",
+)  # TODO: Remove this line once sklearn 1.5.1 is released
 def test_sklearn_gridsearchcv():
     # hyper-parameters for grid search
     param_grid = {
@@ -770,7 +788,7 @@ def test_sklearn_gridsearchcv():
         "converge_latent_estimates": [True, False],
     }
 
-    clf = LogisticRegression(random_state=0, solver="lbfgs", multi_class="auto")
+    clf = LogisticRegression(random_state=0, solver="lbfgs")
 
     cv = GridSearchCV(
         estimator=CleanLearning(clf),
@@ -781,9 +799,7 @@ def test_sklearn_gridsearchcv():
     # cv.fit() raises a warning if some fits fail (including raising
     # exceptions); we don't expect any fits to fail, so ensure that the code
     # doesn't raise any warnings
-    with warnings.catch_warnings(record=True) as record:
-        cv.fit(X=DATA["X_train"], y=DATA["labels"])
-    assert len(record) == 0, "expected no warnings"
+    cv.fit(X=DATA["X_train"], y=DATA["labels"])
 
 
 @pytest.mark.parametrize("filter_by", ["both", "confident_learning"])
@@ -929,3 +945,61 @@ def test_find_issues_low_memory():
         low_memory=True, find_label_issues_kwargs=find_label_issues_kwargs, seed=SEED
     ).find_label_issues(X=X, labels=labels, noise_matrix=DATA["noise_matrix"])
     assert issues_df.equals(issues_df_lm)
+
+
+def test_confident_joint_setting_in_find_label_issues_kwargs():
+    """
+    This test ensures that the 'confident_joint' is correctly set in the
+    'find_label_issues_kwargs' of the 'CleanLearning' class when calling find_label_issues().
+
+    This test was added to cover the lines of code that were previously
+    missed due to the removal of another test.
+    """
+    # Load training data and labels
+    X = DATA["X_train"]
+    labels = DATA["labels"]
+
+    # Estimate predicted probabilities using cross-validation
+    pred_probs = estimate_cv_predicted_probabilities(X=X, labels=labels, seed=SEED)
+
+    # Initialize CleanLearning instance
+    cl = CleanLearning()
+
+    # Test that the confident joint is not set initially
+    cj = cl.find_label_issues_kwargs.get("confident_joint")
+    assert cj is None, "Initial confident_joint should be None"
+
+    # Call find_label_issues to set the confident joint
+    cl.find_label_issues(labels=labels, pred_probs=pred_probs)
+    cj = cl.find_label_issues_kwargs.get("confident_joint")
+
+    # Compute expected confident joint
+    expected_cj = compute_confident_joint(labels=labels, pred_probs=pred_probs)
+
+    # Assert that the confident joint is set correctly
+    np.testing.assert_array_equal(
+        cj, expected_cj, "Confident joint not set correctly after find_label_issues"
+    )
+
+    # Pass a precomputed confident_joint to the CleanLearning instance
+    cj_as_input = np.random.rand(3, 3)
+    cl = CleanLearning(
+        find_label_issues_kwargs={
+            "confident_joint": cj_as_input,
+        }
+    )
+
+    # Ensure the precomputed confident joint is used
+    cj = cl.find_label_issues_kwargs.get("confident_joint")
+    np.testing.assert_array_equal(
+        cj, cj_as_input, "Confident joint not set correctly when passed as input"
+    )
+
+    # Calling find_label_issues should not change the precomputed confident_joint
+    cl.find_label_issues(labels=labels, pred_probs=pred_probs)
+    cj = cl.find_label_issues_kwargs.get("confident_joint")
+    np.testing.assert_array_equal(
+        cj,
+        cj_as_input,
+        "Confident joint should not change after find_label_issues call when precomputed joint is provided",
+    )

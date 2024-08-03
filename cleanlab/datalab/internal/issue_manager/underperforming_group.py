@@ -22,13 +22,10 @@ import inspect
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
-from scipy.spatial.distance import euclidean
-from sklearn.neighbors import NearestNeighbors
-from sklearn.exceptions import NotFittedError
-from sklearn.utils.validation import check_is_fitted
 from sklearn.cluster import DBSCAN
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
+from cleanlab.datalab.internal.issue_manager.knn_graph_helpers import set_knn_graph
 from cleanlab.rank import get_self_confidence_for_each_label
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -62,9 +59,9 @@ class UnderperformingGroupIssueManager(IssueManager):
 
     description: ClassVar[
         str
-    ] = """An underperforming group refers to a collection of “hard” examples
-    for which the model predictions are poor. The quality of predictions is
-    computed using the :py:func:`get_self_confidence_for_each_label <cleanlab.rank.get_self_confidence_for_each_label>` function.
+    ] = """An underperforming group refers to a cluster of similar examples
+    (i.e. a slice) in the dataset for which the ML model predictions
+    are particularly poor (loss evaluation over this subpopulation is high).
     """
     issue_name: ClassVar[str] = "underperforming_group"
     verbosity_levels = {
@@ -109,7 +106,10 @@ class UnderperformingGroupIssueManager(IssueManager):
             )
             raise TypeError(error_msg)
         if cluster_ids is None:
-            knn_graph = self.set_knn_graph(features, kwargs)
+            statistics = self.datalab.get_info("statistics")
+            knn_graph, self.metric, _ = set_knn_graph(
+                features, kwargs, self.metric, self.k, statistics
+            )
             cluster_ids = self.perform_clustering(knn_graph)
             performed_clustering = True
         else:
@@ -144,41 +144,6 @@ class UnderperformingGroupIssueManager(IssueManager):
             performed_clustering=performed_clustering,
             worst_cluster_id=worst_cluster_id,
         )
-
-    def set_knn_graph(
-        self, features: Optional[npt.NDArray], find_issues_kwargs: Dict[str, Any]
-    ) -> csr_matrix:
-        knn_graph = self._process_knn_graph_from_inputs(find_issues_kwargs)
-        old_knn_metric = self.datalab.get_info("statistics").get("knn_metric")
-        metric_changes = self.metric and self.metric != old_knn_metric
-
-        if knn_graph is None or metric_changes:
-            if features is None:
-                raise ValueError(
-                    "If a knn_graph is not provided, features must be provided to fit a new knn."
-                )
-            if self.metric is None:
-                self.metric = (
-                    "cosine"
-                    if features.shape[1] > 3
-                    else "euclidean" if features.shape[0] > 100 else euclidean
-                )
-            knn = NearestNeighbors(n_neighbors=self.k, metric=self.metric)
-
-            if self.metric and self.metric != knn.metric:
-                warnings.warn(
-                    f"Metric {self.metric} does not match metric {knn.metric} used to fit knn. "
-                    "Most likely an existing NearestNeighbors object was passed in, but a different "
-                    "metric was specified."
-                )
-            self.metric = knn.metric
-
-            try:
-                check_is_fitted(knn)
-            except NotFittedError:
-                knn.fit(features)
-            knn_graph = knn.kneighbors_graph(mode="distance")
-        return knn_graph
 
     def perform_clustering(self, knn_graph: csr_matrix) -> npt.NDArray[np.int_]:
         """Perform clustering of datapoints using a knn graph as distance matrix.
@@ -265,26 +230,6 @@ class UnderperformingGroupIssueManager(IssueManager):
             else self.NO_UNDERPERFORMING_CLUSTER_ID
         )
         return worst_cluster_id, worst_cluster_ratio
-
-    def _process_knn_graph_from_inputs(self, kwargs: Dict[str, Any]) -> Union[csr_matrix, None]:
-        """Determine if a knn_graph is provided in the kwargs or if one is already stored in the associated Datalab instance."""
-        knn_graph_kwargs: Optional[csr_matrix] = kwargs.get("knn_graph", None)
-        knn_graph_stats = self.datalab.get_info("statistics").get("weighted_knn_graph", None)
-
-        knn_graph: Optional[csr_matrix] = None
-        if knn_graph_kwargs is not None:
-            knn_graph = knn_graph_kwargs
-        elif knn_graph_stats is not None:
-            knn_graph = knn_graph_stats
-
-        if isinstance(knn_graph, csr_matrix) and kwargs.get("k", 0) > (
-            knn_graph.nnz // knn_graph.shape[0]
-        ):
-            # If the provided knn graph is insufficient, then we need to recompute the knn graph
-            # with the provided features
-            knn_graph = None
-
-        return knn_graph
 
     def collect_info(
         self,

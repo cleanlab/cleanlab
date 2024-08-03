@@ -173,20 +173,28 @@ class Reporter:
             # Drop any items in the issue_summary that have no issues (any issue detected in data needs to have num_issues > 0)
             summary = summary.query("num_issues > 0")
 
+        report_header = (
+            f"{dataset_information}\n\n"
+            + "Here is a summary of various issues found in your data:\n\n"
+        )
+        report_footer = (
+            "\n\n"
+            + "Learn about each issue: https://docs.cleanlab.ai/stable/cleanlab/datalab/guide/issue_type_description.html\n"
+            + "See which examples in your dataset exhibit each issue via: `datalab.get_issues(<ISSUE_NAME>)`\n\n"
+            + "Data indices corresponding to top examples of each issue are shown below.\n\n\n"
+        )
+
         if self.show_summary_score:
             return (
-                "Here is a summary of the different kinds of issues found in the data:\n\n"
+                report_header
                 + summary.to_string(index=False)
                 + "\n\n"
-                + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)\n\n"
-                + f"{dataset_information}\n\n\n"
+                + "(Note: A lower score indicates a more severe issue across all examples in the dataset.)"
+                + report_footer
             )
 
         return (
-            "Here is a summary of the different kinds of issues found in the data:\n\n"
-            + summary.drop(columns=["score"]).to_string(index=False)
-            + "\n\n"
-            + f"{dataset_information}\n\n\n"
+            report_header + summary.drop(columns=["score"]).to_string(index=False) + report_footer
         )
 
     def _get_issue_types(self, issue_summary: pd.DataFrame) -> List[str]:
