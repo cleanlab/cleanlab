@@ -204,17 +204,23 @@ class UnderperformingGroupIssueManager(IssueManager):
         """Get ID and quality score of each underperforming cluster.
 
         Args:
-            cluster_ids (npt.NDArray[np.int_]): _description_
-            unique_cluster_ids (npt.NDArray[np.int_]): _description_
-            labels (npt.NDArray): _description_
-            pred_probs (npt.NDArray): _description_
+            cluster_ids (npt.NDArray[np.int_]): Cluster IDs corresponding to each sample
+            unique_cluster_ids (npt.NDArray[np.int_]): Unique cluster IDs excluding noisy clusters
+            labels (npt.NDArray): Label of each sample
+            pred_probs (npt.NDArray): Prediction probability
 
         Returns:
             Tuple[Dict[int, float], int, float]: (Cluster IDs and their scores, Worst Cluster ID, Worst Cluster Quality Score)
         """
         worst_cluster_ratio = 1.0  # Largest possible probability value
         worst_cluster_id = min(unique_cluster_ids) - 1
-        mean_performance = get_self_confidence_for_each_label(labels, pred_probs).mean()
+        # For calculating mean_performance of the dataset, choose labels and pred-probs of samples belonging to non-noisy clusters
+        filtered_cluster_id_mask = np.isin(cluster_ids, unique_cluster_ids)
+        filtered_labels = labels[filtered_cluster_id_mask]
+        filtered_pred_probs = pred_probs[filtered_cluster_id_mask]
+        mean_performance = get_self_confidence_for_each_label(
+            filtered_labels, filtered_pred_probs
+        ).mean()
         cluster_ids_to_score = {}
         for cluster_id in unique_cluster_ids:
             cluster_mask = cluster_ids == cluster_id
