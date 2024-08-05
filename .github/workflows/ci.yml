@@ -35,6 +35,8 @@ jobs:
       - name: Test with coverage
         run: pytest --verbose --maxfail=3 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
       - uses: codecov/codecov-action@v3
+        with:
+          version: "v0.7.3"
   test-macos-linux:
     name: "Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
@@ -64,6 +66,8 @@ jobs:
       - name: Test with coverage
         run: pytest --verbose --maxfail=3 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
       - uses: codecov/codecov-action@v3
+        with:
+          version: "v0.7.3"
   test-without-extras-min-versions:
     name: Test without optional dependencies and with minimum compatible versions of dependencies
     runs-on: ubuntu-latest
