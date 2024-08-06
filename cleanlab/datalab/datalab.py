@@ -132,7 +132,6 @@ class Datalab:
         self.cleanlab_version = cleanlab.version.__version__
         self.verbosity = verbosity
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
-        self._correlations_df = pd.DataFrame(columns=["property", "score"])
 
         # Create the builder for DataIssues
         builder = _DataIssuesBuilder(self._data)
@@ -420,7 +419,6 @@ class Datalab:
             show_summary_score=show_summary_score,
             show_all_issues=show_all_issues,
             imagelab=self._imagelab,
-            correlations_df=self._correlations_df,
         )
         reporter.report(num_examples=num_examples)
 
