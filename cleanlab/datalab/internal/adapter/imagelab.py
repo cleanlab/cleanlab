@@ -253,8 +253,9 @@ class ImagelabIssueFinderAdapter(IssueFinder):
         knn_graph: Optional[csr_matrix] = None,
         issue_types: Optional[Dict[str, Any]] = None,
     ) -> None:
+        issue_types_to_ignore_in_datalab = ["image_issue_types", "spurious_correlations"]
         datalab_issue_types = (
-            {k: v for k, v in issue_types.items() if k != "image_issue_types"}
+            {k: v for k, v in issue_types.items() if k not in issue_types_to_ignore_in_datalab}
             if issue_types
             else issue_types
         )
@@ -278,7 +279,38 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             self.datalab.data_issues.collect_issues_from_imagelab(
                 self.imagelab, issue_types_copy.keys()
             )
-            if self.datalab.has_labels:
-                self.datalab._correlations_df = self.datalab._spurious_correlation()
         except Exception as e:
             print(f"Error in checking for image issues: {e}")
+
+        spurious_correlation_issue_types = (
+            SPURIOUS_CORRELATION_ISSUE
+            if issue_types is None
+            else issue_types.get("spurious_correlations", {})
+        )
+        try:
+            if self.datalab.has_labels:
+                self.datalab.data_issues.info["spurious_correlations"] = (
+                    handle_spurious_correlations(
+                        imagelab_issues=self.imagelab.issues,
+                        labels=self.datalab._data.labels.labels,
+                        threshold=spurious_correlation_issue_types["spurious_correlation"][
+                            "threshold"
+                        ],
+                    )
+                )
+        except Exception as e:
+            print(f"Error in checking for spurious correlations: {e}")
+
+
+def handle_spurious_correlations(
+    imagelab_issues: pd.DataFrame, labels: np.ndarray, threshold: float
+) -> Dict[str, Any]:
+    imagelab_columns = imagelab_issues.columns.tolist()
+    score_columns = [col for col in imagelab_columns if col.endswith("_score")]
+    correlations_df = SpuriousCorrelations(
+        data=imagelab_issues[score_columns], labels=labels
+    ).calculate_correlations()
+    return {
+        "correlations_df": correlations_df,
+        "threshold": threshold,
+    }
