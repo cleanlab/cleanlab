@@ -341,7 +341,7 @@ def get_correlation_scores(circle_filter="identity", square_filter="identity"):
     dataset = generate_dataset(circle_filter=circle_filter, square_filter=square_filter)
     lab = Datalab(data=dataset, label_name="label", image_key="image")
     lab.find_issues()
-    correlation_scores = lab._spurious_correlation()
+    correlation_scores = lab.get_info("spurious_correlations")["correlations_df"]
     return get_scores(correlation_scores)
 
 
