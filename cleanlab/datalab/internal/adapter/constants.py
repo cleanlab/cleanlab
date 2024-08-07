@@ -1,3 +1,9 @@
+SPURIOUS_CORRELATION_ISSUE = {
+    "spurious_correlation": {
+        "threshold": 0.01,
+    },
+}  # Default issue type for spurious correlation in Datalab
+
 DEFAULT_CLEANVISION_ISSUES = {
     "dark": {},
     "light": {},
