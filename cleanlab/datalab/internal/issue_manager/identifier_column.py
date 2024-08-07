@@ -37,7 +37,7 @@ class IdentifierColumnIssueManager(IssueManager):
         """
         if arr.size == 0:
             return False
-        unique_sorted = np.unique(arr) # Returns a sorted unique list
+        unique_sorted = np.unique(arr)  # Returns a sorted unique list
         min_val, max_val = unique_sorted[0], unique_sorted[-1]
         expected_range = np.arange(min_val, max_val + 1)
         if expected_range.size == 1 or unique_sorted.size != expected_range.size:
@@ -90,7 +90,9 @@ class IdentifierColumnIssueManager(IssueManager):
             raise ValueError("features must be provided to check for identifier columns.")
 
         features = self._prepare_features(features)
-        score = np.array([self._is_sequential(features[:, col]) for col in range(features.shape[1])])
+        score = np.array(
+            [self._is_sequential(features[:, col]) for col in range(features.shape[1])]
+        )
         issue_indices = np.where(score)
         self.issues = pd.DataFrame(
             {
