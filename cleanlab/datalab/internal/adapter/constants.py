@@ -1,5 +1,5 @@
 SPURIOUS_CORRELATION_ISSUE = {
-    "spurious_correlation": {
+    "spurious_correlations": {
         "threshold": 0.01,
     },
 }  # Default issue type for spurious correlation in Datalab

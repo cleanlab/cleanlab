@@ -20,8 +20,10 @@ from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.data_issues import DataIssues, _InfoStrategy
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.report import Reporter
-from cleanlab.datalab.internal.spurious_correlation import SpuriousCorrelations
 from cleanlab.datalab.internal.task import Task
+from cleanlab.datalab.internal.adapter.spurious_correlation_handler import (
+    SpuriousCorrelationHandler,
+)
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanvision import Imagelab
@@ -282,14 +284,20 @@ class ImagelabReporterAdapter(Reporter):
             show_all_issues=show_all_issues,
         )
         self.imagelab = imagelab
-        self.correlation_reporter = CorrelationReporter(data_issues, imagelab)
+        self.correlation_reporter: Optional[CorrelationReporter] = None
+        try:
+            self.correlation_reporter = CorrelationReporter(data_issues, imagelab)
+        except:
+            # Spurious correlations have not been calculated
+            self.correlation_reporter = None
 
     def report(self, num_examples: int) -> None:
         super().report(num_examples)
         self._report_imagelab(num_examples)
 
-        # Will skip reporting spurious correlations if none are found
-        self.correlation_reporter.report()
+        # Only report spurious correlations if they've been calculated & detected
+        if self.correlation_reporter is not None:
+            self.correlation_reporter.report()
 
     def _report_imagelab(self, num_examples):
         print("\n\n")
@@ -311,8 +319,12 @@ class ImagelabIssueFinderAdapter(IssueFinder):
         if issue_types is None:
             return DEFAULT_CLEANVISION_ISSUES
 
-        if "image_issue_types" not in issue_types:
+        if all(key not in issue_types for key in ["image_issue_types", "spurious_correlations"]):
             return None
+
+        if "image_issue_types" not in issue_types:
+            assert "spurious_correlations" in issue_types
+            return DEFAULT_CLEANVISION_ISSUES
 
         issue_types_copy = {}
         for issue_type, params in issue_types["image_issue_types"].items():
@@ -337,6 +349,7 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             if issue_types
             else issue_types
         )
+        datalab_issue_types = datalab_issue_types if datalab_issue_types else None
         super().find_issues(
             pred_probs=pred_probs,
             features=features,
@@ -361,41 +374,26 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             print(f"Error in checking for image issues: {e}")
 
         spurious_correlation_issue_types = (
-            SPURIOUS_CORRELATION_ISSUE
+            SPURIOUS_CORRELATION_ISSUE["spurious_correlations"]
             if issue_types is None
-            else issue_types.get("spurious_correlations", {})
+            else issue_types.get(
+                "spurious_correlations", SPURIOUS_CORRELATION_ISSUE["spurious_correlations"]
+            )
+        )
+        spurious_correlation_threshold = spurious_correlation_issue_types.get(
+            "threshold", SPURIOUS_CORRELATION_ISSUE["spurious_correlations"]["threshold"]
         )
         try:
             if self.datalab.has_labels:
+
+                spurious_correlation_handler = SpuriousCorrelationHandler(
+                    threshold=spurious_correlation_threshold
+                )
                 self.datalab.data_issues.info["spurious_correlations"] = (
-                    handle_spurious_correlations(
+                    spurious_correlation_handler.handle_spurious_correlations(
                         imagelab_issues=self.imagelab.issues,
-                        labels=self.datalab._data.labels.labels,
-                        threshold=spurious_correlation_issue_types["spurious_correlation"][
-                            "threshold"
-                        ],
+                        labels=self.datalab.labels,
                     )
                 )
         except Exception as e:
             print(f"Error in checking for spurious correlations: {e}")
-
-
-def handle_spurious_correlations(
-    imagelab_issues: pd.DataFrame, labels: np.ndarray, threshold: float
-) -> Dict[str, Any]:
-    imagelab_columns = imagelab_issues.columns.tolist()
-    # Check if all vision issue scores are computed
-    if not all(
-        default_cleanvision_issue + "_score" in imagelab_columns
-        for default_cleanvision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
-    ):
-        raise ValueError("Not all vision issue scores have been computed by find_issues() method")
-
-    score_columns = [col for col in imagelab_columns if col.endswith("_score")]
-    correlations_df = SpuriousCorrelations(
-        data=imagelab_issues[score_columns], labels=labels
-    ).calculate_correlations()
-    return {
-        "correlations_df": correlations_df,
-        "threshold": threshold,
-    }

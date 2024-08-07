@@ -205,7 +205,6 @@ class DataIssues:
         ).astype({"score": np.float64, "num_issues": np.int64})
         self.info: Dict[str, Dict[str, Any]] = {
             "statistics": get_data_statistics(data),
-            "spurious_correlations": pd.DataFrame(columns=["property", "score"]),
         }
         self._data = data
         self._strategy = strategy
@@ -404,9 +403,6 @@ class DataIssues:
         Currently, the health score is the mean of the scores for each issue type.
         """
         self.info["statistics"]["health_score"] = self.issue_summary["score"].mean()
-
-    def get_correlation_scores(self) -> pd.DataFrame:
-        return self.info["spurious_correlations"]
 
 
 def get_data_statistics(data: Data) -> Dict[str, Any]:
