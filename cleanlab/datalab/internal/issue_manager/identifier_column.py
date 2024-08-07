@@ -90,9 +90,8 @@ class IdentifierColumnIssueManager(IssueManager):
             raise ValueError("features must be provided to check for identifier columns.")
 
         features = self._prepare_features(features)
-        score = np.array([self._is_sequential(features[:, i]) for i in range(features.shape[1])])
-        indices = [i for i in range(features.shape[1])]
-        issue_indices = [i for i in indices if score[i]]
+        scores = np.array([self._is_sequential(features[:, col]) for col in range(features.shape[1])])
+        issue_indices = np.where(scores)
         self.issues = pd.DataFrame(
             {
                 f"is_{self.issue_name}_issue": score,
