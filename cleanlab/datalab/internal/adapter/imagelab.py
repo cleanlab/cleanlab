@@ -236,9 +236,7 @@ class CorrelationReporter:
         }
         self._visualize(correlated_indices, issues)
 
-    def _visualize(
-        self, correlated_indices: Dict[str, List[int | str]], issues: pd.DataFrame
-    ) -> None:
+    def _visualize(self, correlated_indices: Dict[str, List[Any]], issues: pd.DataFrame) -> None:
         for prop, image_ids in correlated_indices.items():
             print(
                 f"{'Images with minimum and maximum individual scores for ' + prop.replace('_score', '') + ' issue:'}\n"
