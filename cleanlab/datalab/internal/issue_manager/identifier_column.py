@@ -37,15 +37,12 @@ class IdentifierColumnIssueManager(IssueManager):
         """
         if arr.size == 0:
             return False
-        min_val, max_val = arr.min(), arr.max()
-        unique_sorted = set(np.unique(np.sort(arr)).tolist())
-
-        expected_set = set(range(min_val, max_val + 1))
-        # check for special cases (all same )
-        if len(expected_set) == 1:
+        unique_sorted = np.unique(arr) # Returns a sorted unique list
+        min_val, max_val = unique_sorted[0], unique_sorted[-1]
+        expected_range = np.arange(min_val, max_val + 1)
+        if expected_range.size == 1 or unique_sorted.size != expected_range.size:
             return False
-        else:
-            return expected_set == unique_sorted
+        return bool((expected_range == unique_sorted).all())
 
     def _prepare_features(
         self, features: Optional[Union[npt.NDArray, pd.DataFrame, list, dict]]
