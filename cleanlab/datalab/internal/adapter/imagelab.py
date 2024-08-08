@@ -371,8 +371,10 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             return
 
         # Spurious correlation part must be run
-        imagelab_columns = self.imagelab.issues.columns.tolist()
+        print("Finding spurious correlation issues in the dataset ...")
+
         # Check if all vision issue scores are computed
+        imagelab_columns = self.imagelab.issues.columns.tolist()
         if not all(
             default_cleanvision_issue + "_score" in imagelab_columns
             for default_cleanvision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
@@ -388,7 +390,8 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             if not issue_types
             else issue_types["spurious_correlations"]
         )
-        # If theshold is not expicitly given (e.g. lab.find_issues("issue_types={"spurious_correlations": {}"))
+
+        # If threshold is not expicitly given (e.g. lab.find_issues("issue_types={"spurious_correlations": {}"))
         # we extract the default value from SPURIOUS_CORRELATION_ISSUE
         spurious_correlation_issue_threshold = spurious_correlation_issue_types.get(
             "threshold", SPURIOUS_CORRELATION_ISSUE["spurious_correlations"]["threshold"]
