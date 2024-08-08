@@ -317,12 +317,8 @@ class ImagelabIssueFinderAdapter(IssueFinder):
         if issue_types is None:
             return DEFAULT_CLEANVISION_ISSUES
 
-        if all(key not in issue_types for key in ["image_issue_types", "spurious_correlations"]):
-            return None
-
         if "image_issue_types" not in issue_types:
-            assert "spurious_correlations" in issue_types
-            return DEFAULT_CLEANVISION_ISSUES
+            return None
 
         issue_types_copy = {}
         for issue_type, params in issue_types["image_issue_types"].items():
@@ -355,80 +351,76 @@ class ImagelabIssueFinderAdapter(IssueFinder):
         )
 
         issue_types_copy = self._get_imagelab_issue_types(issue_types)
-        if not issue_types_copy:
+        if issue_types_copy:
+            try:
+                if self.verbosity:
+                    print(f'Finding {", ".join(issue_types_copy.keys())} images ...')
+
+                self.imagelab.find_issues(issue_types=issue_types_copy, verbose=False)
+
+                self.datalab.data_issues.collect_statistics(self.imagelab)
+                self.datalab.data_issues.collect_issues_from_imagelab(
+                    self.imagelab, issue_types_copy.keys()
+                )
+            except Exception as e:
+                print(f"Error in checking for image issues: {e}")
+
+        # if issue_types is neither 'None' nor empty dictionary (non-trivial) but
+        # there is no mention of 'spurious_correlations', we return.
+        if issue_types and "spurious_correlations" not in issue_types:
             return
-        try:
-            if self.verbosity:
-                print(f'Finding {", ".join(issue_types_copy.keys())} images ...')
 
-            self.imagelab.find_issues(issue_types=issue_types_copy, verbose=False)
-
-            self.datalab.data_issues.collect_statistics(self.imagelab)
-            self.datalab.data_issues.collect_issues_from_imagelab(
-                self.imagelab, issue_types_copy.keys()
+        # Spurious correlation part must be run
+        imagelab_columns = self.imagelab.issues.columns.tolist()
+        # Check if all vision issue scores are computed
+        if not all(
+            default_cleanvision_issue + "_score" in imagelab_columns
+            for default_cleanvision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
+        ):
+            assert not issue_types
+            raise ValueError(
+                """Not all vision issue scores have been computed by find_issues() method. Run lab.find_issues() first for checking spurious correlations."""
             )
-        except Exception as e:
-            print(f"Error in checking for image issues: {e}")
 
+        # the else part of the following must contain 'spurious_correlations' key
         spurious_correlation_issue_types = (
             SPURIOUS_CORRELATION_ISSUE["spurious_correlations"]
-            if issue_types is None
-            else issue_types.get(
-                "spurious_correlations", SPURIOUS_CORRELATION_ISSUE["spurious_correlations"]
-            )
+            if not issue_types
+            else issue_types["spurious_correlations"]
         )
-        spurious_correlation_threshold = spurious_correlation_issue_types.get(
+        # If theshold is not expicitly given (e.g. lab.find_issues("issue_types={"spurious_correlations": {}"))
+        # we extract the default value from SPURIOUS_CORRELATION_ISSUE
+        spurious_correlation_issue_threshold = spurious_correlation_issue_types.get(
             "threshold", SPURIOUS_CORRELATION_ISSUE["spurious_correlations"]["threshold"]
         )
+
         try:
             if self.datalab.has_labels:
-
-                spurious_correlation_handler = SpuriousCorrelationHandler(
-                    threshold=spurious_correlation_threshold
-                )
                 self.datalab.data_issues.info["spurious_correlations"] = (
-                    spurious_correlation_handler.handle_spurious_correlations(
+                    handle_spurious_correlations(
                         imagelab_issues=self.imagelab.issues,
                         labels=self.datalab.labels,
+                        threshold=spurious_correlation_issue_threshold,
                     )
                 )
         except Exception as e:
             print(f"Error in checking for spurious correlations: {e}")
 
 
-class SpuriousCorrelationHandler:
-    def __init__(self, threshold: Optional[float] = None) -> None:
-        if threshold is None:
-            self.threshold = SPURIOUS_CORRELATION_ISSUE["spurious_correlation"]["threshold"]
-        else:
-            self._threshold = threshold
+def handle_spurious_correlations(
+    *,
+    imagelab_issues: pd.DataFrame,
+    labels: Union[np.ndarray, List[List[int]]],
+    threshold: float,
+    **_,
+) -> Dict[str, Any]:
+    imagelab_columns = imagelab_issues.columns.tolist()
 
-    @property
-    def threshold(self) -> Optional[float]:
-        return self._threshold
-
-    @threshold.setter
-    def threshold(self, new_threshold: float) -> None:
-        self._threshold = new_threshold
-
-    def handle_spurious_correlations(
-        self, imagelab_issues: pd.DataFrame, labels: Union[np.ndarray, List[List[int]]]
-    ) -> Dict[str, Any]:
-        imagelab_columns = imagelab_issues.columns.tolist()
-        # Check if all vision issue scores are computed
-        if not all(
-            default_cleanvision_issue + "_score" in imagelab_columns
-            for default_cleanvision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
-        ):
-            raise ValueError(
-                "Not all vision issue scores have been computed by find_issues() method"
-            )
-
-        score_columns = [col for col in imagelab_columns if col.endswith("_score")]
-        correlations_df = SpuriousCorrelations(
-            data=imagelab_issues[score_columns], labels=labels
-        ).calculate_correlations()
-        return {
-            "correlations_df": correlations_df,
-            "threshold": self.threshold,
-        }
+    score_columns = [col for col in imagelab_columns if col.endswith("_score")]
+    correlations_df = SpuriousCorrelations(
+        data=imagelab_issues[score_columns], labels=labels
+    ).calculate_correlations()
+    return {
+        "correlations_df": correlations_df,
+        "threshold": threshold,
+    }

@@ -403,6 +403,12 @@ def test_smallest_scores_with_filters(test_attribute):
     )
 
 
+def get_report_text(lab):
+    with contextlib.redirect_stdout(io.StringIO()) as f:
+        lab.report()
+    return f.getvalue()
+
+
 @pytest.mark.parametrize(
     "test_attribute",
     [
@@ -458,9 +464,7 @@ class TestImagelabReporterAdapter:
 
     @mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
     def test_report(self, mock_individual_images, lab):
-        with contextlib.redirect_stdout(io.StringIO()) as f:
-            lab.report()
-        report = f.getvalue()
+        report = get_report_text(lab)
 
         report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
         report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
@@ -481,10 +485,8 @@ class TestImagelabReporterAdapter:
                 report_correlation_metric not in report
             ), "Report should not contain correlation metric description"
             assert filtered_correlations_df.empty
-            correlation_key = "correlation"
-            spurious_key = "spurious"
-            assert correlation_key not in report.lower()
-            assert spurious_key not in report.lower()
+            assert "correlation" not in report.lower()
+            assert "spurious" not in report.lower()
 
 
 @mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
@@ -499,13 +501,8 @@ def test_report_image_key(mock_individual_images):
     lab = Datalab(data=dataset, label_name="label", image_key="image")
     lab.find_issues()
 
-    with contextlib.redirect_stdout(io.StringIO()) as f:
-        lab_without_image_key.report()
-    report_without_image_key = f.getvalue()
-
-    with contextlib.redirect_stdout(io.StringIO()) as f:
-        lab.report()
-    report = f.getvalue()
+    report_without_image_key = get_report_text(lab_without_image_key)
+    report = get_report_text(lab)
 
     report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
     report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
@@ -514,7 +511,5 @@ def test_report_image_key(mock_individual_images):
     assert report_correlation_header in report
     assert report_correlation_metric in report
 
-    correlation_key = "correlation"
-    spurious_key = "spurious"
-    assert correlation_key not in report_without_image_key.lower()
-    assert spurious_key not in report_without_image_key.lower()
+    assert "correlation" not in report_without_image_key.lower()
+    assert "spurious" not in report_without_image_key.lower()
