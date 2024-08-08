@@ -4,7 +4,7 @@ The methods/classes in this module are just intended for internal use.
 """
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -21,9 +21,7 @@ from cleanlab.datalab.internal.data_issues import DataIssues, _InfoStrategy
 from cleanlab.datalab.internal.issue_finder import IssueFinder
 from cleanlab.datalab.internal.report import Reporter
 from cleanlab.datalab.internal.task import Task
-from cleanlab.datalab.internal.adapter.spurious_correlation_handler import (
-    SpuriousCorrelationHandler,
-)
+from cleanlab.datalab.internal.spurious_correlation import SpuriousCorrelations
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanvision import Imagelab
@@ -396,3 +394,41 @@ class ImagelabIssueFinderAdapter(IssueFinder):
                 )
         except Exception as e:
             print(f"Error in checking for spurious correlations: {e}")
+
+
+class SpuriousCorrelationHandler:
+    def __init__(self, threshold: Optional[float] = None) -> None:
+        if threshold is None:
+            self.threshold = SPURIOUS_CORRELATION_ISSUE["spurious_correlation"]["threshold"]
+        else:
+            self._threshold = threshold
+
+    @property
+    def threshold(self) -> Optional[float]:
+        return self._threshold
+
+    @threshold.setter
+    def threshold(self, new_threshold: float) -> None:
+        self._threshold = new_threshold
+
+    def handle_spurious_correlations(
+        self, imagelab_issues: pd.DataFrame, labels: Union[np.ndarray, List[List[int]]]
+    ) -> Dict[str, Any]:
+        imagelab_columns = imagelab_issues.columns.tolist()
+        # Check if all vision issue scores are computed
+        if not all(
+            default_cleanvision_issue + "_score" in imagelab_columns
+            for default_cleanvision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
+        ):
+            raise ValueError(
+                "Not all vision issue scores have been computed by find_issues() method"
+            )
+
+        score_columns = [col for col in imagelab_columns if col.endswith("_score")]
+        correlations_df = SpuriousCorrelations(
+            data=imagelab_issues[score_columns], labels=labels
+        ).calculate_correlations()
+        return {
+            "correlations_df": correlations_df,
+            "threshold": self.threshold,
+        }
