@@ -71,6 +71,8 @@ class TestCleanvisionIntegration:
             "null",
             "underperforming_group",
             # "non_iid",
+            # Spurious correlations issue type is checked by default on image datasets
+            "spurious_correlations",
         ]
 
         assert set(all_keys) == set(datalab.info.keys())
