@@ -349,7 +349,6 @@ class ImagelabIssueFinderAdapter(IssueFinder):
             if issue_types
             else issue_types
         )
-        datalab_issue_types = datalab_issue_types if datalab_issue_types else None
         super().find_issues(
             pred_probs=pred_probs,
             features=features,
