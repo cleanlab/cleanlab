@@ -24,15 +24,16 @@ import numpy as np
 
 from cleanlab.internal.constants import (
     ALPHA,
+    AP_SCALE_FACTOR,
+    BADLOC_THRESHOLD_FACTOR,
     HIGH_PROBABILITY_THRESHOLD,
     LOW_PROBABILITY_THRESHOLD,
     OVERLOOKED_THRESHOLD_FACTOR,
-    BADLOC_THRESHOLD_FACTOR,
     SWAP_THRESHOLD_FACTOR,
-    AP_SCALE_FACTOR,
 )
 from cleanlab.internal.object_detection_utils import assert_valid_inputs
 from cleanlab.object_detection.rank import (
+    _get_overlap_matrix,
     _get_valid_inputs_for_compute_scores,
     _separate_label,
     _separate_prediction,
@@ -41,7 +42,6 @@ from cleanlab.object_detection.rank import (
     compute_swap_box_scores,
     get_label_quality_scores,
     issues_from_scores,
-    _get_overlap_matrix,
 )
 
 
@@ -273,13 +273,14 @@ def _calculate_ap_per_class(
     num_images = len(predictions)
     num_scale = 1
     num_classes = len(predictions[0])
-    if num_images > 1:
+    use_pool = num_images > 1 and num_procs > 1
+    if use_pool:
         num_procs = min(num_procs, num_images)
         pool = Pool(num_procs)
     ap_per_class_list = []
     for class_num in range(num_classes):
         pred_bboxes, lab_bboxes = _filter_by_class(labels, predictions, class_num)
-        if num_images > 1:
+        if use_pool:
             tpfp = pool.starmap(
                 _calculate_true_positives_false_positives,
                 zip(pred_bboxes, lab_bboxes, [iou_threshold for _ in range(num_images)]),
@@ -287,10 +288,11 @@ def _calculate_ap_per_class(
         else:
             tpfp = [
                 _calculate_true_positives_false_positives(
-                    pred_bboxes[0],
-                    lab_bboxes[0],
+                    pred,
+                    lab,
                     iou_threshold,
                 )
+                for pred, lab in zip(pred_bboxes, lab_bboxes)
             ]
         true_positives, false_positives = tuple(zip(*tpfp))
         num_gts = np.zeros(num_scale, dtype=int)
@@ -309,7 +311,7 @@ def _calculate_ap_per_class(
         precisions = precisions[0, :]
         ap = _calculate_average_precision(recalls, precisions)
         ap_per_class_list.append(ap)
-    if num_images > 1:
+    if use_pool:
         pool.close()
     return ap_per_class_list
 
@@ -351,25 +353,25 @@ def _calculate_true_positives_false_positives(
         else:
             return true_positives, false_positives
     ious = _get_overlap_matrix(pred_bboxes, lab_bboxes)
-    ious_max = ious.max(axis=1)
     ious_argmax = ious.argmax(axis=1)
     sorted_indices = np.argsort(-pred_bboxes[:, -1])
     is_covered = np.zeros(num_labels, dtype=bool)
-    for index in sorted_indices:
-        if ious_max[index] >= iou_threshold:
-            matching_label = ious_argmax[index]
-            if not is_covered[matching_label]:
-                is_covered[matching_label] = True
-                true_positives[0, index] = 1
-            else:
-                false_positives[0, index] = 1
+
+    mask = ious[sorted_indices, ious_argmax[sorted_indices]] >= iou_threshold
+    false_positives[0, sorted_indices[~mask]] = 1
+    matching_labels = ious_argmax[sorted_indices[mask]]
+    for index, matching_label in zip(sorted_indices[mask], matching_labels):
+        if not is_covered[matching_label]:
+            is_covered[matching_label] = True
+            true_positives[0, index] = 1
         else:
             false_positives[0, index] = 1
+
     if return_false_negative:
         false_negatives = np.zeros((num_scales, num_labels), dtype=np.float32)
-        for label_index in range(num_labels):
-            if not is_covered[label_index]:
-                false_negatives[0, label_index] = 1
+        labels_arange = np.arange(num_labels)
+        mask = ~is_covered[labels_arange]
+        false_negatives[0, labels_arange[mask]] = 1
         return true_positives, false_positives, false_negatives
     return true_positives, false_positives
 
@@ -387,10 +389,9 @@ def _calculate_average_precision(
     modified_recall = np.hstack((zeros_matrix, recall_values, ones_matrix))
     modified_precision = np.hstack((zeros_matrix, precision_values, zeros_matrix))
 
-    for i in range(modified_precision.shape[1] - 1, 0, -1):
-        modified_precision[:, i - 1] = np.maximum(
-            modified_precision[:, i - 1], modified_precision[:, i]
-        )
+    modified_precision[:, :-1] = np.flip(
+        np.maximum.accumulate(np.flip(modified_precision[:, :-1], axis=1), axis=1)
+    )
 
     for i in range(num_scales):
         index = np.where(modified_recall[i, 1:] != modified_recall[i, :-1])[0]
