@@ -375,13 +375,12 @@ class ImagelabIssueFinderAdapter(IssueFinder):
 
         # Check if all vision issue scores are computed
         imagelab_columns = self.imagelab.issues.columns.tolist()
-        if not all(
-            default_cleanvision_issue + "_score" in imagelab_columns
+        if all(
+            default_cleanvision_issue + "_score" not in imagelab_columns
             for default_cleanvision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
         ):
-            assert not issue_types
             raise ValueError(
-                """Not all vision issue scores have been computed by find_issues() method. Run lab.find_issues() first for checking spurious correlations."""
+                """None of the image property scores have been computed by the find_issues() method."""
             )
 
         # the else part of the following must contain 'spurious_correlations' key
