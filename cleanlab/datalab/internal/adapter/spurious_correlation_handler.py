@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union, List
 import numpy as np
 import pandas as pd
 
@@ -19,11 +19,11 @@ class SpuriousCorrelationHandler:
         return self._threshold
 
     @threshold.setter
-    def threshold(self, new_threshold: Optional[float]) -> None:
+    def threshold(self, new_threshold: float) -> None:
         self._threshold = new_threshold
 
     def handle_spurious_correlations(
-        self, imagelab_issues: pd.DataFrame, labels: np.ndarray
+        self, imagelab_issues: pd.DataFrame, labels: Union[np.ndarray, List[List[int]]]
     ) -> Dict[str, Any]:
         imagelab_columns = imagelab_issues.columns.tolist()
         # Check if all vision issue scores are computed
