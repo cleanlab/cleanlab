@@ -125,11 +125,13 @@ class UnderperformingGroupIssueManager(IssueManager):
                 "No meaningful clusters were generated for determining underperforming group."
             )
         n_clusters = len(unique_cluster_ids)
-        worst_cluster_id, worst_cluster_ratio = self.get_worst_cluster(
-            cluster_ids, unique_cluster_ids, labels, pred_probs
+        cluster_id_to_score, worst_cluster_id, worst_cluster_ratio = (
+            self.get_underperforming_clusters(cluster_ids, unique_cluster_ids, labels, pred_probs)
         )
         is_issue_column = cluster_ids == worst_cluster_id
-        scores = np.where(is_issue_column, worst_cluster_ratio, 1)
+        scores = np.ones(is_issue_column.shape[0])
+        for cluster_id, cluster_score in cluster_id_to_score.items():
+            scores[cluster_ids == cluster_id] = cluster_score
         self.issues = pd.DataFrame(
             {
                 f"is_{self.issue_name}_issue": is_issue_column,
@@ -192,26 +194,34 @@ class UnderperformingGroupIssueManager(IssueManager):
         )
         return unique_cluster_ids
 
-    def get_worst_cluster(
+    def get_underperforming_clusters(
         self,
         cluster_ids: npt.NDArray[np.int_],
         unique_cluster_ids: npt.NDArray[np.int_],
         labels: npt.NDArray,
         pred_probs: npt.NDArray,
-    ) -> Tuple[int, float]:
-        """Get ID and quality score of underperforming cluster.
+    ) -> Tuple[Dict[int, float], int, float]:
+        """Get ID and quality score of each underperforming cluster.
 
         Args:
-            cluster_ids (npt.NDArray[np.int_]): _description_
-            unique_cluster_ids (npt.NDArray[np.int_]): _description_
-            labels (npt.NDArray): _description_
-            pred_probs (npt.NDArray): _description_
+            cluster_ids (npt.NDArray[np.int_]): Cluster IDs corresponding to each sample
+            unique_cluster_ids (npt.NDArray[np.int_]): Unique cluster IDs excluding noisy clusters
+            labels (npt.NDArray): Label of each sample
+            pred_probs (npt.NDArray): Prediction probability
 
         Returns:
-            Tuple[int, float]: (Underperforming Cluster ID, Cluster Quality Score)
+            Tuple[Dict[int, float], int, float]: (Cluster IDs and their scores, Worst Cluster ID, Worst Cluster Quality Score)
         """
-        worst_cluster_performance = 1  # Largest possible probability value
+        worst_cluster_ratio = 1.0  # Largest possible probability value
         worst_cluster_id = min(unique_cluster_ids) - 1
+        # For calculating mean_performance of the dataset, choose labels and pred-probs of samples belonging to non-noisy clusters
+        filtered_cluster_id_mask = np.isin(cluster_ids, unique_cluster_ids)
+        filtered_labels = labels[filtered_cluster_id_mask]
+        filtered_pred_probs = pred_probs[filtered_cluster_id_mask]
+        mean_performance = get_self_confidence_for_each_label(
+            filtered_labels, filtered_pred_probs
+        ).mean()
+        cluster_ids_to_score = {}
         for cluster_id in unique_cluster_ids:
             cluster_mask = cluster_ids == cluster_id
             cur_cluster_ids = labels[cluster_mask]
@@ -219,17 +229,17 @@ class UnderperformingGroupIssueManager(IssueManager):
             cluster_performance = get_self_confidence_for_each_label(
                 cur_cluster_ids, cur_cluster_pred_probs
             ).mean()
-            if cluster_performance < worst_cluster_performance:
-                worst_cluster_performance = cluster_performance
-                worst_cluster_id = cluster_id
-        mean_performance = get_self_confidence_for_each_label(labels, pred_probs).mean()
-        worst_cluster_ratio = min(worst_cluster_performance / mean_performance, 1.0)
+            if cluster_performance < mean_performance:
+                cluster_ids_to_score[cluster_id] = cluster_performance / mean_performance
+                if cluster_performance < worst_cluster_ratio:
+                    worst_cluster_ratio = cluster_ids_to_score[cluster_id]
+                    worst_cluster_id = cluster_id
         worst_cluster_id = (
             worst_cluster_id
             if worst_cluster_ratio < self.threshold
             else self.NO_UNDERPERFORMING_CLUSTER_ID
         )
-        return worst_cluster_id, worst_cluster_ratio
+        return cluster_ids_to_score, worst_cluster_id, worst_cluster_ratio
 
     def collect_info(
         self,

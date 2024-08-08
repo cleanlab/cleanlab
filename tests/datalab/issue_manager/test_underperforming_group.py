@@ -79,6 +79,7 @@ class TestUnderperformingGroupIssueManager:
         pd.testing.assert_frame_equal(summary_with_clabels, summary)
 
     def test_find_issues(self, issue_manager, make_data):
+        RELATIVE_TOLERANCE = 1e-3
         data = make_data(noisy=True)
         features, labels, pred_probs = data["features"], data["labels"], data["pred_probs"]
         N = len(labels)
@@ -90,7 +91,7 @@ class TestUnderperformingGroupIssueManager:
         assert np.all(
             issues["is_underperforming_group_issue"] == expected_issue_mask
         ), "Issue mask should be correct"
-        expected_loss_ratio = 0.1428
+        expected_loss_ratio = 0.1429
         expected_scores = np.ones(N)
         expected_scores[labels == 0] = expected_loss_ratio
         np.testing.assert_allclose(
@@ -100,17 +101,17 @@ class TestUnderperformingGroupIssueManager:
             rtol=1e-3,
         )
         assert summary["issue_type"][0] == "underperforming_group"
-        assert summary["score"][0] == pytest.approx(expected_loss_ratio, rel=1e-3)
+        assert summary["score"][0] == pytest.approx(expected_loss_ratio, rel=RELATIVE_TOLERANCE)
         # Check with cluster_ids param
         issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_ids=labels)
         issues_with_clabels, summary_with_clabels = issue_manager.issues, issue_manager.summary
-        pd.testing.assert_frame_equal(issues_with_clabels, issues)
-        pd.testing.assert_frame_equal(summary_with_clabels, summary)
+        pd.testing.assert_frame_equal(issues_with_clabels, issues, rtol=RELATIVE_TOLERANCE)
+        pd.testing.assert_frame_equal(summary_with_clabels, summary, rtol=RELATIVE_TOLERANCE)
         # With shifted cluster_ids
         issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_ids=labels + 10)
         issues_with_clabels, summary_with_clabels = issue_manager.issues, issue_manager.summary
-        pd.testing.assert_frame_equal(issues_with_clabels, issues)
-        pd.testing.assert_frame_equal(summary_with_clabels, summary)
+        pd.testing.assert_frame_equal(issues_with_clabels, issues, rtol=RELATIVE_TOLERANCE)
+        pd.testing.assert_frame_equal(summary_with_clabels, summary, rtol=RELATIVE_TOLERANCE)
 
     def test_collect_info(self, issue_manager, make_data):
         """Test some values in the info dict.
