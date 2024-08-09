@@ -47,10 +47,10 @@ Quickstart
          pip install "git+https://github.com/cleanlab/cleanlab.git#egg=cleanlab[all]"
 
 
-2. Find common issues in your data
-----------------------------------
+2. Check your data for all sorts of issues
+------------------------------------------
 
-cleanlab automatically detects various issues in *any dataset that a classifier can be trained on*. The cleanlab package *works with any ML model* by operating on model outputs (predicted class probabilities or feature embeddings) -- it doesn't require that a particular model created those outputs. For any classification dataset, use your trained model to produce `pred_probs` (predicted class probabilities) and/or `feature_embeddings` (numeric vector representations of each datapoint). To quickly check your dataset for common real-world issues like label errors, outliers, near duplicates, ..., simply run these few lines of code:
+cleanlab automatically detects various issues in *any dataset that a classifier can be trained on*. The cleanlab package *works with any ML model* by operating on model outputs (predicted class probabilities or feature embeddings) -- it doesn't require that a particular model created those outputs. For any classification dataset, use your trained model to produce `pred_probs` (predicted class probabilities) and/or `feature_embeddings` (numeric vector representations of each datapoint). To automatically check your dataset for common real-world issues (like label errors, outliers, near duplicates, IID violations, underperforming groups, ...), simply run these few lines of code:
 
 .. code-block:: python
 
@@ -59,6 +59,8 @@ cleanlab automatically detects various issues in *any dataset that a classifier 
     lab = Datalab(data=your_dataset, label_name="column_name_of_labels")
     lab.find_issues(features=feature_embeddings, pred_probs=pred_probs)
     lab.report()  # summarize issues in dataset, how severe they are in each data point, ...
+
+While other data quality tools only catch limited types of data issues based on manually pre-defined validation rules, cleanlab applies automated data-centric AI techniques using your trained ML model to detect many more types of data issues that would otherwise be hard to catch. Don't dive into ML model improvement without first using AI to help check your data!
 
 
 3. Handle label errors and train robust models with noisy labels
