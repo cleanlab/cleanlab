@@ -308,7 +308,7 @@ To understand/cite other cleanlab functionality not described above, check out o
 * Have questions? Check out [our FAQ](https://docs.cleanlab.ai/stable/tutorials/faq.html), [Github Issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue), or [Slack](https://cleanlab.ai/slack).
 
 * Need professional help with your Data/AI project? Email us: team@cleanlab.ai <br>
-For instance, we offer complementary software to **monitor incoming data and auto-detect issues in real-time**.
+For instance, we can help you **monitor incoming data and detect issues in real-time**.
 
 ## License
 
