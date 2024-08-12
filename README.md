@@ -53,7 +53,7 @@ While this open-source package **finds** data issues, its utility depends on you
 - Work 100x faster (1 min to analyze your raw data with **zero** code or ML work; optionally use [Python API](https://help.cleanlab.ai/tutorials/))
 - Produce better-quality data (10x more [types of issues](https://help.cleanlab.ai/guide/concepts/cleanlab_columns/) auto detected & **corrected** via built-in AI)
 - Accomplish more (auto-label data, deploy ML instantly, audit LLM inputs/outputs, moderate content, ...)
-- Monitor incoming data and auto-detect issues in real-time (integrate with your data pipeline on an [Enterprise plan](https://cleanlab.ai/sales/)) 
+- Monitor incoming data and detect issues in real-time (integrate your data pipeline on an [Enterprise plan](https://cleanlab.ai/sales/)) 
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/ml-with-cleanlab-studio.png" alt="The modern AI pipeline automated with Cleanlab Studio">
