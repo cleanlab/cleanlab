@@ -346,174 +346,174 @@ def get_correlation_scores(circle_filter="identity", square_filter="identity"):
     return get_scores(correlation_scores)
 
 
-# @pytest.mark.parametrize(
-#     "test_attribute",
-#     [
-#         "dark",
-#         "blurry",
-#         "odd_aspect_ratio",
-#     ],
-# )
-# def test_correlation_scores_against_standard(test_attribute):
-#     """
-#     Tests that correlation scores for specific filters are lower than standard scores.
+@pytest.mark.parametrize(
+    "test_attribute",
+    [
+        "dark",
+        "blurry",
+        "odd_aspect_ratio",
+    ],
+)
+def test_correlation_scores_against_standard(test_attribute):
+    """
+    Tests that correlation scores for specific filters are lower than standard scores.
 
-#     Asserts:
-#         AssertionError: If any of the specific filter scores are not lower than the standard scores.
-#     """
-#     standard_correlation_scores = get_correlation_scores()
-#     attribute_filter_scores = get_correlation_scores(circle_filter=f"{test_attribute}")
-#     assert (
-#         standard_correlation_scores[f"{test_attribute}_score"]
-#         > attribute_filter_scores[f"{test_attribute}_score"]
-#     )
-
-
-# @pytest.mark.parametrize(
-#     "test_attribute",
-#     [
-#         "dark",
-#         pytest.param(
-#             "blurry",
-#             marks=pytest.mark.xfail(
-#                 reason="odd aspect ratio filter seems to score lower", strict=True
-#             ),
-#         ),
-#         "odd_aspect_ratio",
-#     ],
-# )
-# def test_smallest_scores_with_filters(test_attribute):
-#     """
-#     Tests that each specific filter has the smallest correlation score for its respective property.
-
-#     Asserts:
-#         AssertionError: If any specific filter score is not the smallest for its respective property.
-#     """
-
-#     attributes_to_score = ["dark", "blurry", "odd_aspect_ratio"]
-#     standard_correlation_scores = get_correlation_scores()
-
-#     score_key = f"{test_attribute}_score"
-#     filtered_scores = {f: get_correlation_scores(circle_filter=f) for f in attributes_to_score}
-
-#     # The attribute being tested should have the lowest score for the filtered dataset
-#     test_scores = filtered_scores.pop(test_attribute)
-#     assert test_scores[score_key] <= min(
-#         standard_correlation_scores[score_key],
-#         *[scores[score_key] for scores in filtered_scores.values()],
-#     )
+    Asserts:
+        AssertionError: If any of the specific filter scores are not lower than the standard scores.
+    """
+    standard_correlation_scores = get_correlation_scores()
+    attribute_filter_scores = get_correlation_scores(circle_filter=f"{test_attribute}")
+    assert (
+        standard_correlation_scores[f"{test_attribute}_score"]
+        > attribute_filter_scores[f"{test_attribute}_score"]
+    )
 
 
-# def get_report_text(lab):
-#     with contextlib.redirect_stdout(io.StringIO()) as f:
-#         lab.report()
-#     return f.getvalue()
+@pytest.mark.parametrize(
+    "test_attribute",
+    [
+        "dark",
+        pytest.param(
+            "blurry",
+            marks=pytest.mark.xfail(
+                reason="odd aspect ratio filter seems to score lower", strict=True
+            ),
+        ),
+        "odd_aspect_ratio",
+    ],
+)
+def test_smallest_scores_with_filters(test_attribute):
+    """
+    Tests that each specific filter has the smallest correlation score for its respective property.
+
+    Asserts:
+        AssertionError: If any specific filter score is not the smallest for its respective property.
+    """
+
+    attributes_to_score = ["dark", "blurry", "odd_aspect_ratio"]
+    standard_correlation_scores = get_correlation_scores()
+
+    score_key = f"{test_attribute}_score"
+    filtered_scores = {f: get_correlation_scores(circle_filter=f) for f in attributes_to_score}
+
+    # The attribute being tested should have the lowest score for the filtered dataset
+    test_scores = filtered_scores.pop(test_attribute)
+    assert test_scores[score_key] <= min(
+        standard_correlation_scores[score_key],
+        *[scores[score_key] for scores in filtered_scores.values()],
+    )
 
 
-# @pytest.mark.parametrize(
-#     "test_attribute",
-#     [
-#         "dark",
-#         pytest.param(
-#             "blurry",
-#             marks=pytest.mark.xfail(
-#                 reason="blurry filter makes other image properties like 'dark' and 'low information' spurious rather than 'blurry'",
-#                 strict=False,
-#             ),
-#         ),
-#         "odd_aspect_ratio",
-#         "identity",
-#     ],
-# )
-# class TestImagelabReporterAdapter:
-#     """
-#     Test class for `ImagelabReporterAdapter` to verify the behavior of the `lab.report()` method
-#     when handling different image attributes.
-
-#     This class uses parameterized testing to check the following:
-
-#     1. Output Verification: Ensures that the `report` method prints the expected output based on the `test_attribute` value.
-#     2. Spurious Correlations: Confirms that spurious correlations are shown or hidden appropriately:
-#     - When `test_attribute` is set to 'identity', the report should not display any spurious correlations.
-#     - When `test_attribute` is set to 'dark', 'blurry', or 'odd_aspect_ratio', the report should display the relevant spurious correlations.
-
-#     Each test run verifies that the output matches the expected print statements and that the report behaves as expected for each attribute scenario.
-#     """
-
-#     @pytest.fixture(autouse=True)
-#     def lab(self, test_attribute):
-#         self.test_attribute = test_attribute
-#         self.threshold = 0.01
-#         dataset = generate_dataset(circle_filter=test_attribute)
-#         lab = Datalab(data=dataset, label_name="label", image_key="image")
-#         lab.find_issues()
-#         self.correlations_df = lab.get_info("spurious_correlations")["correlations_df"]
-#         return lab
-
-#     def _get_correlated_properties(self):
-#         if self.correlations_df.empty:
-#             return []
-#         return self.correlations_df.query("score < @self.threshold")["property"].tolist()
-
-#     def _get_correlated_dataframe(self):
-#         correlated_properties = self._get_correlated_properties()
-#         filtered_correlations_df = self.correlations_df.query("property in @correlated_properties")
-#         filtered_correlations_df.loc[:, "property"] = filtered_correlations_df["property"].apply(
-#             lambda x: x.replace("_score", "")
-#         )
-#         return filtered_correlations_df
-
-#     @mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
-#     def test_report(self, mock_individual_images, lab):
-#         report = get_report_text(lab)
-
-#         report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
-#         report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
-#         filtered_correlations_df = self._get_correlated_dataframe()
-
-#         if self.test_attribute != "identity":
-#             assert report_correlation_header in report, "Report should contain correlation header"
-#             assert (
-#                 report_correlation_metric in report
-#             ), "Report should contain correlation metric description"
-#             assert self.test_attribute in filtered_correlations_df["property"].values
-#             assert filtered_correlations_df.to_string(index=False) in report
-#         else:
-#             assert (
-#                 report_correlation_header not in report
-#             ), "Report should not contain correlation header"
-#             assert (
-#                 report_correlation_metric not in report
-#             ), "Report should not contain correlation metric description"
-#             assert filtered_correlations_df.empty
-#             assert "correlation" not in report.lower()
-#             assert "spurious" not in report.lower()
+def get_report_text(lab):
+    with contextlib.redirect_stdout(io.StringIO()) as f:
+        lab.report()
+    return f.getvalue()
 
 
-# @mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
-# def test_report_image_key(mock_individual_images):
-#     X = np.random.rand(100, 2)
-#     y = np.sum(X, axis=1)
-#     data = {"X": X, "y": y}
-#     lab_without_image_key = Datalab(data, label_name="y")
-#     lab_without_image_key.find_issues()
+@pytest.mark.parametrize(
+    "test_attribute",
+    [
+        "dark",
+        pytest.param(
+            "blurry",
+            marks=pytest.mark.xfail(
+                reason="blurry filter makes other image properties like 'dark' and 'low information' spurious rather than 'blurry'",
+                strict=False,
+            ),
+        ),
+        "odd_aspect_ratio",
+        "identity",
+    ],
+)
+class TestImagelabReporterAdapter:
+    """
+    Test class for `ImagelabReporterAdapter` to verify the behavior of the `lab.report()` method
+    when handling different image attributes.
 
-#     dataset = generate_dataset(circle_filter="dark")
-#     lab = Datalab(data=dataset, label_name="label", image_key="image")
-#     lab.find_issues()
+    This class uses parameterized testing to check the following:
 
-#     report_without_image_key = get_report_text(lab_without_image_key)
-#     report = get_report_text(lab)
+    1. Output Verification: Ensures that the `report` method prints the expected output based on the `test_attribute` value.
+    2. Spurious Correlations: Confirms that spurious correlations are shown or hidden appropriately:
+    - When `test_attribute` is set to 'identity', the report should not display any spurious correlations.
+    - When `test_attribute` is set to 'dark', 'blurry', or 'odd_aspect_ratio', the report should display the relevant spurious correlations.
 
-#     report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
-#     report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
-#     assert report_correlation_header not in report_without_image_key
-#     assert report_correlation_metric not in report_without_image_key
-#     assert report_correlation_header in report
-#     assert report_correlation_metric in report
+    Each test run verifies that the output matches the expected print statements and that the report behaves as expected for each attribute scenario.
+    """
 
-#     assert "correlation" not in report_without_image_key.lower()
-#     assert "spurious" not in report_without_image_key.lower()
+    @pytest.fixture(autouse=True)
+    def lab(self, test_attribute):
+        self.test_attribute = test_attribute
+        self.threshold = 0.01
+        dataset = generate_dataset(circle_filter=test_attribute)
+        lab = Datalab(data=dataset, label_name="label", image_key="image")
+        lab.find_issues()
+        self.correlations_df = lab.get_info("spurious_correlations")["correlations_df"]
+        return lab
+
+    def _get_correlated_properties(self):
+        if self.correlations_df.empty:
+            return []
+        return self.correlations_df.query("score < @self.threshold")["property"].tolist()
+
+    def _get_correlated_dataframe(self):
+        correlated_properties = self._get_correlated_properties()
+        filtered_correlations_df = self.correlations_df.query("property in @correlated_properties")
+        filtered_correlations_df.loc[:, "property"] = filtered_correlations_df["property"].apply(
+            lambda x: x.replace("_score", "")
+        )
+        return filtered_correlations_df
+
+    @mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
+    def test_report(self, mock_individual_images, lab):
+        report = get_report_text(lab)
+
+        report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
+        report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
+        filtered_correlations_df = self._get_correlated_dataframe()
+
+        if self.test_attribute != "identity":
+            assert report_correlation_header in report, "Report should contain correlation header"
+            assert (
+                report_correlation_metric in report
+            ), "Report should contain correlation metric description"
+            assert self.test_attribute in filtered_correlations_df["property"].values
+            assert filtered_correlations_df.to_string(index=False) in report
+        else:
+            assert (
+                report_correlation_header not in report
+            ), "Report should not contain correlation header"
+            assert (
+                report_correlation_metric not in report
+            ), "Report should not contain correlation metric description"
+            assert filtered_correlations_df.empty
+            assert "correlation" not in report.lower()
+            assert "spurious" not in report.lower()
+
+
+@mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
+def test_report_image_key(mock_individual_images):
+    X = np.random.rand(100, 2)
+    y = np.sum(X, axis=1)
+    data = {"X": X, "y": y}
+    lab_without_image_key = Datalab(data, label_name="y")
+    lab_without_image_key.find_issues()
+
+    dataset = generate_dataset(circle_filter="dark")
+    lab = Datalab(data=dataset, label_name="label", image_key="image")
+    lab.find_issues()
+
+    report_without_image_key = get_report_text(lab_without_image_key)
+    report = get_report_text(lab)
+
+    report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
+    report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
+    assert report_correlation_header not in report_without_image_key
+    assert report_correlation_metric not in report_without_image_key
+    assert report_correlation_header in report
+    assert report_correlation_metric in report
+
+    assert "correlation" not in report_without_image_key.lower()
+    assert "spurious" not in report_without_image_key.lower()
 
 
 def test_iterative_property_threshold():
