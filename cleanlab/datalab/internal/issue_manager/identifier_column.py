@@ -102,16 +102,12 @@ class IdentifierColumnIssueManager(IssueManager):
         issue_indices = np.where(scores)
         # this issue does not reflect rows at all so we set the score to 1.0 for all rows in the issue attribute
         # and set the is_identifier_column_issue to False
-        print(f"shape of features raw: {features.shape}")
-        print("features: ", features)
-        print(f"processed_features: {processed_features}")
         self.issues = pd.DataFrame(
             {
                 f"is_{self.issue_name}_issue": False,
                 self.issue_score_key: [1.0 for _ in range(features.shape[0])],
             },
         )
-        print(f"self.issues: {self.issues}")
         # score in summary should be 1.0 if the issue is not presend and 0.0 if at least one column is an identifier column
         self.summary = self.make_summary(score=1.0 if scores.sum() == 0 else 0.0)
         self.info = {

@@ -79,10 +79,7 @@ def test_prepare_features(features, expected_prepared_features):
             np.array([]),
             1.0,
         ),
-        (np.array([[1, 2, 7], [4, 3, 8], [7, 4, 9], [10, 5, 10]]),
-        2,
-        np.array([1, 2]),
-        0.0),
+        (np.array([[1, 2, 7], [4, 3, 8], [7, 4, 9], [10, 5, 10]]), 2, np.array([1, 2]), 0.0),
     ],
 )
 def test_find_issues(
@@ -97,6 +94,7 @@ def test_find_issues(
         pass
     else:
         raise AssertionError()
+
 
 @pytest.mark.parametrize(
     "features, expected_is_identifer_column, expected_score",
