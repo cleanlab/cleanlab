@@ -32,13 +32,10 @@ def test_is_sequential(arr, expected_output):
 @pytest.mark.parametrize(
     "features, expected_prepared_features",
     [
-        (np.array([[1, 2, 3], [4, 5, 6]]), np.array([[1, 2, 3], [4, 5, 6]])),
-        (
-            pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]}),
-            np.array([[1, 4], [2, 5], [3, 6]]),
-        ),
-        ([1, 2, 3], np.array([1, 2, 3])),
-        ({"A": [1, 2, 3], "B": [4, 5, 6]}, np.array([[1, 4], [2, 5], [3, 6]])),
+        (np.array([[1, 2, 3], [4, 5, 6]]), np.array([[1, 4], [2, 5], [3, 6]])),
+        (pd.DataFrame({"A": [1, 4], "B": [2, 5], "C": [3, 6]}), np.array([[1, 4], [2, 5], [3, 6]])),
+        ([[1, 4], [2, 5], [3, 6]], np.array([[1, 4], [2, 5], [3, 6]])),
+        ({"A": [1, 4], "B": [2, 5], "C": [3, 6]}, np.array([[1, 4], [2, 5], [3, 6]])),
     ],
 )
 def test_prepare_features(features, expected_prepared_features):
@@ -54,40 +51,72 @@ def test_prepare_features(features, expected_prepared_features):
 
 
 @pytest.mark.parametrize(
-    "features, expected_num_identifier_columns, expected_score, expected_total_res",
+    "features, expected_num_identifier_columns, expected_indices, expected_total_res",
     [
-        (np.array([[1, 2, 3], [4, 5, 2]]), 1, np.array([False, False, True]), 1),
-        (np.array([[1, 2, 3], [1, 3, 2]]), 2, np.array([False, True, True]), 1),
+        (np.array([[1, 2, 3], [4, 5, 2]]), 1, np.array([2]), 0.0),
+        (np.array([[1, 2, 3], [1, 3, 2]]), 2, np.array([1, 2]), 0.0),
         (
             np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]),
             0,
-            np.array([False, False, False]),
-            0,
+            np.array([]),
+            1.0,
         ),
         (
             np.array([[1, 2, 3], [1, 2, 3], [1, 2, 3]]),
             0,
-            np.array([False, False, False]),
-            0,
+            np.array([]),
+            1.0,
         ),
         (
             np.array([[0, 2, 3], [-1, 5, 6], [-2, 2, 3]]),
             1,
-            np.array([True, False, False]),
-            1,
+            np.array([0]),
+            0.0,
         ),
         (
             np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]]),
             0,
-            np.array([False, False, False]),
-            0,
+            np.array([]),
+            1.0,
         ),
+        (np.array([[1, 2, 7], [4, 3, 8], [7, 4, 9], [10, 5, 10]]),
+        2,
+        np.array([1, 2]),
+        0.0),
     ],
 )
-def test_find_issues(features, expected_num_identifier_columns, expected_score, expected_total_res):
+def test_find_issues(
+    features, expected_num_identifier_columns, expected_indices, expected_total_res
+):
     lab = Datalab(pd.DataFrame(features))
     manager = IdentifierColumnIssueManager(datalab=lab)
     manager.find_issues(features)
-    assert np.array_equal(manager.issues[f"is_{manager.issue_name}_issue"], expected_score)
     assert manager.summary["score"][0] == expected_total_res
     assert manager.info["num_identifier_columns"] == expected_num_identifier_columns
+    if (manager.info["identifier_columns"] == expected_indices).all():
+        pass
+    else:
+        raise AssertionError()
+
+@pytest.mark.parametrize(
+    "features, expected_is_identifer_column, expected_score",
+    [
+        (np.array([[1, 2, 3], [4, 5, 2]]), False, [1.0, 1.0]),
+        (np.array([[1, 2, 3], [1, 3, 2]]), False, [1.0, 1.0]),
+        (np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), False, [1.0, 1.0, 1.0]),
+        (np.array([[1, 2, 3], [1, 2, 3], [1, 2, 3]]), False, [1.0, 1.0, 1.0]),
+    ],
+)
+def test_issue_attribute(features, expected_is_identifer_column, expected_score):
+    lab = Datalab(pd.DataFrame(features))
+    manager = IdentifierColumnIssueManager(datalab=lab)
+    manager.find_issues(features)
+    if (manager.issues[f"is_{manager.issue_name}_issue"] == expected_is_identifer_column).all():
+        pass
+    else:
+        raise AssertionError()
+
+    if (manager.issues[manager.issue_score_key] == expected_score).all():
+        pass
+    else:
+        raise AssertionError()

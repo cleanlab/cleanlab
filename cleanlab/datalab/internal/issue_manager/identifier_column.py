@@ -57,17 +57,20 @@ class IdentifierColumnIssueManager(IssueManager):
             features: features as npt.NDArray
         """
         if isinstance(features, np.ndarray):
-            return features
-        if isinstance(features, pd.DataFrame):
-            features = features.to_numpy()
-            return features
-        if isinstance(features, list):
-            features = np.array(features)
-            return features
-        if isinstance(features, dict):
-            df = pd.DataFrame(features)
-            features = df.to_numpy()
-            return features
+            return features.T
+        elif isinstance(features, pd.DataFrame) or isinstance(features, dict):
+            feature_list = list()
+            for _, feature_value in features.items():
+                feature_list.append(np.array(feature_value))
+            return feature_list
+        elif isinstance(features, list):
+            for col_list in features:
+                if not isinstance(col_list, list):
+                    raise ValueError("features must be a list of lists if it features is a list.")
+                feature_list = [np.array(col_list) for col_list in features]
+            return (
+                feature_list  # don't need to transpose, format needs to be a list of column lists
+            )
         else:
             raise ValueError(
                 "features must be a numpy array or a pandas DataFrame. or list\
@@ -88,20 +91,29 @@ class IdentifierColumnIssueManager(IssueManager):
         """
         if features is None:
             raise ValueError("features must be provided to check for identifier columns.")
+        processed_features = self._prepare_features(features)
 
-        features = self._prepare_features(features)
         scores = np.array(
-            [self._is_sequential(features[:, col]) for col in range(features.shape[1])]
+            [
+                np.issubdtype(feature.dtype, np.integer) and self._is_sequential(feature)
+                for feature in processed_features
+            ]
         )
         issue_indices = np.where(scores)
+        # this issue does not reflect rows at all so we set the score to 1.0 for all rows in the issue attribute
+        # and set the is_identifier_column_issue to False
+        print(f"shape of features raw: {features.shape}")
+        print("features: ", features)
+        print(f"processed_features: {processed_features}")
         self.issues = pd.DataFrame(
             {
-                f"is_{self.issue_name}_issue": scores,
-                self.issue_score_key: scores,
+                f"is_{self.issue_name}_issue": False,
+                self.issue_score_key: [1.0 for _ in range(features.shape[0])],
             },
         )
-
-        self.summary = self.make_summary(score=min(scores.sum(), 1))
+        print(f"self.issues: {self.issues}")
+        # score in summary should be 1.0 if the issue is not presend and 0.0 if at least one column is an identifier column
+        self.summary = self.make_summary(score=1.0 if scores.sum() == 0 else 0.0)
         self.info = {
             "identifier_columns": issue_indices,
             "num_identifier_columns": scores.sum(),
