@@ -59,18 +59,12 @@ class IdentifierColumnIssueManager(IssueManager):
         if isinstance(features, np.ndarray):
             return features.T
         elif isinstance(features, pd.DataFrame) or isinstance(features, dict):
-            feature_list = list()
-            for _, feature_value in features.items():
-                feature_list.append(np.array(feature_value))
-            return feature_list
+            return np.array([col for _, col in features.items()])
         elif isinstance(features, list):
             for col_list in features:
                 if not isinstance(col_list, list):
                     raise ValueError("features must be a list of lists if it features is a list.")
-                feature_list = [np.array(col_list) for col_list in features]
-            return (
-                feature_list  # don't need to transpose, format needs to be a list of column lists
-            )
+                return np.array([np.array(col_list) for col_list in features])
         else:
             raise ValueError(
                 "features must be a numpy array or a pandas DataFrame. or list\
