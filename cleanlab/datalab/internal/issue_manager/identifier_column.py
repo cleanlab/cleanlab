@@ -64,7 +64,7 @@ class IdentifierColumnIssueManager(IssueManager):
             for col_list in features:
                 if not isinstance(col_list, list):
                     raise ValueError("features must be a list of lists if it features is a list.")
-                return np.array([np.array(col_list) for col_list in features])
+            return np.array([np.array(col_list) for col_list in features])
         else:
             raise ValueError(
                 "features must be a numpy array or a pandas DataFrame. or list\
