@@ -99,7 +99,7 @@ class IdentifierColumnIssueManager(IssueManager):
         self.issues = pd.DataFrame(
             {
                 f"is_{self.issue_name}_issue": False,
-                self.issue_score_key: [1.0 for _ in range(features.shape[0])],
+                self.issue_score_key: [1.0 for _ in range(processed_features.shape[1])],
             },
         )
         # score in summary should be 1.0 if the issue is not presend and 0.0 if at least one column is an identifier column
