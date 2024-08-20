@@ -101,7 +101,7 @@ Some metadata about label issues is stored in the `issues` attribute of the Data
 Let's look at one way to access this information.
 
 .. testcode::
-    
+
     lab.get_issues("label").sort_values("label_score").head(5)
 
 The output will look something like this:
@@ -118,7 +118,7 @@ The output will look something like this:
 ``is_label_issue``
 ~~~~~~~~~~~~~~~~~~
 
-A boolean column that flags examples with label issues. 
+A boolean column that flags examples with label issues.
 If `True`, the example is estimated to have a label issue.
 If `False`, the example is estimated to not have a label issue.
 
@@ -194,7 +194,7 @@ A boolean column, where `True` indicates that an example is identified as an out
 ``outlier_score``
 ~~~~~~~~~~~~~~~~~
 
-A numeric column with scores between 0 and 1. 
+A numeric column with scores between 0 and 1.
 A smaller value for an example indicates that it is less common or typical in the dataset, suggesting that it is more likely to be an outlier.
 
 
@@ -236,12 +236,12 @@ The output will look something like this:
 
 .. testoutput::
 
-        is_near_duplicate_issue  near_duplicate_score near_duplicate_sets distance_to_nearest_neighbor  
-    36                     True              0.066009            [11, 80]                     0.003906    
-    11                     True              0.066009                [36]                     0.003906    
-    80                     True              0.093245                [36]                     0.005599    
-    27                    False              0.156720                  []                     0.009751    
-    72                    False              0.156720                  []                     0.009751    
+        is_near_duplicate_issue  near_duplicate_score near_duplicate_sets distance_to_nearest_neighbor
+    36                     True              0.066009            [11, 80]                     0.003906
+    11                     True              0.066009                [36]                     0.003906
+    80                     True              0.093245                [36]                     0.005599
+    27                    False              0.156720                  []                     0.009751
+    72                    False              0.156720                  []                     0.009751
 
 
 ``is_near_duplicate_issue``
@@ -420,10 +420,10 @@ Consider reviewing the relationship between the image property and the labels if
 
 This issue type is more about the overall dataset vs. individual data points and will only be highlighted by Datalab in its report, if any such troublesome image properties are found.
 
-Metadata about spurious correlations is stored in the `info` attribute of the Datalab object. 
+Metadata about spurious correlations is stored in the `info` attribute of the Datalab object.
 It can be accessed like so:
 
-.. code:: 
+.. code::
 
     lab.get_info("spurious_correlations")["correlations_df"]
 
@@ -446,16 +446,15 @@ The output will look something like this:
 
     Note that the label uncorrelatedness scores are *not* stored in the `issues` attribute of Datalab.
 
-``property`` 
+``property``
 ~~~~~~~~~~~~
 
-TODO: Rahul
+A categorical column that identifies specific image-related characteristics assessed for potential spurious correlations with the class labels. Each entry in this column represents a distinct property of the images, such as blurriness, darkness, or grayscale, which may or may not be correlated with the labels.
 
 ``score``
 ~~~~~~~~~
 
-TODO: Rahul
-
+A numeric column that gives the level of label uncorrelatedness for each image-specific property computed while calling `lab.find_issues()`. The score lies between 0 and 1. The lower the score for an image-property, the more correlated the image-property is with the given labels.
 
 .. tip::
 
