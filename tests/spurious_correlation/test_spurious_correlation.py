@@ -467,8 +467,8 @@ class TestImagelabReporterAdapter:
     def test_report(self, mock_individual_images, lab):
         report = get_report_text(lab)
 
-        report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
-        report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
+        report_correlation_header = "Here is a summary of spurious correlations between image features (like 'dark_score', 'blurry_score', etc.) and class labels detected in the data.\n\n"
+        report_correlation_metric = "A lower score implies a higher likelihood of a spurious correlation between that property and the class labels.\n\n"
         filtered_correlations_df = self._get_correlated_dataframe()
 
         if self.test_attribute != "identity":
@@ -505,8 +505,8 @@ def test_report_image_key(mock_individual_images):
     report_without_image_key = get_report_text(lab_without_image_key)
     report = get_report_text(lab)
 
-    report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
-    report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
+    report_correlation_header = "Here is a summary of spurious correlations between image features (like 'dark_score', 'blurry_score', etc.) and class labels detected in the data.\n\n"
+    report_correlation_metric = "A lower score implies a higher likelihood of a spurious correlation between that property and the class labels.\n\n"
     assert report_correlation_header not in report_without_image_key
     assert report_correlation_metric not in report_without_image_key
     assert report_correlation_header in report
