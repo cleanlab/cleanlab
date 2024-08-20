@@ -220,7 +220,7 @@ class CorrelationReporter:
     def _print_correlation_summary(self) -> None:
         print("\n\n")
         report_correlation_header = "Here is a summary of spurious correlations between image features (like 'dark_score', 'blurry_score', etc.) and class labels detected in the data.\n\n"
-        report_correlation_metric = "A lower score implies a higher likelihood of a spurious correlation between that property and the class labels..\n\n"
+        report_correlation_metric = "A lower score implies a higher likelihood of a spurious correlation between that property and the class labels.\n\n"
         print(report_correlation_header + report_correlation_metric)
 
     def _visualize_extremes(
