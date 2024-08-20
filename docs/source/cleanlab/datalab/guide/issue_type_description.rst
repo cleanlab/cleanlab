@@ -399,6 +399,77 @@ To detect these issues, simply specify the `image_key` argument in :py:meth:`~cl
 This functionality currently works only with Hugging Face datasets. You can convert other local dataset formats into a Hugging Face dataset by following `this guide <https://huggingface.co/docs/datasets/en/loading>`_.
 More information on these image-specific issues is available in the `CleanVision package <https://github.com/cleanlab/cleanvision?tab=readme-ov-file#clean-your-data-for-better-computer-vision>`_ .
 
+Spurious Correlations between image-specific properties and labels
+------------------------------------------------------------------
+
+Based on the :ref:`image properties discussed earlier <Image-specific Issues>`, Datalab can also look for spurious correlations between image properties and the labels in the dataset.
+These are unintended relationships between irrelevant features in images and the given labels, which ML models may easily exploit during training without learning the relevant features.
+Once deployed, such models would consistently fail to generalize on unseen data where these spurious correlations most likely don't hold.
+
+Spurious correlations may arise in the dataset due to various reasons, such as:
+
+- Images for certain classes might be consistently captured under specific environmental conditions.
+- Preprocessing techniques applied to the data might introduce systematic differences across classes.
+- Objects of different classes may be systematically photographed in particular ways.
+
+Spurious Correlations are checked for when Datalab is initialized for an image dataset with the `image_key` keyword argument,
+after checking for :ref:`Image-specific Issues <Image-specific Issues>` where the image properties are computed.
+
+Each image property is assigned a label uncorrelatedness score for the entire dataset. The lower the score, the more likely the property is to be spuriously correlated with the labels.
+Consider reviewing the relationship between the image property and the labels if the corresponding label uncorrelatedness score is low.
+
+This issue type is more about the overall dataset vs. individual data points and will only be highlighted by Datalab in its report, if any such troublesome image properties are found.
+
+Metadata about spurious correlations is stored in the `info` attribute of the Datalab object. 
+It can be accessed like so:
+
+.. code:: 
+
+    lab.get_info("spurious_correlations")["correlations_df"]
+
+
+The output will look something like this:
+
+.. testoutput::
+
+                         property         score
+    0                blurry_score          0.559
+    1                  dark_score          0.808
+    2                 light_score          0.723
+    3              odd_size_score          0.957
+    4      odd_aspect_ratio_score          0.835
+    5             grayscale_score          0.003  # Likely to be spuriously correlated with the labels
+    6       low_information_score          0.688
+
+
+.. warning::
+
+    Note that the label uncorrelatedness scores are *not* stored in the `issues` attribute of Datalab.
+
+``property`` 
+~~~~~~~~~~~~
+
+TODO: Rahul
+
+``score``
+~~~~~~~~~
+
+TODO: Rahul
+
+
+.. tip::
+
+        This type of issue has the issue name `"spurious_correlations"`.
+
+        Run a check for this particular kind of issue by calling :py:meth:`Datalab.find_issues() <cleanlab.datalab.datalab.Datalab.find_issues>` like so:
+
+        .. code-block:: python
+
+            # `lab` is a Datalab instance
+            lab.find_issues(..., issue_types = {"spurious_correlations": {}})
+
+
+
 Underperforming Group Issue
 ---------------------------
 
