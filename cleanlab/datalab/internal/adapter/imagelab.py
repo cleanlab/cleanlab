@@ -370,18 +370,20 @@ class ImagelabIssueFinderAdapter(IssueFinder):
         if issue_types and "spurious_correlations" not in issue_types:
             return
 
-        # Spurious correlation part must be run
-        print("Finding spurious correlation issues in the dataset ...")
-
         # Check if all vision issue scores are computed
         imagelab_columns = self.imagelab.issues.columns.tolist()
         if all(
             default_cleanvision_issue + "_score" not in imagelab_columns
             for default_cleanvision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
         ):
-            raise ValueError(
-                """None of the image property scores have been computed by the find_issues() method."""
+            print("Skipping spurious correlations check: Image property scores not available.")
+            print(
+                "To include this check, run find_issues() without parameters to compute all scores."
             )
+            return
+
+        # Spurious correlation part must be run
+        print("Finding spurious correlation issues in the dataset ...")
 
         # the else part of the following must contain 'spurious_correlations' key
         spurious_correlation_issue_types = (
