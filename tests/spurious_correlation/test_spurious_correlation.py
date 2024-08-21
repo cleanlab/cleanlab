@@ -24,6 +24,7 @@ from cleanlab import Datalab
 import contextlib
 import io
 from unittest import mock
+from cleanlab.datalab.internal.adapter.constants import SPURIOUS_CORRELATION_ISSUE
 
 seed = 42
 np.random.seed(seed=seed)
@@ -341,7 +342,7 @@ def get_correlation_scores(circle_filter="identity", square_filter="identity"):
     dataset = generate_dataset(circle_filter=circle_filter, square_filter=square_filter)
     lab = Datalab(data=dataset, label_name="label", image_key="image")
     lab.find_issues()
-    correlation_scores = lab._spurious_correlation()
+    correlation_scores = lab.get_info("spurious_correlations")["correlations_df"]
     return get_scores(correlation_scores)
 
 
@@ -403,6 +404,12 @@ def test_smallest_scores_with_filters(test_attribute):
     )
 
 
+def get_report_text(lab):
+    with contextlib.redirect_stdout(io.StringIO()) as f:
+        lab.report()
+    return f.getvalue()
+
+
 @pytest.mark.parametrize(
     "test_attribute",
     [
@@ -440,7 +447,7 @@ class TestImagelabReporterAdapter:
         dataset = generate_dataset(circle_filter=test_attribute)
         lab = Datalab(data=dataset, label_name="label", image_key="image")
         lab.find_issues()
-        self.correlations_df = lab._spurious_correlation()
+        self.correlations_df = lab.get_info("spurious_correlations")["correlations_df"]
         return lab
 
     def _get_correlated_properties(self):
@@ -458,12 +465,10 @@ class TestImagelabReporterAdapter:
 
     @mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
     def test_report(self, mock_individual_images, lab):
-        with contextlib.redirect_stdout(io.StringIO()) as f:
-            lab.report()
-        report = f.getvalue()
+        report = get_report_text(lab)
 
-        report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
-        report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
+        report_correlation_header = "Here is a summary of spurious correlations between image features (like 'dark_score', 'blurry_score', etc.) and class labels detected in the data.\n\n"
+        report_correlation_metric = "A lower score implies a higher likelihood of a spurious correlation between that property and the class labels.\n\n"
         filtered_correlations_df = self._get_correlated_dataframe()
 
         if self.test_attribute != "identity":
@@ -481,3 +486,80 @@ class TestImagelabReporterAdapter:
                 report_correlation_metric not in report
             ), "Report should not contain correlation metric description"
             assert filtered_correlations_df.empty
+            assert "correlation" not in report.lower()
+            assert "spurious" not in report.lower()
+
+
+@mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
+def test_report_image_key(mock_individual_images):
+    X = np.random.rand(100, 2)
+    y = np.sum(X, axis=1)
+    data = {"X": X, "y": y}
+    lab_without_image_key = Datalab(data, label_name="y")
+    lab_without_image_key.find_issues()
+
+    dataset = generate_dataset(circle_filter="dark")
+    lab = Datalab(data=dataset, label_name="label", image_key="image")
+    lab.find_issues()
+
+    report_without_image_key = get_report_text(lab_without_image_key)
+    report = get_report_text(lab)
+
+    report_correlation_header = "Here is a summary of spurious correlations between image features (like 'dark_score', 'blurry_score', etc.) and class labels detected in the data.\n\n"
+    report_correlation_metric = "A lower score implies a higher likelihood of a spurious correlation between that property and the class labels.\n\n"
+    assert report_correlation_header not in report_without_image_key
+    assert report_correlation_metric not in report_without_image_key
+    assert report_correlation_header in report
+    assert report_correlation_metric in report
+
+    assert "correlation" not in report_without_image_key.lower()
+    assert "spurious" not in report_without_image_key.lower()
+
+
+def test_iterative_property_threshold():
+    dataset = generate_dataset()
+    lab = Datalab(data=dataset, label_name="label", image_key="image")
+
+    lab.find_issues(
+        issue_types={"image_issue_types": {"dark": {}}, "spurious_correlations": {"threshold": 0.1}}
+    )
+    correlations = lab.get_info("spurious_correlations")
+
+    # Spurious correlation scores dataframe should include only 1 row: 'dark_score'
+    assert len(correlations["correlations_df"]) == 1
+    assert correlations["correlations_df"].loc[0, "property"] == "dark_score"
+    # threshold value should be set to 0.1 (user input) for spurious correlations
+    assert correlations["threshold"] == 0.1
+
+    lab.find_issues(
+        issue_types={"image_issue_types": {"dark": {}, "blurry": {}}, "spurious_correlations": {}}
+    )
+    correlations = lab.get_info("spurious_correlations")
+
+    # Spurious correlation scores dataframe should include 2 rows: 'dark_score', 'blurry_score'
+    assert len(correlations["correlations_df"]) == 2
+    assert correlations["correlations_df"]["property"].tolist() == ["dark_score", "blurry_score"]
+    # threshold value should be set to the default value for spurious correlations
+    default_spurious_correlations_threshold = SPURIOUS_CORRELATION_ISSUE["spurious_correlations"][
+        "threshold"
+    ]
+    assert correlations["threshold"] == default_spurious_correlations_threshold
+
+    lab.find_issues(issue_types={"spurious_correlations": {"threshold": 0.5}})
+    correlations = lab.get_info("spurious_correlations")
+
+    # Spurious correlation scores dataframe should include only 1 row: 'blurry_score'
+    assert len(correlations["correlations_df"]) == 2
+    assert correlations["correlations_df"]["property"].tolist() == ["dark_score", "blurry_score"]
+    # threshold value should be set to 0.5 (user input) for spurious correlations
+    assert correlations["threshold"] == 0.5
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="lab.find_issues() must be called with atleast one image-property (or None) before finding spurious correlations",
+)
+def test_no_issues():
+    dataset = generate_dataset()
+    lab = Datalab(data=dataset, label_name="label", image_key="image")
+    correlations = lab.get_info("spurious_correlations")

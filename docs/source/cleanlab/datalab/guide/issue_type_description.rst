@@ -101,7 +101,7 @@ Some metadata about label issues is stored in the `issues` attribute of the Data
 Let's look at one way to access this information.
 
 .. testcode::
-    
+
     lab.get_issues("label").sort_values("label_score").head(5)
 
 The output will look something like this:
@@ -118,7 +118,7 @@ The output will look something like this:
 ``is_label_issue``
 ~~~~~~~~~~~~~~~~~~
 
-A boolean column that flags examples with label issues. 
+A boolean column that flags examples with label issues.
 If `True`, the example is estimated to have a label issue.
 If `False`, the example is estimated to not have a label issue.
 
@@ -194,7 +194,7 @@ A boolean column, where `True` indicates that an example is identified as an out
 ``outlier_score``
 ~~~~~~~~~~~~~~~~~
 
-A numeric column with scores between 0 and 1. 
+A numeric column with scores between 0 and 1.
 A smaller value for an example indicates that it is less common or typical in the dataset, suggesting that it is more likely to be an outlier.
 
 
@@ -236,12 +236,12 @@ The output will look something like this:
 
 .. testoutput::
 
-        is_near_duplicate_issue  near_duplicate_score near_duplicate_sets distance_to_nearest_neighbor  
-    36                     True              0.066009            [11, 80]                     0.003906    
-    11                     True              0.066009                [36]                     0.003906    
-    80                     True              0.093245                [36]                     0.005599    
-    27                    False              0.156720                  []                     0.009751    
-    72                    False              0.156720                  []                     0.009751    
+        is_near_duplicate_issue  near_duplicate_score near_duplicate_sets distance_to_nearest_neighbor
+    36                     True              0.066009            [11, 80]                     0.003906
+    11                     True              0.066009                [36]                     0.003906
+    80                     True              0.093245                [36]                     0.005599
+    27                    False              0.156720                  []                     0.009751
+    72                    False              0.156720                  []                     0.009751
 
 
 ``is_near_duplicate_issue``
@@ -398,6 +398,76 @@ Datalab can identify image-specific issues in datasets, such as images that are 
 To detect these issues, simply specify the `image_key` argument in :py:meth:`~cleanlab.datalab.datalab.Datalab`, indicating the image column name in your dataset.
 This functionality currently works only with Hugging Face datasets. You can convert other local dataset formats into a Hugging Face dataset by following `this guide <https://huggingface.co/docs/datasets/en/loading>`_.
 More information on these image-specific issues is available in the `CleanVision package <https://github.com/cleanlab/cleanvision?tab=readme-ov-file#clean-your-data-for-better-computer-vision>`_ .
+
+Spurious Correlations between image-specific properties and labels
+------------------------------------------------------------------
+
+Based on the :ref:`image properties discussed earlier <Image-specific Issues>`, Datalab can also look for spurious correlations between image properties and the labels in the dataset.
+These are unintended relationships between irrelevant features in images and the given labels, which ML models may easily exploit during training without learning the relevant features.
+Once deployed, such models would consistently fail to generalize on unseen data where these spurious correlations most likely don't hold.
+
+Spurious correlations may arise in the dataset due to various reasons, such as:
+
+- Images for certain classes might be consistently captured under specific environmental conditions.
+- Preprocessing techniques applied to the data might introduce systematic differences across classes.
+- Objects of different classes may be systematically photographed in particular ways.
+
+Spurious Correlations are checked for when Datalab is initialized for an image dataset with the `image_key` keyword argument,
+after checking for :ref:`Image-specific Issues <Image-specific Issues>` where the image properties are computed.
+
+Each image property is assigned a label uncorrelatedness score for the entire dataset. The lower the score, the more likely the property is to be spuriously correlated with the labels.
+Consider reviewing the relationship between the image property and the labels if the corresponding label uncorrelatedness score is low.
+
+This issue type is more about the overall dataset vs. individual data points and will only be highlighted by Datalab in its report, if any such troublesome image properties are found.
+
+Metadata about spurious correlations is stored in the `info` attribute of the Datalab object.
+It can be accessed like so:
+
+.. code::
+
+    lab.get_info("spurious_correlations")["correlations_df"]
+
+
+The output will look something like this:
+
+.. testoutput::
+
+                         property         score
+    0                blurry_score          0.559
+    1                  dark_score          0.808
+    2                 light_score          0.723
+    3              odd_size_score          0.957
+    4      odd_aspect_ratio_score          0.835
+    5             grayscale_score          0.003  # Likely to be spuriously correlated with the labels
+    6       low_information_score          0.688
+
+
+.. warning::
+
+    Note that the label uncorrelatedness scores are *not* stored in the `issues` attribute of Datalab.
+
+``property``
+~~~~~~~~~~~~
+
+A categorical column that identifies specific image-related characteristics assessed for potential spurious correlations with the class labels. Each entry in this column represents a distinct property of the images, such as blurriness, darkness, or grayscale, which may or may not be correlated with the labels.
+
+``score``
+~~~~~~~~~
+
+A numeric column that gives the level of label uncorrelatedness for each image-specific property computed while calling `lab.find_issues()`. The score lies between 0 and 1. The lower the score for an image-property, the more correlated the image-property is with the given labels.
+
+.. tip::
+
+        This type of issue has the issue name `"spurious_correlations"`.
+
+        Run a check for this particular kind of issue by calling :py:meth:`Datalab.find_issues() <cleanlab.datalab.datalab.Datalab.find_issues>` like so:
+
+        .. code-block:: python
+
+            # `lab` is a Datalab instance
+            lab.find_issues(..., issue_types = {"spurious_correlations": {}})
+
+
 
 Underperforming Group Issue
 ---------------------------
