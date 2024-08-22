@@ -451,7 +451,9 @@ class TestImagelabReporterAdapter:
         self.threshold = 0.01
         dataset = generate_dataset(circle_filter=test_attribute)
         lab = Datalab(data=dataset, label_name="label", image_key="image")
-        lab.find_issues()
+        lab.find_issues()  # Easiest way to get default imagelab checks
+        # Rerun checks with threshold for spurious correlations for simplicity.
+        lab.find_issues(issue_types={"spurious_correlations": {"threshold": self.threshold}})
         self.label_uncorrelatedness_scores = lab.get_info("spurious_correlations")[
             "correlations_df"
         ]
