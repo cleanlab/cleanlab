@@ -454,7 +454,7 @@ A categorical column that identifies specific image-related characteristics asse
 ``score``
 ~~~~~~~~~
 
-A numeric column that gives the level of label uncorrelatedness for each image-specific property computed while calling `lab.find_issues()`. The score lies between 0 and 1. The lower the score for an image-property, the more correlated the image-property is with the given labels.
+A numeric column that gives the level of label uncorrelatedness for a given image-specific property. The score lies between 0 and 1. The lower the score for an image-property, the more correlated the image-property is with the given labels.
 
 .. tip::
 
