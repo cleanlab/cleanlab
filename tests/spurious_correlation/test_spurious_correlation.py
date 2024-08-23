@@ -448,7 +448,7 @@ class TestImagelabReporterAdapter:
     @pytest.fixture(autouse=True)
     def lab(self, test_attribute):
         self.test_attribute = test_attribute
-        self.threshold = 0.01
+        self.threshold = SPURIOUS_CORRELATION_ISSUE["spurious_correlations"]["threshold"]
         dataset = generate_dataset(circle_filter=test_attribute)
         lab = Datalab(data=dataset, label_name="label", image_key="image")
         lab.find_issues()  # Easiest way to get default imagelab checks
