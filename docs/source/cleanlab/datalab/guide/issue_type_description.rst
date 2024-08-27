@@ -415,8 +415,9 @@ Spurious correlations may arise in the dataset due to various reasons, such as:
 Spurious Correlations are checked for when Datalab is initialized for an image dataset with the `image_key` keyword argument,
 after checking for :ref:`Image-specific Issues <Image-specific Issues>` where the image properties are computed.
 
-Each image property is assigned a label uncorrelatedness score for the entire dataset. The lower the score, the more likely the property is to be spuriously correlated with the labels.
-Consider reviewing the relationship between the image property and the labels if the corresponding label uncorrelatedness score is low.
+Each image property (e.g. darkness/brightness) is assigned a label uncorrelatedness score for the entire dataset. The lower the score, the more strongly the property is correlated with the class labels, across images of the dataset. This score is mathematically defined as: 1 minus the relative accuracy improvement in predicting the labels based solely on this image property value (relative to always predicting the most common overall class).
+
+Consider reviewing the relationship between images with high and low values of this property and the labels if the corresponding label uncorrelatedness score is low, because ML models trained on this dataset may latch onto the spurious correlation and fail to generalize.
 
 This issue type is more about the overall dataset vs. individual data points and will only be highlighted by Datalab in its report, if any such troublesome image properties are found.
 
