@@ -5,39 +5,7 @@ on:
   schedule:
     - cron: '0 12 * * 1'
 jobs:
-  test-windows:
-    name: "Test: Python ${{ matrix.python }} on windows"
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        python:
-          - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python }}
-      - name: Download cleanvision test data
-        run: |
-          git clone https://github.com/cleanlab/assets.git
-          mv assets\cleanlab_test_data tests\datalab\data
-      - name: Install cleanlab
-        run: pip install -e ".[all]"
-      - name: Install development dependencies
-        run: pip install -r requirements-dev.txt
-      - name: Overwrite tensorflow version on Windows
-        run: |
-          pip uninstall -y tensorflow
-          pip install tensorflow-cpu<2.16
-      - name: Test with coverage
-        run: pytest --verbose --maxfail=3 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
-      - uses: codecov/codecov-action@v3
-        with:
-          version: "v0.7.3"
-  test-macos-linux:
+  test-all-os:
     name: "Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     strategy:
@@ -45,6 +13,7 @@ jobs:
         os:
           - ubuntu-latest
           - macos-12
+          - windows-latest
         python:
           - "3.8"
           - "3.9"
@@ -63,6 +32,11 @@ jobs:
         run: pip install -e ".[all]"
       - name: Install development dependencies
         run: pip install -r requirements-dev.txt
+      - name: Overwrite tensorflow version on Windows
+        if: runner.os == 'Windows'
+        run: |
+          pip uninstall -y tensorflow
+          pip install tensorflow-cpu<2.16
       - name: Test with coverage
         run: pytest --verbose --maxfail=3 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
       - uses: codecov/codecov-action@v3
