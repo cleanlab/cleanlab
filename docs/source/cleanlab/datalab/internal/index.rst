@@ -15,6 +15,7 @@ internal
 .. toctree::
     :maxdepth: 2
 
+    adapter/index
     data
     data_issues
     issue_finder
