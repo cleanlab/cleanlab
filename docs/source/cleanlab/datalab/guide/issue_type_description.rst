@@ -806,6 +806,14 @@ To customize optional parameters for specific image issue types, you can provide
 
     For more information, view the cleanvision `docs <https://cleanvision.readthedocs.io/en/latest/tutorials/tutorial.html#5.-Check-for-an-issue-with-a-different-threshold>`_.
 
+Spurious Correlations Issue Parameters
+--------------------------------------
+
+.. code-block:: python
+
+    spurious_correlations_kwargs = {
+        "threshold": 0.3, # Non-negative floating value between 0 and 1, lower value implies fewer image properties may have a low enough label uncorrelatedness score to be marked as issue and vice versa.
+    }
 
 Cleanlab Studio (Easy Mode)
 ---------------------------
