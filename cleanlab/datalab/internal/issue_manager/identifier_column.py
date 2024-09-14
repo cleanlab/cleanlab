@@ -59,7 +59,7 @@ class IdentifierColumnIssueManager(IssueManager):
         if isinstance(features, np.ndarray):
             return features.T
         elif isinstance(features, pd.DataFrame) or isinstance(features, dict):
-            return np.array([col for _, col in features.items()])
+            return [np.array(col) for _, col in features.items()])
         elif isinstance(features, list):
             for col_list in features:
                 if not isinstance(col_list, list):
