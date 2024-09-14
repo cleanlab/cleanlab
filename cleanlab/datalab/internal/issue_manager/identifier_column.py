@@ -103,7 +103,7 @@ class IdentifierColumnIssueManager(IssueManager):
                 self.issue_score_key: np.ones(num_rows),
             },
         )
-        # score in summary should be 1.0 if the issue is not presend and 0.0 if at least one column is an identifier column
+        # score in summary should be 1.0 if the issue is not present and 0.0 if at least one column is an identifier column
         self.summary = self.make_summary(score=1.0 if scores.sum() == 0 else 0.0)
         self.info = {
             "identifier_columns": issue_indices,
