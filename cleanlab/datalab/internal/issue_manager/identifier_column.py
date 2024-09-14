@@ -46,7 +46,7 @@ class IdentifierColumnIssueManager(IssueManager):
 
     def _prepare_features(
         self, features: Optional[Union[npt.NDArray, pd.DataFrame, list, dict]]
-    ) -> npt.NDArray:
+    ) -> Union[npt.NDArray, list[npt.NDArray]]:
         """
         Prepare the features for issue check.
 
