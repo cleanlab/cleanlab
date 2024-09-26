@@ -669,14 +669,14 @@ Outlier Issue Parameters
 .. code-block:: python
 
     outlier_kwargs = {
-        "threshold": # floating value between 0 and 1 that sets the sensitivity of the outlier detection algorithms, based on either features or pred_probs..
+        "threshold": # floating value between 0 and 1 that sets the sensitivity of the outlier detection algorithms, based on either features or pred_probs.
+        "k": # integer representing the number of nearest neighbors for nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary, Used with features,
+        "t": # integer used to modulate the strength of the transformation from distances to scores that lie in the range [0, 1]. Used with features,
+        "scaling_factor": # floating value used to normalize the distances before they are converted into scores. Used with features,
+        "metric": # string or callable representing the distance metric used in nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary, Used with features,
     	"ood_kwargs": # dict of keyword arguments to constructor `OutOfDistribution()`{
     		"params": {
     			# NOTE: Each of the following keyword arguments can also be provided outside "ood_kwargs"
-
-    			"knn": # `knn` argument to constructor `OutOfDistribution()`. Used with features,
-    			"k": # `k` argument to constructor `OutOfDistribution()`. Used with features,
-    			"t": # `t` argument to constructor `OutOfDistribution()`. Used with features,
     			"adjust_pred_probs": # `adjust_pred_probs` argument to constructor `OutOfDistribution()`. Used with pred_probs,
     			"method": # `method` argument to constructor `OutOfDistribution()`. Used with pred_probs,
     			"confident_thresholds": # `confident_thresholds` argument to constructor `OutOfDistribution()`. Used with pred_probs,
