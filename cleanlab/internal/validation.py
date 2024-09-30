@@ -18,12 +18,14 @@
 Checks to ensure valid inputs for various methods.
 """
 
-from cleanlab.typing import LabelLike, DatasetLike
-from cleanlab.internal.constants import FLOATING_POINT_COMPARISON
-from typing import Any, List, Optional, Union
 import warnings
+from typing import Any, List, Optional, Union
+
 import numpy as np
 import pandas as pd
+
+from cleanlab.internal.constants import FLOATING_POINT_COMPARISON
+from cleanlab.typing import DatasetLike, LabelLike
 
 
 def assert_valid_inputs(
@@ -46,13 +48,14 @@ def assert_valid_inputs(
     allow_empty_X = True
     if pred_probs is None:
         allow_empty_X = False
-    try:
-        import tensorflow
+    if X is not None and not isinstance(X, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
+        try:
+            import tensorflow
 
-        if isinstance(X, tensorflow.data.Dataset):
-            allow_empty_X = True  # length of X may differ due to batch-size used in tf Dataset, so don't check it
-    except Exception:
-        pass
+            if isinstance(X, tensorflow.data.Dataset):
+                allow_empty_X = True  # length of X may differ due to batch-size used in tf Dataset, so don't check it
+        except Exception:
+            pass
 
     if not allow_empty_X:
         assert_nonempty_input(X)
