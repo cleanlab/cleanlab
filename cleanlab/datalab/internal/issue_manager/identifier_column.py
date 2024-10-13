@@ -57,19 +57,28 @@ class IdentifierColumnIssueManager(IssueManager):
             features: features as npt.NDArray
         """
         if isinstance(features, np.ndarray):
-            return features.T
-        elif isinstance(features, pd.DataFrame) or isinstance(features, dict):
-            return [np.array(col) for _, col in features.items()])
+            return features.T  # Transpose if it's a NumPy array
+        # to keep the datatype of the string columns for dicts and pandas dataframes consistent
+        # we convert the string columns to dtype=str, otherwise we ran into error in our tests
+        elif isinstance(features, pd.DataFrame):
+            return [
+                np.array(features[col].values, dtype=str if features[col].dtype == object else None)
+                for col in features.columns
+            ]
+        elif isinstance(features, dict):
+            return [
+                np.array(value, dtype=str if isinstance(value[0], str) else None)
+                for value in features.values()
+            ]
         elif isinstance(features, list):
             for col_list in features:
-                if not isinstance(col_list, list):
-                    raise ValueError("features must be a list of lists if it features is a list.")
-            return np.array([np.array(col_list) for col_list in features])
+                if not isinstance(col_list, list) and not isinstance(col_list, np.ndarray):
+                    raise ValueError(
+                        "features must be a list of lists or numpy arrays if a list is passed."
+                    )
+            return [np.array(col_list) for col_list in features]
         else:
-            raise ValueError(
-                "features must be a numpy array or a pandas DataFrame. or list\
-                    or dict that can be converted to a numpy array."
-            )
+            raise ValueError("features must be a numpy array, pandas DataFrame, list, or dict.")
 
     def find_issues(
         self, features: Optional[Union[npt.NDArray, pd.DataFrame, list, dict]], **kwargs
@@ -106,6 +115,6 @@ class IdentifierColumnIssueManager(IssueManager):
         # score in summary should be 1.0 if the issue is not present and 0.0 if at least one column is an identifier column
         self.summary = self.make_summary(score=1.0 if scores.sum() == 0 else 0.0)
         self.info = {
-            "identifier_columns": issue_indices,
+            "identifier_columns": issue_indices[0].tolist(),
             "num_identifier_columns": scores.sum(),
         }
