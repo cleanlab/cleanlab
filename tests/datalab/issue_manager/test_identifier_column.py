@@ -65,7 +65,7 @@ class TestIdentifierColumnIssueManager:
         assert np.array_equal(prepared_features, expected_prepared_features)
 
     @pytest.mark.parametrize(
-        "features, expected_indices, expected_score",
+        "features, expected_indices, expected_is_identifier_column",
         [
             (np.array([[1, 2, 3], [4, 5, 2]]), [2], 0.0),
             (np.array([[1, 2, 3], [1, 3, 2]]), [1, 2], 0.0),
@@ -92,14 +92,21 @@ class TestIdentifierColumnIssueManager:
             (np.array([[1, 2, 7], [4, 3, 8], [7, 4, 9], [10, 5, 10]]), [1, 2], 0.0),
         ],
     )
-    def test_find_issues(self, issue_manager, features, expected_indices, expected_score):
+    def test_find_issues(
+        self, issue_manager, features, expected_indices, expected_is_identifier_column
+    ):
         issue_manager.find_issues(features)
-        assert issue_manager.summary["score"][0] == expected_score
+        print(f"summary: {issue_manager.summary['score'].values[0]}")
+        # print type of score
+        score = issue_manager.summary["score"].values[0]
+        print(f"score type: {type(score)}")
+        print(f"num_identifier_columns: {issue_manager.info['num_identifier_columns']}")
+        assert issue_manager.summary["score"].values[0] == expected_is_identifier_column
         assert issue_manager.info["num_identifier_columns"] == len(expected_indices)
-        assert issue_manager.info["identifier_columns"] == expected_indices
+        assert np.array_equal(issue_manager.info["identifier_columns"], expected_indices)
 
     @pytest.mark.parametrize(
-        "features, expected_is_identifier_column, expected_score",
+        "features, expected_is_identifier_column_issue, expected_is_identifier_column",
         [
             (np.array([[1, 2, 3], [4, 5, 2]]), np.array([False, False]), [1.0, 1.0]),
             (np.array([[1, 2, 3], [1, 3, 2]]), np.array([False, False]), [1.0, 1.0]),
@@ -116,11 +123,17 @@ class TestIdentifierColumnIssueManager:
         ],
     )
     def test_issue_attribute(
-        self, issue_manager, features, expected_is_identifier_column, expected_score
+        self,
+        issue_manager,
+        features,
+        expected_is_identifier_column_issue,
+        expected_is_identifier_column,
     ):
         issue_manager.find_issues(features)
         assert np.array_equal(
             issue_manager.issues[f"is_{issue_manager.issue_name}_issue"],
-            expected_is_identifier_column,
+            expected_is_identifier_column_issue,
         )
-        assert np.array_equal(issue_manager.issues[issue_manager.issue_score_key], expected_score)
+        assert np.array_equal(
+            issue_manager.issues[issue_manager.issue_score_key], expected_is_identifier_column
+        )

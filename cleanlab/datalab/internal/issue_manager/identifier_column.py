@@ -96,13 +96,13 @@ class IdentifierColumnIssueManager(IssueManager):
             raise ValueError("features must be provided to check for identifier columns.")
         processed_features = self._prepare_features(features)
 
-        scores = np.array(
+        is_identifier_column = np.array(
             [
                 np.issubdtype(feature.dtype, np.integer) and self._is_sequential(feature)
                 for feature in processed_features
             ]
         )
-        issue_indices = np.where(scores)
+        identifier_column_indices = np.where(is_identifier_column)
         # this issue does not reflect rows at all so we set the score to 1.0 for all rows in the issue attribute
         # and set the is_identifier_column_issue to False
         num_rows = processed_features[0].size
@@ -113,8 +113,10 @@ class IdentifierColumnIssueManager(IssueManager):
             },
         )
         # score in summary should be 1.0 if the issue is not present and 0.0 if at least one column is an identifier column
-        self.summary = self.make_summary(score=1.0 if scores.sum() == 0 else 0.0)
+        self.summary = self.make_summary(score=1.0 - is_identifier_column.any())
+        # more elegant way to set the score in summary
         self.info = {
-            "identifier_columns": issue_indices[0].tolist(),
-            "num_identifier_columns": scores.sum(),
+            "identifier_columns": identifier_column_indices[0].tolist(),
+            "num_identifier_columns": identifier_column_indices[0].size,
         }
+        print(is_identifier_column.size)
