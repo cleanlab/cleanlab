@@ -74,9 +74,6 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build"]
 
-# Adding notebook patterns to exclude
-exclude_patterns += ["tutorials/datalab/data_monitor.ipynb"]
-
 autosummary_generate = True
 
 # set the default role of `name` to make cross references
@@ -176,6 +173,7 @@ html_context = {
     # Add new tags to RELEASE_VERSIONS before release
     # fmt: off
     "RELEASE_VERSIONS": [
+        "v2.7.0",
         "v2.6.6",
         "v2.6.5",
         "v2.6.4",

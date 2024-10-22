@@ -43,7 +43,6 @@ from cleanlab.datalab.internal.issue_manager_factory import (
 )
 from cleanlab.datalab.internal.serialize import _Serializer
 from cleanlab.datalab.internal.task import Task
-from cleanlab.datalab.internal.spurious_correlation import SpuriousCorrelations
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -132,7 +131,6 @@ class Datalab:
         self.cleanlab_version = cleanlab.version.__version__
         self.verbosity = verbosity
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
-        self._correlations_df = pd.DataFrame(columns=["property", "score"])
 
         # Create the builder for DataIssues
         builder = _DataIssuesBuilder(self._data)
@@ -420,7 +418,6 @@ class Datalab:
             show_summary_score=show_summary_score,
             show_all_issues=show_all_issues,
             imagelab=self._imagelab,
-            correlations_df=self._correlations_df,
         )
         reporter.report(num_examples=num_examples)
 
@@ -638,56 +635,3 @@ class Datalab:
         load_message = f"Datalab loaded from folder: {path}"
         print(load_message)
         return datalab
-
-    def _spurious_correlation(self) -> pd.DataFrame:
-        """
-        Assess potential spurious correlations in issue severity scores.
-
-        This method calculates scores indicating the likelihood of spurious correlations
-        for various issue severity scores in the dataset, as estimated by the `find_issues()` method.
-        Currently, it focuses on severity scores related to image attributes.
-        If `find_issues()` has not been called, it raises a ValueError.
-
-        Returns
-        -------
-        `correlations_df` : pandas.DataFrame
-            A DataFrame containing the calculated correlations for each property, excluding 'class_imbalance_score'.
-            The DataFrame includes:
-            - 'property' : str
-                The name of the property.
-            - 'score' : float
-                The spurious correlation score (between 0 and 1) for the property,
-                where a low score indicates a higher likelihood of spurious correlation,
-                and a high score indicates a lower likelihood.
-
-        Raises
-        ------
-        ValueError
-            If the issues have not been identified (i.e., `find_issues()` has not been called).
-
-        Notes
-        -----
-        This method currently focuses on image-related severity scores, with potential for future expansions.
-        """
-        try:
-            issues = self.get_issues()
-        except ValueError:
-            raise ValueError(
-                "Please call find_issues() before proceeding with finding Spurious Correlations"
-            )
-
-        if not all(
-            default_cleanvision_issue + "_score" in issues.columns.tolist()
-            for default_cleanvision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
-        ):
-            raise ValueError("All vision issue scores are not computed by get_issues() method")
-
-        cleanvision_issues_columns = [
-            default_cleanvision_issue + "_score"
-            for default_cleanvision_issue in DEFAULT_CLEANVISION_ISSUES.keys()
-        ]
-        issues_score_data = issues[cleanvision_issues_columns]
-        property_correlations = SpuriousCorrelations(data=issues_score_data, labels=self.labels)
-        correlations_df = property_correlations.calculate_correlations()
-
-        return correlations_df

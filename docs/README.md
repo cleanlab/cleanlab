@@ -37,7 +37,7 @@ pip install -r docs/requirements.txt
 5. **[Optional]** [Create a new branch](https://www.atlassian.com/git/tutorials/using-branches), make your code changes, and then `git commit` them. **ONLY COMMITTED CHANGES WILL BE REFLECTED IN THE DOCS BUILD WITH `sphinx-multiversion`.** Instead use `sphinx-build` if you don't want to commit some test changes but still want to see their corresponding docs.
 
 6. Build the docs with either
-   1. [`sphinx-multiversion`](https://holzhaus.github.io/sphinx-multiversion):
+   1. [`sphinx-multiversion`](https://sphinx-contrib.github.io/multiversion/):
 
       * If you're building from a **branch** (usually the `master` branch):
 

@@ -15,6 +15,7 @@ of machine learning models trained on such data.
 The test is implemented using the cleanlab library using Datalab module, which helps identify and quantify these spurious correlations.
 """
 
+import re
 import numpy as np
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 import random
@@ -24,6 +25,7 @@ from cleanlab import Datalab
 import contextlib
 import io
 from unittest import mock
+from cleanlab.datalab.internal.adapter.constants import SPURIOUS_CORRELATION_ISSUE
 
 seed = 42
 np.random.seed(seed=seed)
@@ -321,28 +323,28 @@ def get_scores(df):
     """
     filter_functions_map = get_filter_functions_without_identity()
     properties_of_interest = [prop + "_score" for prop in filter_functions_map.keys()]
-    standard_correlation_scores = {
+    standard_label_uncorrelatedness_scores = {
         prop: get_property_score(df, prop) for prop in properties_of_interest
     }
-    return standard_correlation_scores
+    return standard_label_uncorrelatedness_scores
 
 
-def get_correlation_scores(circle_filter="identity", square_filter="identity"):
+def get_label_uncorrelatedness_scores(circle_filter="identity", square_filter="identity"):
     """
-    Generates a dataset and computes spurious correlation scores.
+    Generates a dataset and computes label uncorrelatedness scores.
 
     Args:
         circle_filter (str): The filter to apply to circle images.
         square_filter (str): The filter to apply to square images.
 
     Returns:
-        dict: A dictionary with property names as keys and their correlation scores as values.
+        dict: A dictionary with property names as keys and their uncorrelatedness scores as values.
     """
     dataset = generate_dataset(circle_filter=circle_filter, square_filter=square_filter)
     lab = Datalab(data=dataset, label_name="label", image_key="image")
     lab.find_issues()
-    correlation_scores = lab._spurious_correlation()
-    return get_scores(correlation_scores)
+    label_uncorrelatedness_scores = lab.get_info("spurious_correlations")["correlations_df"]
+    return get_scores(label_uncorrelatedness_scores)
 
 
 @pytest.mark.parametrize(
@@ -353,18 +355,20 @@ def get_correlation_scores(circle_filter="identity", square_filter="identity"):
         "odd_aspect_ratio",
     ],
 )
-def test_correlation_scores_against_standard(test_attribute):
+def test_uncorrelatedness_scores_against_standard(test_attribute):
     """
-    Tests that correlation scores for specific filters are lower than standard scores.
+    Tests that label uncorrelatedness scores for specific filters are lower than standard scores.
 
     Asserts:
         AssertionError: If any of the specific filter scores are not lower than the standard scores.
     """
-    standard_correlation_scores = get_correlation_scores()
-    attribute_filter_scores = get_correlation_scores(circle_filter=f"{test_attribute}")
+    standard_label_uncorrelatedness_scores = get_label_uncorrelatedness_scores()
+    attribute_filter_label_uncorrelatedness_scores = get_label_uncorrelatedness_scores(
+        circle_filter=f"{test_attribute}"
+    )
     assert (
-        standard_correlation_scores[f"{test_attribute}_score"]
-        > attribute_filter_scores[f"{test_attribute}_score"]
+        standard_label_uncorrelatedness_scores[f"{test_attribute}_score"]
+        > attribute_filter_label_uncorrelatedness_scores[f"{test_attribute}_score"]
     )
 
 
@@ -383,17 +387,19 @@ def test_correlation_scores_against_standard(test_attribute):
 )
 def test_smallest_scores_with_filters(test_attribute):
     """
-    Tests that each specific filter has the smallest correlation score for its respective property.
+    Tests that each specific filter has the smallest uncorrelatedness score for its respective property.
 
     Asserts:
         AssertionError: If any specific filter score is not the smallest for its respective property.
     """
 
     attributes_to_score = ["dark", "blurry", "odd_aspect_ratio"]
-    standard_correlation_scores = get_correlation_scores()
+    standard_correlation_scores = get_label_uncorrelatedness_scores()
 
     score_key = f"{test_attribute}_score"
-    filtered_scores = {f: get_correlation_scores(circle_filter=f) for f in attributes_to_score}
+    filtered_scores = {
+        f: get_label_uncorrelatedness_scores(circle_filter=f) for f in attributes_to_score
+    }
 
     # The attribute being tested should have the lowest score for the filtered dataset
     test_scores = filtered_scores.pop(test_attribute)
@@ -401,6 +407,12 @@ def test_smallest_scores_with_filters(test_attribute):
         standard_correlation_scores[score_key],
         *[scores[score_key] for scores in filtered_scores.values()],
     )
+
+
+def get_report_text(lab):
+    with contextlib.redirect_stdout(io.StringIO()) as f:
+        lab.report()
+    return f.getvalue()
 
 
 @pytest.mark.parametrize(
@@ -439,40 +451,48 @@ class TestImagelabReporterAdapter:
         self.threshold = 0.01
         dataset = generate_dataset(circle_filter=test_attribute)
         lab = Datalab(data=dataset, label_name="label", image_key="image")
-        lab.find_issues()
-        self.correlations_df = lab._spurious_correlation()
+        lab.find_issues()  # Easiest way to get default imagelab checks
+        # Rerun checks with threshold for spurious correlations for simplicity.
+        lab.find_issues(issue_types={"spurious_correlations": {"threshold": self.threshold}})
+        self.label_uncorrelatedness_scores = lab.get_info("spurious_correlations")[
+            "correlations_df"
+        ]
         return lab
 
     def _get_correlated_properties(self):
-        if self.correlations_df.empty:
+        if self.label_uncorrelatedness_scores.empty:
             return []
-        return self.correlations_df.query("score < @self.threshold")["property"].tolist()
+        return self.label_uncorrelatedness_scores.query("score < @self.threshold")[
+            "property"
+        ].tolist()
 
-    def _get_correlated_dataframe(self):
+    def _get_label_uncorrelatedness_scores(self):
         correlated_properties = self._get_correlated_properties()
-        filtered_correlations_df = self.correlations_df.query("property in @correlated_properties")
-        filtered_correlations_df.loc[:, "property"] = filtered_correlations_df["property"].apply(
-            lambda x: x.replace("_score", "")
+        filtered_label_uncorrelatedness_scores = self.label_uncorrelatedness_scores.query(
+            "property in @correlated_properties"
         )
-        return filtered_correlations_df
+        filtered_label_uncorrelatedness_scores.loc[:, "property"] = (
+            filtered_label_uncorrelatedness_scores["property"].apply(
+                lambda x: x.replace("_score", "")
+            )
+        )
+        return filtered_label_uncorrelatedness_scores
 
     @mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
     def test_report(self, mock_individual_images, lab):
-        with contextlib.redirect_stdout(io.StringIO()) as f:
-            lab.report()
-        report = f.getvalue()
+        report = get_report_text(lab)
 
-        report_correlation_header = "Here is a summary of spurious correlations between image features like 'dark_score', 'blurry_score', etc., and class labels detected in the data.\n\n"
-        report_correlation_metric = "A lower score for each property implies a higher correlation of that property with the class labels.\n\n"
-        filtered_correlations_df = self._get_correlated_dataframe()
+        report_correlation_header = "Summary of (potentially spurious) correlations between image properties and class labels detected in the data:\n\n"
+        report_correlation_metric = "Lower scores below correspond to images properties that are more strongly correlated with the class labels.\n\n"
+        filtered_label_uncorrelatedness_scores = self._get_label_uncorrelatedness_scores()
 
         if self.test_attribute != "identity":
             assert report_correlation_header in report, "Report should contain correlation header"
             assert (
                 report_correlation_metric in report
             ), "Report should contain correlation metric description"
-            assert self.test_attribute in filtered_correlations_df["property"].values
-            assert filtered_correlations_df.to_string(index=False) in report
+            assert self.test_attribute in filtered_label_uncorrelatedness_scores["property"].values
+            assert filtered_label_uncorrelatedness_scores.to_string(index=False) in report
         else:
             assert (
                 report_correlation_header not in report
@@ -480,4 +500,109 @@ class TestImagelabReporterAdapter:
             assert (
                 report_correlation_metric not in report
             ), "Report should not contain correlation metric description"
-            assert filtered_correlations_df.empty
+            assert filtered_label_uncorrelatedness_scores.empty
+            assert "correlation" not in report.lower()
+            assert "spurious" not in report.lower()
+
+
+@mock.patch("cleanvision.utils.viz_manager.VizManager.individual_images")
+def test_report_image_key(mock_individual_images):
+    X = np.random.rand(100, 2)
+    y = np.sum(X, axis=1)
+    data = {"X": X, "y": y}
+    lab_without_image_key = Datalab(data, label_name="y")
+    lab_without_image_key.find_issues()
+
+    dataset = generate_dataset(circle_filter="dark")
+    lab = Datalab(data=dataset, label_name="label", image_key="image")
+    lab.find_issues()
+
+    report_without_image_key = get_report_text(lab_without_image_key)
+    report = get_report_text(lab)
+
+    report_correlation_header = "Summary of (potentially spurious) correlations between image properties and class labels detected in the data:\n\n"
+    report_correlation_metric = "Lower scores below correspond to images properties that are more strongly correlated with the class labels.\n\n"
+    assert report_correlation_header not in report_without_image_key
+    assert report_correlation_metric not in report_without_image_key
+    assert report_correlation_header in report
+    assert report_correlation_metric in report
+
+    assert "correlation" not in report_without_image_key.lower()
+    assert "spurious" not in report_without_image_key.lower()
+
+
+def test_iterative_property_threshold():
+    dataset = generate_dataset()
+    lab = Datalab(data=dataset, label_name="label", image_key="image")
+
+    lab.find_issues(
+        issue_types={"image_issue_types": {"dark": {}}, "spurious_correlations": {"threshold": 0.1}}
+    )
+    spurious_correlations_info = lab.get_info("spurious_correlations")
+
+    # Spurious correlation scores dataframe should include only 1 row: 'dark_score'
+    assert len(spurious_correlations_info["correlations_df"]) == 1
+    assert spurious_correlations_info["correlations_df"].loc[0, "property"] == "dark_score"
+    # threshold value should be set to 0.1 (user input) for spurious correlations
+    assert spurious_correlations_info["threshold"] == 0.1
+
+    lab.find_issues(
+        issue_types={"image_issue_types": {"dark": {}, "blurry": {}}, "spurious_correlations": {}}
+    )
+    spurious_correlations_info = lab.get_info("spurious_correlations")
+
+    # Spurious correlation scores dataframe should include 2 rows: 'dark_score', 'blurry_score'
+    assert len(spurious_correlations_info["correlations_df"]) == 2
+    assert spurious_correlations_info["correlations_df"]["property"].tolist() == [
+        "dark_score",
+        "blurry_score",
+    ]
+    # threshold value should be set to the default value for spurious correlations
+    default_spurious_correlations_threshold = SPURIOUS_CORRELATION_ISSUE["spurious_correlations"][
+        "threshold"
+    ]
+    assert spurious_correlations_info["threshold"] == default_spurious_correlations_threshold
+
+    lab.find_issues(issue_types={"spurious_correlations": {"threshold": 0.5}})
+    spurious_correlations_info = lab.get_info("spurious_correlations")
+
+    # Spurious correlation scores dataframe should include only 1 row: 'blurry_score'
+    assert len(spurious_correlations_info["correlations_df"]) == 2
+    assert spurious_correlations_info["correlations_df"]["property"].tolist() == [
+        "dark_score",
+        "blurry_score",
+    ]
+    # threshold value should be set to 0.5 (user input) for spurious correlations
+    assert spurious_correlations_info["threshold"] == 0.5
+
+
+def test_get_info_spurious_correlations_check_skipped():
+    """An extra set of tests to verify that spurious correlations
+    are not available without pre-existing image-property checks,
+    so no info on spurious correlations can be retrieved."""
+    dataset = generate_dataset()
+    lab = Datalab(data=dataset, label_name="label", image_key="image")
+
+    # Test 1: Spurious correlations not available without checks
+    error_message = "Spurious correlations have not been calculated. Run find_issues() first."
+    with pytest.raises(ValueError, match=re.escape(error_message)):
+        lab.get_info("spurious_correlations")
+
+    # Test 2: Spurious correlations check skipped without image-property checks
+    with contextlib.redirect_stdout(io.StringIO()) as f:
+        lab.find_issues(issue_types={"spurious_correlations": {}})
+
+    assert f.getvalue().startswith(
+        "Skipping spurious correlations check: Image property scores not available.\n"
+        "To include this check, run find_issues() without parameters to compute all scores."
+    )
+
+    with pytest.raises(ValueError, match=re.escape(error_message)):
+        lab.get_info("spurious_correlations")
+
+    # Test 3: Running image-property checks allows spurious correlations calculation
+    lab.find_issues(issue_types={"image_issue_types": {"odd_aspect_ratio": {}}})
+    lab.find_issues(issue_types={"spurious_correlations": {}})
+
+    spurious_correlations_info = lab.get_info("spurious_correlations")
+    assert set(["correlations_df", "threshold"]) == set(list(spurious_correlations_info.keys()))

@@ -2,8 +2,106 @@
   <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_open_source.png" width=60% height=60%>
 </p>
 
+<div align="center">
+<a href="https://pypi.org/pypi/cleanlab/" target="_blank"><img src="https://img.shields.io/pypi/v/cleanlab.svg" alt="pypi_versions"></a>
+<a href="https://pypi.org/pypi/cleanlab/" target="_blank"><img src="https://img.shields.io/badge/python-3.8%2B-blue" alt="py_versions"></a>
+<a href="https://app.codecov.io/gh/cleanlab/cleanlab" target="_blank"><img src="https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg" alt="coverage"></a>
+<a href="https://github.com/cleanlab/cleanlab/stargazers/" target="_blank"><img src="https://img.shields.io/github/stars/cleanlab/cleanlab?style=social&maxAge=2592000" alt="Github Stars"></a>
+<a href="https://cleanlab.ai/slack" target="_blank"><img src="https://img.shields.io/static/v1?logo=slack&style=flat&color=white&label=slack&message=join" alt="Slack Community"></a>
+<a href="https://twitter.com/CleanlabAI" target="_blank"><img src="https://img.shields.io/twitter/follow/CleanlabAI?style=social" alt="Twitter"></a>
+</div>
 
-cleanlab helps you **clean** data and **lab**els by automatically detecting issues in a ML dataset. To facilitate **machine learning with messy, real-world data**, this data-centric AI package uses your *existing* models to estimate dataset problems that can be fixed to train even *better* models.
+<h4 align="center">
+    <p>
+        <a href="https://docs.cleanlab.ai/">Documentation</a> |
+        <a href="https://github.com/cleanlab/examples">Examples</a> |
+        <a href="https://cleanlab.ai/blog/">Blog</a> |
+        <a href="#citation-and-related-publications">Research</a> |
+        <a href="#try-easy-mode-with-cleanlab-studio">Cleanlab Studio</a> |
+        <a href="#join-our-community">Community</a>
+    <p>
+</h4>
+
+cleanlab helps you **clean** data and **lab**els by automatically detecting issues in a ML dataset. To facilitate **machine learning with messy, real-world data**, this data-centric AI package uses your *existing* models to estimate dataset problems that can be fixed to train even *better* models. Improve reliability across supervised learning, LLM, and RAG applications.
+ 
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/datalab_issues.png" width=74% height=74%>
+</p>
+<p align="center">
+    Examples of various issues in Cat/Dog dataset <b>automatically detected</b> by cleanlab via this code:    
+</p>
+
+```python
+        lab = cleanlab.Datalab(data=dataset, label="column_name_for_labels")
+        # Fit any ML model, get its feature_embeddings & pred_probs for your data
+        lab.find_issues(features=feature_embeddings, pred_probs=pred_probs)
+        lab.report()
+```
+
+- Use cleanlab to automatically check every: [text](https://docs.cleanlab.ai/stable/tutorials/datalab/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/datalab/audio.html), [image](https://docs.cleanlab.ai/stable/tutorials/datalab/image.html), or [tabular](https://docs.cleanlab.ai/stable/tutorials/datalab/tabular.html) dataset.
+- Use cleanlab to automatically: [detect data issues (outliers, duplicates, label errors, etc)](https://docs.cleanlab.ai/stable/tutorials/datalab/datalab_quickstart.html), [train robust models](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html), [infer consensus + annotator-quality for multi-annotator data](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html), [suggest data to (re)label next (active learning)](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb).
+
+
+---
+
+### Try easy mode with Cleanlab Studio 
+
+While this open-source package **finds** data issues, its utility depends on you having: a good existing ML model + an interface to efficiently **fix** these issues in your dataset. Providing all these pieces, [Cleanlab Studio](https://cleanlab.ai/blog/data-centric-ai/) is a Data Curation platform to **find and fix** problems in any {text, image, tabular} dataset. Cleanlab Studio [automatically](https://cleanlab.ai/blog/data-centric-ai/) runs optimized algorithms from this package on top of **AutoML & Foundation** models fit to your data, and presents detected issues (+ AI-suggested fixes) in an intelligent [data correction interface](https://www.youtube.com/playlist?list=PLn_2rr2ltYqA1uAC0AnRbPyY-wWVf1aeg).
+
+**[Try it for free!](https://cleanlab.ai/signup/)** Adopting Cleanlab Studio enables users of this package to:
+- Work 100x faster (1 min to analyze your raw data with **zero** code or ML work; optionally use [Python API](https://help.cleanlab.ai/tutorials/))
+- Produce better-quality data (10x more [types of issues](https://help.cleanlab.ai/guide/concepts/cleanlab_columns/) auto detected & **corrected** via built-in AI)
+- Accomplish more (auto-label data, deploy ML instantly, audit LLM inputs/outputs, moderate content, ...)
+- Monitor incoming data and detect issues in real-time (integrate your data pipeline on an [Enterprise plan](https://cleanlab.ai/sales/)) 
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/ml-with-cleanlab-studio.png" alt="The modern AI pipeline automated with Cleanlab Studio">
+</p>
+
+
+## Run cleanlab open-source
+
+This cleanlab package runs on Python 3.8+ and supports Linux, macOS, as well as Windows.
+
+- Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda`.
+- Developers who install the bleeding-edge from source should refer to [this master branch documentation](https://docs.cleanlab.ai/master/index.html).
+
+**Practicing data-centric AI can look like this:**
+1. Train initial ML model on original dataset.
+2. Utilize this model to diagnose data issues (via cleanlab methods) and improve the dataset.
+3. Train the same model on the improved dataset. 
+4. Try various modeling techniques to further improve performance.
+
+Most folks jump from Step 1 → 4, but you may achieve big gains without *any* change to your modeling code by using cleanlab!
+Continuously boost performance by iterating Steps 2 → 4 (and try to evaluate with *cleaned* data).
+
+![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/flowchart.png)
+
+
+## Use cleanlab with any model and in most ML tasks
+
+All features of cleanlab work with **any dataset** and **any model**. Yes, any model: PyTorch, Tensorflow, Keras, JAX, HuggingFace, OpenAI, XGBoost, scikit-learn, etc.
+
+cleanlab is useful across a wide variety of Machine Learning tasks. Specific tasks this data-centric AI package offers dedicated functionality for include:
+1. [Binary and multi-class classification](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html)
+2. [Multi-label classification](https://docs.cleanlab.ai/stable/tutorials/multilabel_classification.html) (e.g. image/document tagging)
+3. [Token classification](https://docs.cleanlab.ai/stable/tutorials/token_classification.html) (e.g. entity recognition in text)
+4. [Regression](https://docs.cleanlab.ai/stable/tutorials/regression.html) (predicting numerical column in a dataset)
+5. [Image segmentation](https://docs.cleanlab.ai/stable/tutorials/segmentation.html) (images with per-pixel annotations)
+6. [Object detection](https://docs.cleanlab.ai/stable/tutorials/object_detection.html) (images with bounding box annotations)
+7. [Classification with data labeled by multiple annotators](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html)
+8. [Active learning with multiple annotators](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb) (suggest which data to label or re-label to improve model most)
+9. [Outlier detection](https://docs.cleanlab.ai/stable/tutorials/outliers.html) (identify atypical data that appears out of distribution)
+
+For other ML tasks, cleanlab can still help you improve your dataset if appropriately applied.
+See our [Example Notebooks](https://github.com/cleanlab/examples) and [Blog](https://cleanlab.ai/blog/).
+
+
+## So fresh, so cleanlab
+
+Beyond automatically catching [all sorts of issues](https://docs.cleanlab.ai/stable/cleanlab/datalab/guide/issue_type_description.html) lurking in your data, this data-centric AI package helps you deal with **noisy labels** and train more **robust ML models**.
+Here's an example:
 
 ```python
 
@@ -23,40 +121,7 @@ cl.predict(test_data)
 cleanlab.dataset.health_summary(labels, confident_joint=cl.confident_joint)
 ```
 
-Get started with: [tutorials](https://docs.cleanlab.ai/stable/tutorials/datalab/image.html), [documentation](https://docs.cleanlab.ai/), [examples](https://github.com/cleanlab/examples), and [blogs](https://cleanlab.ai/blog/).
-
- - Learn to run cleanlab on your data in 5 minutes for: [image](https://docs.cleanlab.ai/stable/tutorials/datalab/image.html), [text](https://docs.cleanlab.ai/stable/tutorials/datalab/text.html), [audio](https://docs.cleanlab.ai/stable/tutorials/datalab/audio.html), or [tabular](https://docs.cleanlab.ai/stable/tutorials/datalab/tabular.html) data.
-- Use cleanlab to automatically: [detect data issues (outliers, duplicates, label errors, etc)](https://docs.cleanlab.ai/stable/tutorials/datalab/datalab_quickstart.html), [train robust models](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html), [infer consensus + annotator-quality for multi-annotator data](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html), [suggest data to (re)label next (active learning)](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb). 
-
-
-[![pypi](https://img.shields.io/pypi/v/cleanlab.svg)](https://pypi.org/pypi/cleanlab/)
-[![os](https://img.shields.io/badge/platform-noarch-lightgrey)](https://pypi.org/pypi/cleanlab/)
-[![py\_versions](https://img.shields.io/badge/python-3.8%2B-blue)](https://pypi.org/pypi/cleanlab/)
-[![build\_status](https://github.com/cleanlab/cleanlab/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab/actions?query=workflow%3ACI)
-[![coverage](https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg)](https://app.codecov.io/gh/cleanlab/cleanlab)
-[![docs](https://img.shields.io/static/v1?logo=github&style=flat&color=pink&label=docs&message=cleanlab)](https://docs.cleanlab.ai/)
-[![Slack Community](https://img.shields.io/static/v1?logo=slack&style=flat&color=white&label=slack&message=community)](https://cleanlab.ai/slack)
-[![Twitter](https://img.shields.io/twitter/follow/CleanlabAI?style=social)](https://twitter.com/CleanlabAI)
-[![Cleanlab Studio](https://raw.githubusercontent.com/cleanlab/assets/master/shields/cl-studio-shield.svg)](https://cleanlab.ai/studio/?utm_source=github&utm_medium=readme&utm_campaign=clostostudio)
-
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/datalab_issues.png" width=74% height=74%>
-</p>
-<p align="center">
-    Examples of various issues in Cat/Dog dataset <b>automatically detected</b> by cleanlab via this code:    
-</p>
-
-```python
-        lab = cleanlab.Datalab(data=dataset, label="column_name_for_labels")
-        # Fit any ML model, get its feature_embeddings & pred_probs for your data
-        lab.find_issues(features=feature_embeddings, pred_probs=pred_probs)
-        lab.report()
-```
-
-## So fresh, so cleanlab
-
-cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learning* algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) and [blog](https://l7.curtisnorthcutt.com/confident-learning). See some of the datasets cleaned with cleanlab at [labelerrors.com](https://labelerrors.com). This data-centric AI tool helps you find data and label issues, so you can train reliable ML models.
+cleanlab **clean**s your data's **lab**els via state-of-the-art *confident learning* algorithms, published in this [paper](https://jair.org/index.php/jair/article/view/12125) and [blog](https://l7.curtisnorthcutt.com/confident-learning). See some of the datasets cleaned with cleanlab at [labelerrors.com](https://labelerrors.com).
 
 cleanlab is:
 
@@ -71,90 +136,6 @@ cleanlab is:
 Examples of incorrect given labels in various image datasets <a href="https://l7.curtisnorthcutt.com/label-errors">found and corrected</a> using cleanlab. 
 While these examples are from image datasets, this also works for text, audio, tabular data.
 </p>
-
-## Run cleanlab
-
-cleanlab supports Linux, macOS, and Windows and runs on Python 3.8+.
-
-- Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda` as described [here](https://docs.cleanlab.ai/).
-- Developers who install the bleeding-edge from source should refer to [this master branch documentation](https://docs.cleanlab.ai/master/index.html).
-- For help, check out our detailed [FAQ](https://docs.cleanlab.ai/stable/tutorials/faq.html), [Github Issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue), or [Slack](https://cleanlab.ai/slack). We welcome any questions!
-
-**Practicing data-centric AI can look like this:**
-1. Train initial ML model on original dataset.
-2. Utilize this model to diagnose data issues (via cleanlab methods) and improve the dataset.
-3. Train the same model on the improved dataset. 
-4. Try various modeling techniques to further improve performance.
-
-Most folks jump from Step 1 → 4, but you may achieve big gains without *any* change to your modeling code by using cleanlab!
-Continuously boost performance by iterating Steps 2 → 4 (and try to evaluate with *cleaned* data).
-
-![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/flowchart.png)
-
-
-## Use cleanlab with any model for most ML tasks
-
-All features of cleanlab work with **any dataset** and **any model**. Yes, any model: PyTorch, Tensorflow, Keras, JAX, HuggingFace, OpenAI, XGBoost, scikit-learn, etc.
-If you use a sklearn-compatible classifier, all cleanlab methods work out-of-the-box.
-
-<details><summary>
-It’s also easy to use your favorite non-sklearn-compatible model (<b>click to learn more</b>)
-</summary>
-<br/>
-
-cleanlab can find label issues from any model's predicted class probabilities if you can produce them yourself.
-
-Some cleanlab functionality may require your model to be sklearn-compatible.
-There's nothing you need to do if your model already has `.fit()`, `.predict()`, and `.predict_proba()` methods.
-Otherwise, just wrap your custom model into a Python class that inherits the `sklearn.base.BaseEstimator`:
-
-``` python
-from sklearn.base import BaseEstimator
-class YourFavoriteModel(BaseEstimator): # Inherits sklearn base classifier
-    def __init__(self, ):
-        pass  # ensure this re-initializes parameters for neural net models
-    def fit(self, X, y, sample_weight=None):
-        pass
-    def predict(self, X):
-        pass
-    def predict_proba(self, X):
-        pass
-    def score(self, X, y, sample_weight=None):
-        pass
-```
-
-This inheritance allows to apply a wide range of sklearn functionality like hyperparameter-optimization to your custom model.
-Now you can use your model with every method in cleanlab. Here's one example:
-
-``` python
-from cleanlab.classification import CleanLearning
-cl = CleanLearning(clf=YourFavoriteModel())  # has all the same methods of YourFavoriteModel
-cl.fit(train_data, train_labels_with_errors)
-cl.predict(test_data)
-```
-
-#### Want to see a working example? [Here’s a compliant PyTorch MNIST CNN class](https://github.com/cleanlab/cleanlab/blob/master/cleanlab/experimental/mnist_pytorch.py)
-
-More details are provided in documentation of [cleanlab.classification.CleanLearning](https://docs.cleanlab.ai/stable/cleanlab/classification.html).
-
-Note, some libraries exist to give you sklearn-compatibility for free. For PyTorch, check out the [skorch](https://skorch.readthedocs.io/) Python library which will wrap your PyTorch model into a sklearn-compatible model ([example](https://docs.cleanlab.ai/stable/tutorials/datalab/image.html)). For TensorFlow/Keras, check out our [Keras wrapper](https://docs.cleanlab.ai/stable/cleanlab/models/keras.html). Many libraries also already offer a special scikit-learn API, for example: [XGBoost](https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn) or [LightGBM](https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html).
-
-<br/>
-</details>
-
-cleanlab is useful across a wide variety of Machine Learning tasks. Specific tasks this data-centric AI solution offers dedicated functionality for include:
-1. [Binary and multi-class classification](https://docs.cleanlab.ai/stable/tutorials/indepth_overview.html)
-2. [Multi-label classification](https://docs.cleanlab.ai/stable/tutorials/multilabel_classification.html) (e.g. image/document tagging)
-3. [Token classification](https://docs.cleanlab.ai/stable/tutorials/token_classification.html) (e.g. entity recognition in text)
-4. [Regression](https://docs.cleanlab.ai/stable/tutorials/regression.html) (predicting numerical column in a dataset)
-5. [Image segmentation](https://docs.cleanlab.ai/stable/tutorials/segmentation.html) (images with per-pixel annotations)
-6. [Object detection](https://docs.cleanlab.ai/stable/tutorials/object_detection.html) (images with bounding box annotations)
-7. [Classification with data labeled by multiple annotators](https://docs.cleanlab.ai/stable/tutorials/multiannotator.html)
-8. [Active learning with multiple annotators](https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb) (suggest which data to label or re-label to improve model most)
-9. [Outlier detection](https://docs.cleanlab.ai/stable/tutorials/outliers.html) (identify atypical data that appears out of distribution)
-
-For other ML tasks, cleanlab can still help you improve your dataset if appropriately applied.
-Many practical applications are demonstrated in our [Example Notebooks](https://github.com/cleanlab/examples).
 
 
 ## Citation and related publications
@@ -318,34 +299,16 @@ To understand/cite other cleanlab functionality not described above, check out o
 - [Release notes for past versions](https://github.com/cleanlab/cleanlab/releases)
 
 
-## Easy mode: *No-code Data Improvement*
-
-While this open-source package **finds** data issues, its utility depends on you having: a good existing ML model + an interface to efficiently **fix** these issues in your dataset. Providing all these pieces, [Cleanlab Studio](https://cleanlab.ai/blog/data-centric-ai/) is a Data Curation platform to **find and fix** problems in any {image, text, tabular} dataset. Cleanlab Studio [automatically](https://cleanlab.ai/blog/data-centric-ai/) runs optimized algorithms from this package on top of **AutoML & Foundation** models fit to your data, and presents detected issues (+ AI-suggested fixes) in an intelligent [data correction interface](https://www.youtube.com/playlist?list=PLn_2rr2ltYqA1uAC0AnRbPyY-wWVf1aeg).
-
-**[Try it for free!](https://cleanlab.ai/signup/)** Adopting Cleanlab Studio enables users of this package to:
-- work 100x faster (1 min to analyze your raw data with **zero** code or ML work; optionally use [Python API](https://help.cleanlab.ai/tutorials/))
-- produce better-quality data (10x more [types of issues](https://help.cleanlab.ai/guide/concepts/cleanlab_columns/) auto detected & **corrected** via built-in AI)
-- accomplish more (auto-label data, deploy ML instantly, audit LLM inputs/outputs, moderate content, ...)
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/ml-with-cleanlab-studio.png" alt="The modern AI pipeline automated with Cleanlab Studio">
-</p>
-
-
 ## Join our community
 
-* The best place to learn is [our Slack community](https://cleanlab.ai/slack).
+* Learn, discuss, and shape the future of cleanlab in our 1000+ member [Slack community](https://cleanlab.ai/slack).
 
-* Have ideas for the future of cleanlab? How are you using cleanlab? [Join the discussion](https://github.com/cleanlab/cleanlab/discussions) and check out [our active/planned Projects and what we could use your help with](https://github.com/cleanlab/cleanlab/projects).
+* Interested in contributing? See the [contributing guide](CONTRIBUTING.md), [development guide](DEVELOPMENT.md), and [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab). We welcome your help building a standard open-source platform for data-centric AI!
 
-* Interested in contributing? See the [contributing guide](CONTRIBUTING.md) and [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab). We welcome your help building a standard open-source platform for data-centric AI!
+* Have questions? Check out [our FAQ](https://docs.cleanlab.ai/stable/tutorials/faq.html), [Github Issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue), or [Slack](https://cleanlab.ai/slack).
 
-* Have code improvements for cleanlab? See the [development guide](DEVELOPMENT.md).
-
-* Have an issue with cleanlab? Search [our FAQ](https://docs.cleanlab.ai/stable/tutorials/faq.html) and [existing issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue), or [submit a new issue](https://github.com/cleanlab/cleanlab/issues/new).
-
-* Need professional help with cleanlab?
-Join our [\#help Slack channel](https://cleanlab.ai/slack) and message us there, or reach out via email: team@cleanlab.ai
+* Need professional help with your Data/AI project? Email us: team@cleanlab.ai <br>
+For instance, we can help you **monitor incoming data and detect issues in real-time**.
 
 ## License
 

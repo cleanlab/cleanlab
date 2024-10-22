@@ -101,7 +101,7 @@ Some metadata about label issues is stored in the `issues` attribute of the Data
 Let's look at one way to access this information.
 
 .. testcode::
-    
+
     lab.get_issues("label").sort_values("label_score").head(5)
 
 The output will look something like this:
@@ -118,7 +118,7 @@ The output will look something like this:
 ``is_label_issue``
 ~~~~~~~~~~~~~~~~~~
 
-A boolean column that flags examples with label issues. 
+A boolean column that flags examples with label issues.
 If `True`, the example is estimated to have a label issue.
 If `False`, the example is estimated to not have a label issue.
 
@@ -194,7 +194,7 @@ A boolean column, where `True` indicates that an example is identified as an out
 ``outlier_score``
 ~~~~~~~~~~~~~~~~~
 
-A numeric column with scores between 0 and 1. 
+A numeric column with scores between 0 and 1.
 A smaller value for an example indicates that it is less common or typical in the dataset, suggesting that it is more likely to be an outlier.
 
 
@@ -236,12 +236,12 @@ The output will look something like this:
 
 .. testoutput::
 
-        is_near_duplicate_issue  near_duplicate_score near_duplicate_sets distance_to_nearest_neighbor  
-    36                     True              0.066009            [11, 80]                     0.003906    
-    11                     True              0.066009                [36]                     0.003906    
-    80                     True              0.093245                [36]                     0.005599    
-    27                    False              0.156720                  []                     0.009751    
-    72                    False              0.156720                  []                     0.009751    
+        is_near_duplicate_issue  near_duplicate_score near_duplicate_sets distance_to_nearest_neighbor
+    36                     True              0.066009            [11, 80]                     0.003906
+    11                     True              0.066009                [36]                     0.003906
+    80                     True              0.093245                [36]                     0.005599
+    27                    False              0.156720                  []                     0.009751
+    72                    False              0.156720                  []                     0.009751
 
 
 ``is_near_duplicate_issue``
@@ -398,6 +398,77 @@ Datalab can identify image-specific issues in datasets, such as images that are 
 To detect these issues, simply specify the `image_key` argument in :py:meth:`~cleanlab.datalab.datalab.Datalab`, indicating the image column name in your dataset.
 This functionality currently works only with Hugging Face datasets. You can convert other local dataset formats into a Hugging Face dataset by following `this guide <https://huggingface.co/docs/datasets/en/loading>`_.
 More information on these image-specific issues is available in the `CleanVision package <https://github.com/cleanlab/cleanvision?tab=readme-ov-file#clean-your-data-for-better-computer-vision>`_ .
+
+Spurious Correlations between image-specific properties and labels
+------------------------------------------------------------------
+
+Based on the :ref:`image properties discussed earlier <Image-specific Issues>`, Datalab can also look for spurious correlations between image properties and the labels in the dataset.
+These are unintended relationships between irrelevant features in images and the given labels, which ML models may easily exploit during training without learning the relevant features.
+Once deployed, such models would consistently fail to generalize on unseen data where these spurious correlations most likely don't hold.
+
+Spurious correlations may arise in the dataset due to various reasons, such as:
+
+- Images for certain classes might be consistently captured under specific environmental conditions.
+- Preprocessing techniques applied to the data might introduce systematic differences across classes.
+- Objects of different classes may be systematically photographed in particular ways.
+
+Spurious Correlations are checked for when Datalab is initialized for an image dataset with the `image_key` keyword argument,
+after checking for :ref:`Image-specific Issues <Image-specific Issues>` where the image properties are computed.
+
+Each image property (e.g. darkness/brightness) is assigned a label uncorrelatedness score for the entire dataset. The lower the score, the more strongly the property is correlated with the class labels, across images of the dataset. This score is mathematically defined as: 1 minus the relative accuracy improvement in predicting the labels based solely on this image property value (relative to always predicting the most common overall class).
+
+Consider reviewing the relationship between images with high and low values of this property and the labels if the corresponding label uncorrelatedness score is low, because ML models trained on this dataset may latch onto the spurious correlation and fail to generalize.
+
+This issue type is more about the overall dataset vs. individual data points and will only be highlighted by Datalab in its report, if any such troublesome image properties are found.
+
+Metadata about spurious correlations is stored in the `info` attribute of the Datalab object.
+It can be accessed like so:
+
+.. code::
+
+    lab.get_info("spurious_correlations")["correlations_df"]
+
+
+The output will look something like this:
+
+.. testoutput::
+
+                         property         score
+    0                blurry_score          0.559
+    1                  dark_score          0.808
+    2                 light_score          0.723
+    3              odd_size_score          0.957
+    4      odd_aspect_ratio_score          0.835
+    5             grayscale_score          0.003  # Likely to be spuriously correlated with the labels
+    6       low_information_score          0.688
+
+
+.. warning::
+
+    Note that the label uncorrelatedness scores are *not* stored in the `issues` attribute of Datalab.
+
+``property``
+~~~~~~~~~~~~
+
+A categorical column that identifies specific image-related characteristics assessed for potential spurious correlations with the class labels. Each entry in this column represents a distinct property of the images, such as blurriness, darkness, or grayscale, which may or may not be correlated with the labels.
+
+``score``
+~~~~~~~~~
+
+A numeric column that gives the level of label uncorrelatedness for a given image-specific property. The score lies between 0 and 1. The lower the score for an image-property, the more correlated the image-property is with the given labels.
+
+.. tip::
+
+        This type of issue has the issue name `"spurious_correlations"`.
+
+        Run a check for this particular kind of issue by calling :py:meth:`Datalab.find_issues() <cleanlab.datalab.datalab.Datalab.find_issues>` like so:
+
+        .. code-block:: python
+
+            # `lab` is a Datalab instance
+            lab.find_issues(..., issue_types = {"spurious_correlations": {}})
+
+
 
 Underperforming Group Issue
 ---------------------------
@@ -616,14 +687,14 @@ Outlier Issue Parameters
 .. code-block:: python
 
     outlier_kwargs = {
-        "threshold": # floating value between 0 and 1 that sets the sensitivity of the outlier detection algorithms, based on either features or pred_probs..
+        "threshold": # floating value between 0 and 1 that sets the sensitivity of the outlier detection algorithms, based on either features or pred_probs.
+        "k": # integer representing the number of nearest neighbors for nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary, Used with features,
+        "t": # integer used to modulate the strength of the transformation from distances to scores that lie in the range [0, 1]. Used with features,
+        "scaling_factor": # floating value used to normalize the distances before they are converted into scores. Used with features,
+        "metric": # string or callable representing the distance metric used in nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary, Used with features,
     	"ood_kwargs": # dict of keyword arguments to constructor `OutOfDistribution()`{
     		"params": {
     			# NOTE: Each of the following keyword arguments can also be provided outside "ood_kwargs"
-
-    			"knn": # `knn` argument to constructor `OutOfDistribution()`. Used with features,
-    			"k": # `k` argument to constructor `OutOfDistribution()`. Used with features,
-    			"t": # `t` argument to constructor `OutOfDistribution()`. Used with features,
     			"adjust_pred_probs": # `adjust_pred_probs` argument to constructor `OutOfDistribution()`. Used with pred_probs,
     			"method": # `method` argument to constructor `OutOfDistribution()`. Used with pred_probs,
     			"confident_thresholds": # `confident_thresholds` argument to constructor `OutOfDistribution()`. Used with pred_probs,
@@ -733,6 +804,17 @@ Data Valuation Issue Parameters
 .. note::
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.data_valuation.DataValuationIssueManager <cleanlab.datalab.internal.issue_manager.data_valuation.DataValuationIssueManager>`.
 
+Identifier Column Parameters
+----------------------------
+
+.. code-block:: python
+
+    identifier_column_kwargs = {}
+
+.. note::
+
+  For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.identifier_column.IdentifierColumnIssueManager <cleanlab.datalab.internal.issue_manager.identifier_column.IdentifierColumnIssueManager>`.
+
 Image Issue Parameters
 ----------------------
 
@@ -753,16 +835,16 @@ To customize optional parameters for specific image issue types, you can provide
 
     For more information, view the cleanvision `docs <https://cleanvision.readthedocs.io/en/latest/tutorials/tutorial.html#5.-Check-for-an-issue-with-a-different-threshold>`_.
 
-Identifier Column Parameters
-----------------------------
+
+Spurious Correlations Issue Parameters
+--------------------------------------
 
 .. code-block:: python
 
-    identifier_column_kwargs = {}
-
-.. note::
-
-    For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.null.NullIssueManager <cleanlab.datalab.internal.issue_manager.identifier_column.IdentifierColumnIssueManager>`.
+    spurious_correlations_kwargs = {
+        "threshold": 0.3, # Non-negative floating value between 0 and 1, lower value implies fewer image properties may have a low enough label uncorrelatedness score to be marked as issue and vice versa.
+    }
+    
 Cleanlab Studio (Easy Mode)
 ---------------------------
 

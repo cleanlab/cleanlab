@@ -15,13 +15,19 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 
-__version__ = "2.6.7"
+__version__ = "2.7.1"
 
-# 2.6.7 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
+# 2.7.1 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
 
 # ------------------------------------------------
 # | PREVIOUS MAJOR VERSION RELEASE NOTES SUMMARY |
 # ------------------------------------------------
+
+# 2.7.0 - Broadening Data Quality Checks and ML Workflows
+#
+#   Major new functionalities include:
+#   - Detection of spurious correlations in image datasets with Datalab
+#   - New tutorial for improving ML performance with train and test set curation
 
 # 2.6.0 - Elevating Data Insights: Comprehensive Issue Checks & Expanded ML Task Compatibility
 #
