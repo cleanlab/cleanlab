@@ -1,4 +1,4 @@
-from typing import ClassVar, Optional, Union
+from typing import ClassVar, List, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -46,7 +46,7 @@ class IdentifierColumnIssueManager(IssueManager):
 
     def _prepare_features(
         self, features: Optional[Union[npt.NDArray, pd.DataFrame, list, dict]]
-    ) -> Union[npt.NDArray, list[npt.NDArray]]:
+    ) -> Union[npt.NDArray, List[npt.NDArray]]:
         """
         Prepare the features for issue check.
 
