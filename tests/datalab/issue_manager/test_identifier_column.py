@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-from cleanlab import Datalab
 from cleanlab.datalab.internal.issue_manager.identifier_column import IdentifierColumnIssueManager
 
 
