@@ -113,7 +113,7 @@ class IdentifierColumnIssueManager(IssueManager):
             },
         )
         # score in summary should be 1.0 if the issue is not present and 0.0 if at least one column is an identifier column
-        self.summary = self.make_summary(score=1.0 - is_identifier_column.any())
+        self.summary = self.make_summary(score=1.0 - float(is_identifier_column.any()))
         # more elegant way to set the score in summary
         self.info = {
             "identifier_columns": identifier_column_indices[0].tolist(),
