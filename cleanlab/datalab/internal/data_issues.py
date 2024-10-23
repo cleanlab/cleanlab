@@ -124,7 +124,7 @@ class _ClassificationInfoStrategy(_InfoStrategy):
                 labels = info.get(key, None)
                 if labels is not None:
                     info[key] = np.vectorize(label_map.get)(labels)
-            info["class_names"] = list(label_map.values())
+            info["class_names"] = list(label_map.values())  # type: ignore
         return info
 
 
@@ -171,8 +171,8 @@ class _MultilabelInfoStrategy(_InfoStrategy):
             for key in ["given_label", "predicted_label"]:
                 labels = info.get(key, None)
                 if labels is not None:
-                    info[key] = [list(map(label_map.get, label)) for label in labels]
-            info["class_names"] = list(label_map.values())
+                    info[key] = [list(map(label_map.get, label)) for label in labels]  # type: ignore
+            info["class_names"] = list(label_map.values())  # type: ignore
         return info
 
 
