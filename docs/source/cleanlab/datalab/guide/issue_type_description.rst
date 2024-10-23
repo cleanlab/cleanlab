@@ -619,6 +619,23 @@ Examples with higher scores more positively influence the resulting model's pred
     {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
     {% endwith %}
 
+Identifier Column Issue
+-----------------------
+This issue type flags sequential numerical columns in the features of a dataset. A numerical sequential column is most likely an identifier column, which - in most cases - should not be used in training ML models.
+More formally, an identifier column is defined as a column i in features such that set(features[:,i]) = set(c, c+1, ..., c+n) for some integer c, where n = num_rows of features. Note we don't consider the ordering of the column in case the dataset was pre-shuffled.
+
+If the condition is met in one or more columns, then we say this dataset has the identifier_column issue. The overall issue-summary-score is binary. The score equals 1 if the issue is present and 0 if the issue is not present.
+
+The info attribute of Datalab shows the indices of the columns with the column_identifier issue.
+
+
+
+.. jinja ::
+
+    {% with issue_name = "identifier_column"%}
+    {% include "cleanlab/datalab/guide/_templates/issue_types_tip.rst" %}
+    {% endwith %}
+
 Optional Issue Parameters
 =========================
 
@@ -633,6 +650,7 @@ Appropriate defaults are used for any parameters you do not specify, so no need 
         "near_duplicate": near_duplicate_kwargs, "non_iid": non_iid_kwargs,
         "class_imbalance": class_imbalance_kwargs, "underperforming_group": underperforming_group_kwargs,
         "null": null_kwargs, "data_valuation": data_valuation_kwargs,
+        "identifier_column": identifier_column_kwargs,
     }
 
 
@@ -786,6 +804,17 @@ Data Valuation Issue Parameters
 .. note::
     For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.data_valuation.DataValuationIssueManager <cleanlab.datalab.internal.issue_manager.data_valuation.DataValuationIssueManager>`.
 
+Identifier Column Parameters
+----------------------------
+
+.. code-block:: python
+
+    identifier_column_kwargs = {}
+
+.. note::
+
+  For more information, view the source code of:  :py:class:`datalab.internal.issue_manager.identifier_column.IdentifierColumnIssueManager <cleanlab.datalab.internal.issue_manager.identifier_column.IdentifierColumnIssueManager>`.
+
 Image Issue Parameters
 ----------------------
 
@@ -806,6 +835,7 @@ To customize optional parameters for specific image issue types, you can provide
 
     For more information, view the cleanvision `docs <https://cleanvision.readthedocs.io/en/latest/tutorials/tutorial.html#5.-Check-for-an-issue-with-a-different-threshold>`_.
 
+
 Spurious Correlations Issue Parameters
 --------------------------------------
 
@@ -814,7 +844,7 @@ Spurious Correlations Issue Parameters
     spurious_correlations_kwargs = {
         "threshold": 0.3, # Non-negative floating value between 0 and 1, lower value implies fewer image properties may have a low enough label uncorrelatedness score to be marked as issue and vice versa.
     }
-
+    
 Cleanlab Studio (Easy Mode)
 ---------------------------
 
