@@ -22,7 +22,7 @@ tensorflow-io==0.32.0
 sentence-transformers==2.2.2
 speechbrain==0.5.13
 huggingface_hub>=0.17.0
-torch==2.1.2
+torch==2.2.0
 torchvision==0.16.2
 torchaudio==2.1.2
 timm==0.9.12
