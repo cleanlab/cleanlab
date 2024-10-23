@@ -27,21 +27,21 @@ To run this approach, either use the ``find_label_issues_batched()`` convenience
 or follow the examples script for the ``LabelInspector`` class if you require greater customization.
 """
 
-import numpy as np
-from typing import Optional, List, Tuple, Any
+import multiprocessing as mp
+import platform
+from typing import Any, List, Optional, Tuple
 
-from cleanlab.count import get_confident_thresholds, _reduce_issues
-from cleanlab.rank import find_top_issues, _compute_label_quality_scores
-from cleanlab.typing import LabelLike
-from cleanlab.internal.util import value_counts_fill_missing_classes
+import numpy as np
+
+from cleanlab.count import _reduce_issues, get_confident_thresholds
 from cleanlab.internal.constants import (
+    CLIPPING_LOWER_BOUND,
     CONFIDENT_THRESHOLDS_LOWER_BOUND,
     FLOATING_POINT_COMPARISON,
-    CLIPPING_LOWER_BOUND,
 )
-
-import platform
-import multiprocessing as mp
+from cleanlab.internal.util import value_counts_fill_missing_classes
+from cleanlab.rank import _compute_label_quality_scores, find_top_issues
+from cleanlab.typing import LabelLike
 
 try:
     import psutil
@@ -236,8 +236,13 @@ def find_label_issues_batched(
     label_issues_indices = lab.get_label_issues()
     label_issues_mask = np.zeros(len(labels), dtype=bool)
     label_issues_mask[label_issues_indices] = True
-    mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
-    label_issues_mask[mask] = False
+
+    for i in range(0, label_issues_mask.shape[0], batch_size):
+        end = i + batch_size
+        mask = _reduce_issues(pred_probs=pred_probs[i:end, :], labels=labels[i:end])
+        # Where mask is True we set label to False.
+        label_issues_mask[i:end] = np.where(mask, False, label_issues_mask[i:end])
+
     if return_mask:
         return label_issues_mask
     return np.where(label_issues_mask)[0]
@@ -568,13 +573,11 @@ class LabelInspector:
             confident_thresholds=self.get_confident_thresholds(silent=True),
             **self.quality_score_kwargs,
         )
-        class_counts = value_counts_fill_missing_classes(labels, num_classes=self.num_class)
         if update_num_issues:
             self._update_num_label_issues(labels, pred_probs, **self.num_issue_kwargs)
         self.examples_processed_quality += batch_size
         if self.store_results:
-            self.label_quality_scores += list(scores)
-
+            self.label_quality_scores.extend(scores)
         return scores
 
     def _update_num_label_issues(
@@ -635,10 +638,10 @@ class LabelInspector:
                 )
                 for class_label in range(self.num_class):
                     labels_equal_to_class = labels == class_label
-                    self.normalization[class_label] += np.sum(labels_equal_to_class & to_increment)
+                    mask_to_increment = labels_equal_to_class & to_increment
+                    self.normalization[class_label] += np.sum(mask_to_increment)
                     self.prune_counts[class_label] += np.sum(
-                        labels_equal_to_class
-                        & to_increment
+                        mask_to_increment
                         & (max_ind != labels)
                         # & (pred_class != labels)
                         # This is not applied in num_label_issues(..., estimation_method="off_diagonal_custom"). Do we want to add it?
