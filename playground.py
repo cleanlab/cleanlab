@@ -38,7 +38,24 @@ def main():
 
     label_issues = cl.find_label_issues(X=train_texts, labels=train_labels)
 
-    print(label_issues.head())
+    identified_issues = label_issues[label_issues["is_label_issue"] == True]
+    lowest_quality_labels = label_issues["label_quality"].argsort()[:10].to_numpy()
+
+    print(
+        f"cleanlab found {len(identified_issues)} potential label errors in the dataset.\n"
+        f"Here are indices of the top 10 most likely errors: \n {lowest_quality_labels}"
+    )
+
+    def _as_df(index):
+        return pd.DataFrame(
+            {
+                "text": raw_train_texts,
+                "given_label": raw_train_labels,
+                "predicted_label": encoder.inverse_transform(label_issues["predicted_label"]),
+            },
+        ).iloc[index]
+
+    print(_as_df(lowest_quality_labels[:10]))
 
 
 if __name__ == "__main__":
