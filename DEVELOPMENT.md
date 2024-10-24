@@ -37,7 +37,8 @@ pip install -r requirements-dev.txt
 pip install -e .
 ```
 
-For Macs with Apple silicon: replace `tensorflow` in requirements-dev.txt with: `tensorflow-macos==2.9.2` and `tensorflow-metal==0.5.1`
+For Macs with Apple silicon: replace `tensorflow` in requirements-dev.txt with: `tensorflow-macos==2.9.2` and `tensorflow-metal==0.5.1`.
+Note that `tensorflow` requires `python --version < 3.12`; `pip install` will fail if you're on a newer version of Python.
 
 ### Handling optional dependencies
 
