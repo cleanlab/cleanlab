@@ -22,3 +22,4 @@ pillow
 spacy
 gensim
 scipy
+pyspellchecker
