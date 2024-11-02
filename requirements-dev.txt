@@ -11,10 +11,14 @@ pytest-cov
 requests
 scipy
 skorch
-tensorflow<2.16
+tensorflow-metal
+tensorflow-macos
 torch
 torchvision
 typing-extensions>=4.8.0
 wget
 matplotlib
 pillow
+spacy
+gensim
+scipy
