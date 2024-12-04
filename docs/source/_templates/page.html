@@ -10,6 +10,11 @@
     </div>
 </noscript>
 
+<agility-assistant
+    api-key="JEk5VyeztukKht42NlO5njPaVlVG3Syr_MJLcNz67xI"
+    assistant-id="baa79ddf-fcad-4ea8-9d8a-33f8d6214688"
+/>
+
 {% if current_version %}
 
 <!-- Start of Version Warning Banner -->
@@ -48,11 +53,6 @@
 
 <!-- End of Version Warning Banner -->
 
-<agility-assistant
-    api-key="HpoS1AzReshzEzavFqSsrHxzXKkVibfPaVoRE7qfPPU"
-    assistant-id="78ce0e1e-651d-4338-a5bc-be698548943e"
-/>
-
 {% endif %} {{ super() }} {% endblock %} {% block footer %} {{ super() }}
 
 <script type="text/javascript">
@@ -65,8 +65,6 @@
         );
     });
 </script>
-
-<script src="{{ DOCS_SITE_URL }}agility-web-component.umd.js"></script>
 
 {% endblock %} {% block regular_scripts %}{{ super() }}
 <script async defer src="https://buttons.github.io/buttons.js"></script>
