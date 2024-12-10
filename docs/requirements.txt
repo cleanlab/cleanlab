@@ -15,18 +15,19 @@ sphinxcontrib-gtagjs==0.2.1
 sphinx-jinja==2.0.2
 sphinx-autodoc-typehints==1.25.2
 sphinxext-opengraph==0.9.1
-matplotlib==3.7.4
 requests==2.28.2
 tensorflow==2.12.1
 tensorflow-io==0.32.0
 sentence-transformers==2.2.2
 speechbrain==0.5.13
-huggingface_hub==0.25.2
-torch==2.1.2
-torchvision==0.16.2
-torchaudio==2.1.2
-timm==0.9.12
-datasets>=2.14.6
-seaborn==0.13.2
 faiss-cpu==1.8.0
+datasets>=2.14.6
 xgboost
+matplotlib==3.7.4  # TODO: uncap version
+huggingface_hub==0.25.2  # TODO: uncap version
+torch==2.1.2  # TODO: uncap version
+torchvision==0.16.2  # TODO: uncap version
+torchaudio==2.1.2  # TODO: uncap version
+timm==0.9.12  # TODO: uncap version
+seaborn==0.13.2  # TODO: uncap version
+scikit-learn==1.5.2  # TODO: uncap version
