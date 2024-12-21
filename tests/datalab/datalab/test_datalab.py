@@ -147,6 +147,7 @@ class TestDatalab:
             }
         )
         monkeypatch.setattr(lab, "issue_summary", mock_summary)
+        assert lab.issue_summary is lab.data_issues.issue_summary
 
         label_summary = lab.get_issue_summary(issue_name="label")
         pd.testing.assert_frame_equal(label_summary, mock_summary.iloc[[0]])
@@ -171,6 +172,7 @@ class TestDatalab:
             },
         )
         monkeypatch.setattr(lab, "issues", mock_issues)
+        assert lab.issues is lab.data_issues.issues
 
         mock_predicted_labels = np.array([0, 1, 2, 1, 2])
 
