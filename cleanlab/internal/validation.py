@@ -18,12 +18,14 @@
 Checks to ensure valid inputs for various methods.
 """
 
-from cleanlab.typing import LabelLike, DatasetLike
-from cleanlab.internal.constants import FLOATING_POINT_COMPARISON
-from typing import Any, List, Optional, Union
 import warnings
+from typing import Any, List, Optional, Union
+
 import numpy as np
 import pandas as pd
+
+from cleanlab.internal.constants import FLOATING_POINT_COMPARISON
+from cleanlab.typing import DatasetLike, LabelLike
 
 
 def assert_valid_inputs(
@@ -86,7 +88,7 @@ def assert_valid_inputs(
             raise ValueError("pred_probs array must have shape: num_examples x num_classes.")
         if not multi_label:
             assert isinstance(y, np.ndarray)
-            highest_class = max(y) + 1
+            highest_class = np.max(y) + 1
         else:
             assert isinstance(y, list)
             assert all(isinstance(y_i, list) for y_i in y)
@@ -114,13 +116,14 @@ def assert_valid_class_labels(
     """
     if y.ndim != 1:
         raise ValueError("Labels must be 1D numpy array.")
-    if any([isinstance(label, str) for label in y]):
+    # Short-circuit check. Numeric dtypes cannot have strings.
+    if not np.issubdtype(y.dtype, np.number) and any((isinstance(label, str) for label in y)):
         raise ValueError(
             "Labels cannot be strings, they must be zero-indexed integers corresponding to class indices."
         )
     if not np.equal(np.mod(y, 1), 0).all():  # check that labels are integers
         raise ValueError("Labels must be zero-indexed integers corresponding to class indices.")
-    if min(y) < 0:
+    if np.min(y) < 0:
         raise ValueError("Labels must be positive integers corresponding to class indices.")
 
     unique_classes = np.unique(y)
