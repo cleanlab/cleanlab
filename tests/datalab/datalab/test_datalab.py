@@ -970,16 +970,16 @@ class TestDatalabFindNonIIDIssues:
         assert "weighted_knn_graph" not in lab.get_info("statistics")
 
     def test_incremental_search(self, lab, sorted_embeddings):
-        lab.find_issues(features=sorted_embeddings)
+        lab.find_issues(features=sorted_embeddings, issue_types={"null": {}})
         check_issues_dtypes(lab)
         check_issue_summary_dtypes(lab)
         summary = lab.get_issue_summary()
-        assert len(summary) == 5
+        assert len(summary) == 1
         lab.find_issues(features=sorted_embeddings, issue_types={"non_iid": {}})
         check_issues_dtypes(lab)
         check_issue_summary_dtypes(lab)
         summary = lab.get_issue_summary()
-        assert len(summary) == 5
+        assert len(summary) == 2
         assert "non_iid" in summary["issue_type"].values
         non_iid_summary = lab.get_issue_summary("non_iid")
         assert non_iid_summary["score"].values[0] == 0
