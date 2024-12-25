@@ -64,7 +64,7 @@ def check_issues_dtypes(lab):
 
     for col in ["given_label", "predicted_label", "distance_to_nearest_neighbor"]:
         if col in lab.issues.columns:
-            series = lab.issue_summary[col]
+            series = lab.issues[col]
             dtype = series.dtype
             assert np.issubdtype(dtype, np.number), (
                 f"Column '{col}' must be numeric"
