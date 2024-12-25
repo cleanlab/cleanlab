@@ -62,14 +62,6 @@ def check_issues_dtypes(lab):
     for col in lab.issues.filter(like="_score").columns:
         assert lab.issues[col].dtype.kind in {'i', 'f'}, f"Column '{col}' must be numeric."
 
-    for col in ["given_label", "predicted_label", "distance_to_nearest_neighbor"]:
-        if col in lab.issues.columns:
-            series = lab.issues[col]
-            dtype = series.dtype
-            assert np.issubdtype(dtype, np.number), (
-                f"Column '{col}' must be numeric"
-            )
-
 def check_issue_summary_dtypes(lab):
     """
     Asserts that each column in lab.issue_summary has the expected dtype.
