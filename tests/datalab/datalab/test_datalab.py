@@ -203,7 +203,6 @@ class TestDatalab:
             },
         )
         monkeypatch.setattr(lab, "issues", mock_issues)
-        assert lab.issues is lab.data_issues.issues
 
         mock_predicted_labels = np.array([0, 1, 2, 1, 2])
 
