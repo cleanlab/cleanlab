@@ -80,7 +80,7 @@ def check_issue_summary_dtypes(lab):
         series = lab.issue_summary[col]
         dtype = series.dtype
         assert np.issubdtype(dtype, np.number), (
-            f"Column '{column}' must be numeric"
+            f"Column '{col}' must be numeric"
         )
 
 @pytest.fixture(scope="function")
