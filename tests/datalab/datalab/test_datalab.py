@@ -99,12 +99,6 @@ class TestDatalab:
             "underperforming_group",
         ]
 
-    def tmp_path(self):
-        # A path for temporarily saving the instance during tests.
-        # This is a workaround for the fact that the Datalab class
-        # does not have a save method.
-        return Path(__file__).parent / "tmp.pkl"
-
     def test_attributes(self, lab):
         # Has the right attributes
         for attr in ["data", "label_name", "_labels", "info", "issues"]:
