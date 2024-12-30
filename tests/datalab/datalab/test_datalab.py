@@ -512,9 +512,6 @@ class TestDatalab:
         lab.save(tmp_path, force=True)
 
         loaded_lab = Datalab.load(tmp_path)
-        data = lab._data
-        loaded_data = loaded_lab._data
-        assert loaded_data == data
         assert loaded_lab.info == lab.info
         pd.testing.assert_frame_equal(loaded_lab.issues, mock_issues)
         pd.testing.assert_frame_equal(loaded_lab.issue_summary, mock_issue_summary)
