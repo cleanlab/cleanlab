@@ -111,6 +111,27 @@ def custom_issue_manager():
     return CustomIssueManager
 
 
+@pytest.fixture
+def mock_issues():
+    return pd.DataFrame(
+        {
+            "is_foo_issue": [False, True, False, False, False],
+            "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
+        }
+    )
+
+
+@pytest.fixture
+def mock_issue_summary():
+    return pd.DataFrame(
+        {
+            "issue_type": ["foo"],
+            "score": [0.72],
+            "num_issues": [1],
+        }
+    )
+
+
 def generate_image():
     arr = np.random.randint(low=0, high=256, size=(300, 300, 3), dtype=np.uint8)
     img = Image.fromarray(arr, mode="RGB")

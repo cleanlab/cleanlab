@@ -398,24 +398,12 @@ class TestDatalab:
         assert knn_graph.nnz == dataset_size * k
 
     # Mock the lab.issues dataframe to have some pre-existing issues
-    def test_update_issues(self, lab, pred_probs, monkeypatch):
+    def test_update_issues(self, lab, pred_probs, mock_issues, mock_issue_summary, monkeypatch):
         """If there are pre-existing issues in the lab,
         find_issues should add columns to the issues dataframe for each example.
         """
-        mock_issues = pd.DataFrame(
-            {
-                "is_foo_issue": [False, True, False, False, False],
-                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
-            }
-        )
+
         monkeypatch.setattr(lab, "issues", mock_issues)
-        mock_issue_summary = pd.DataFrame(
-            {
-                "issue_type": ["foo"],
-                "score": [0.72],
-                "num_issues": [1],
-            }
-        )
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
 
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
@@ -442,7 +430,7 @@ class TestDatalab:
             lab.issue_summary, expected_issue_summary_df, check_exact=False
         )
 
-    def test_save(self, lab, tmp_path, monkeypatch):
+    def test_save(self, lab, tmp_path, mock_issues, mock_issue_summary, monkeypatch):
         """Test that the save and load methods work."""
         lab.save(tmp_path, force=True)
         assert tmp_path.exists(), "Save directory was not created"
@@ -451,22 +439,7 @@ class TestDatalab:
         assert (tmp_path / "summary.csv").exists(), "Issue summary file was not saved"
         assert (tmp_path / "datalab.pkl").exists(), "Datalab file was not saved"
 
-        # Mock the issues dataframe
-        mock_issues = pd.DataFrame(
-            {
-                "is_foo_issue": [False, True, False, False, False],
-                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
-            }
-        )
         monkeypatch.setattr(lab, "issues", mock_issues)
-
-        # Mock the issue summary dataframe
-        mock_issue_summary = pd.DataFrame(
-            {
-                "issue_type": ["foo"],
-                "score": [0.72],
-            }
-        )
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
         lab.save(tmp_path, force=True)
         assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
@@ -488,25 +461,10 @@ class TestDatalab:
 
         assert lab2.label_name == "star"
 
-    def test_load(self, lab, tmp_path, dataset, monkeypatch):
+    def test_load(self, lab, tmp_path, dataset, mock_issues, mock_issue_summary, monkeypatch):
         """Test that the save and load methods work."""
 
-        # Mock the issues dataframe
-        mock_issues = pd.DataFrame(
-            {
-                "is_foo_issue": [False, True, False, False, False],
-                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
-            }
-        )
         monkeypatch.setattr(lab, "issues", mock_issues)
-
-        # Mock the issue summary dataframe
-        mock_issue_summary = pd.DataFrame(
-            {
-                "issue_type": ["foo"],
-                "score": [0.72],
-            }
-        )
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
 
         lab.save(tmp_path, force=True)
