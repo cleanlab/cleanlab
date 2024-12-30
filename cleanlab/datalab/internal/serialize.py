@@ -35,7 +35,6 @@ if TYPE_CHECKING:  # pragma: no cover
 OBJECT_FILENAME = "datalab.pkl"
 ISSUES_FILENAME = "issues.csv"
 ISSUE_SUMMARY_FILENAME = "summary.csv"
-INFO_FILENAME = "info.pkl"
 DATA_DIRNAME = "data"
 
 
