@@ -18,7 +18,6 @@
 import contextlib
 import io
 import os
-import pickle
 import timeit
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
@@ -128,12 +127,6 @@ class TestDatalab:
             "class_imbalance",
             "underperforming_group",
         ]
-
-    def tmp_path(self):
-        # A path for temporarily saving the instance during tests.
-        # This is a workaround for the fact that the Datalab class
-        # does not have a save method.
-        return Path(__file__).parent / "tmp.pkl"
 
     def test_attributes(self, lab):
         # Has the right attributes
@@ -404,24 +397,12 @@ class TestDatalab:
         assert knn_graph.nnz == dataset_size * k
 
     # Mock the lab.issues dataframe to have some pre-existing issues
-    def test_update_issues(self, lab, pred_probs, monkeypatch):
+    def test_update_issues(self, lab, pred_probs, mock_issues, mock_issue_summary, monkeypatch):
         """If there are pre-existing issues in the lab,
         find_issues should add columns to the issues dataframe for each example.
         """
-        mock_issues = pd.DataFrame(
-            {
-                "is_foo_issue": [False, True, False, False, False],
-                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
-            }
-        )
+
         monkeypatch.setattr(lab, "issues", mock_issues)
-        mock_issue_summary = pd.DataFrame(
-            {
-                "issue_type": ["foo"],
-                "score": [0.72],
-                "num_issues": [1],
-            }
-        )
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
 
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
@@ -448,31 +429,16 @@ class TestDatalab:
             lab.issue_summary, expected_issue_summary_df, check_exact=False
         )
 
-    def test_save(self, lab, tmp_path, monkeypatch):
+    def test_save(self, lab, tmp_path, mock_issues, mock_issue_summary, monkeypatch):
         """Test that the save and load methods work."""
         lab.save(tmp_path, force=True)
         assert tmp_path.exists(), "Save directory was not created"
         assert (tmp_path / "data").is_dir(), "Data directory was not saved"
         assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
         assert (tmp_path / "summary.csv").exists(), "Issue summary file was not saved"
-        assert (tmp_path / "datalab.pkl").exists(), "Datalab file was not saved"
+        assert (tmp_path / "datalab.json").exists(), "Datalab file was not saved"
 
-        # Mock the issues dataframe
-        mock_issues = pd.DataFrame(
-            {
-                "is_foo_issue": [False, True, False, False, False],
-                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
-            }
-        )
         monkeypatch.setattr(lab, "issues", mock_issues)
-
-        # Mock the issue summary dataframe
-        mock_issue_summary = pd.DataFrame(
-            {
-                "issue_type": ["foo"],
-                "score": [0.72],
-            }
-        )
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
         lab.save(tmp_path, force=True)
         assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
@@ -484,44 +450,39 @@ class TestDatalab:
         lab.save(new_dir)
         assert new_dir.exists(), "Directory was not created"
 
-    def test_pickle(self, lab, tmp_path):
-        """Test that the class can be pickled."""
-        pickle_file = os.path.join(tmp_path, "lab.pkl")
-        with open(pickle_file, "wb") as f:
-            pickle.dump(lab, f)
-        with open(pickle_file, "rb") as f:
-            lab2 = pickle.load(f)
-
-        assert lab2.label_name == "star"
-
-    def test_load(self, lab, tmp_path, dataset, monkeypatch):
+    def test_load(self, lab, tmp_path, dataset, mock_issues, mock_issue_summary, monkeypatch):
         """Test that the save and load methods work."""
 
-        # Mock the issues dataframe
-        mock_issues = pd.DataFrame(
-            {
-                "is_foo_issue": [False, True, False, False, False],
-                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
-            }
-        )
         monkeypatch.setattr(lab, "issues", mock_issues)
-
-        # Mock the issue summary dataframe
-        mock_issue_summary = pd.DataFrame(
-            {
-                "issue_type": ["foo"],
-                "score": [0.72],
-            }
-        )
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
 
         lab.save(tmp_path, force=True)
 
         loaded_lab = Datalab.load(tmp_path)
-        data = lab._data
-        loaded_data = loaded_lab._data
-        assert loaded_data == data
-        assert loaded_lab.info == lab.info
+        assert (
+            loaded_lab.task == lab.task
+        ), f"Mismatch in 'task' attribute: {loaded_lab.task} != {lab.task}"
+        assert (
+            loaded_lab.label_name == lab.label_name
+        ), f"Mismatch in 'label_name' attribute: {loaded_lab.label_name} != {lab.label_name}"
+        assert (
+            loaded_lab.cleanlab_version == lab.cleanlab_version
+        ), f"Mismatch in 'cleanlab_version' attribute: {loaded_lab.cleanlab_version} != {lab.cleanlab_version}"
+        assert (
+            loaded_lab.verbosity == lab.verbosity
+        ), f"Mismatch in 'verbosity' attribute: {loaded_lab.verbosity} != {lab.verbosity}"
+        assert (
+            loaded_lab.info == lab.info
+        ), f"Mismatch in 'info' property: {loaded_lab.info} != {lab.info}"
+        assert np.array_equal(
+            loaded_lab.labels, lab.labels
+        ), f"Mismatch in 'labels' property: {loaded_lab.labels} != {lab.labels}"
+        assert (
+            loaded_lab.has_labels == lab.has_labels
+        ), f"Mismatch in 'has_labels' property: {loaded_lab.has_labels} != {lab.has_labels}"
+        assert (
+            loaded_lab.class_names == lab.class_names
+        ), f"Mismatch in 'class_names' property: {loaded_lab.class_names} != {lab.class_names}"
         pd.testing.assert_frame_equal(loaded_lab.issues, mock_issues)
         pd.testing.assert_frame_equal(loaded_lab.issue_summary, mock_issue_summary)
 
