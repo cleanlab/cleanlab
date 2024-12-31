@@ -470,13 +470,36 @@ class TestDatalab:
         lab.save(tmp_path, force=True)
 
         loaded_lab = Datalab.load(tmp_path)
-        assert loaded_lab.info == lab.info
+        assert (
+            loaded_lab.task == lab.task
+        ), f"Mismatch in 'task' attribute: {loaded_lab.task} != {lab.task}"
+        assert (
+            loaded_lab.label_name == lab.label_name
+        ), f"Mismatch in 'label_name' attribute: {loaded_lab.label_name} != {lab.label_name}"
+        assert (
+            loaded_lab.cleanlab_version == lab.cleanlab_version
+        ), f"Mismatch in 'cleanlab_version' attribute: {loaded_lab.cleanlab_version} != {lab.cleanlab_version}"
+        assert (
+            loaded_lab.verbosity == lab.verbosity
+        ), f"Mismatch in 'verbosity' attribute: {loaded_lab.verbosity} != {lab.verbosity}"
+        assert (
+            loaded_lab.info == lab.info
+        ), f"Mismatch in 'info' property: {loaded_lab.info} != {lab.info}"
         pd.testing.assert_frame_equal(loaded_lab.issues, mock_issues)
         pd.testing.assert_frame_equal(loaded_lab.issue_summary, mock_issue_summary)
 
         # Load accepts a `Dataset`.
         loaded_lab = Datalab.load(tmp_path, data=dataset)
         assert loaded_lab.data._data == dataset.data
+        assert np.array_equal(
+            loaded_lab.labels, lab.labels
+        ), f"Mismatch in 'labels' property: {loaded_lab.labels} != {lab.labels}"
+        assert (
+            loaded_lab.has_labels == lab.has_labels
+        ), f"Mismatch in 'has_labels' property: {loaded_lab.has_labels} != {lab.has_labels}"
+        assert (
+            loaded_lab.class_names == lab.class_names
+        ), f"Mismatch in 'class_names' property: {loaded_lab.class_names} != {lab.class_names}"
 
         # Misaligned dataset raises a ValueError
         with pytest.raises(ValueError) as excinfo:
