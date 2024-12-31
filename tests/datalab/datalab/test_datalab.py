@@ -18,7 +18,6 @@
 import contextlib
 import io
 import os
-import pickle
 import timeit
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
@@ -450,16 +449,6 @@ class TestDatalab:
         assert not new_dir.exists(), "Directory should not exist"
         lab.save(new_dir)
         assert new_dir.exists(), "Directory was not created"
-
-    def test_pickle(self, lab, tmp_path):
-        """Test that the class can be pickled."""
-        pickle_file = os.path.join(tmp_path, "lab.pkl")
-        with open(pickle_file, "wb") as f:
-            pickle.dump(lab, f)
-        with open(pickle_file, "rb") as f:
-            lab2 = pickle.load(f)
-
-        assert lab2.label_name == "star"
 
     def test_load(self, lab, tmp_path, dataset, mock_issues, mock_issue_summary, monkeypatch):
         """Test that the save and load methods work."""

@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import os
 import json
-import pickle
 import warnings
 from typing import TYPE_CHECKING, Optional
 
