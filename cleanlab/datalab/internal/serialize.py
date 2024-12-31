@@ -16,14 +16,16 @@
 from __future__ import annotations
 
 import os
+import json
 import pickle
 import warnings
 from typing import TYPE_CHECKING, Optional
 
+import numpy as np
 import pandas as pd
 
 import cleanlab
-from cleanlab.datalab.internal.data import Data
+from cleanlab.datalab.internal.data import Data, Label
 
 if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
@@ -32,7 +34,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 # Constants:
-OBJECT_FILENAME = "datalab.pkl"
+OBJECT_FILENAME = "datalab.json"
 ISSUES_FILENAME = "issues.csv"
 ISSUE_SUMMARY_FILENAME = "summary.csv"
 DATA_DIRNAME = "data"
@@ -88,9 +90,33 @@ class _Serializer:
                 raise FileExistsError("Please specify a new path or set force=True")
             print(f"WARNING: Existing files will be overwritten by newly saved files at: {path}")
 
-        # Save the datalab object to disk.
-        with open(os.path.join(path, OBJECT_FILENAME), "wb") as f:
-            pickle.dump(datalab, f)
+        def custom_serializer(obj):
+            if isinstance(obj, np.int64):
+                return int(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, Label):
+                return {
+                    "label_map": obj.label_map,
+                    "labels": obj.labels,
+                }
+            else:
+                raise TypeError(f"Type {type(obj)} is not serializable")
+
+        with open(os.path.join(path, OBJECT_FILENAME), "w") as f:
+            json.dump(
+                {
+                    "task": str(datalab.task),
+                    "label_name": datalab.label_name,
+                    "cleanlab_version": datalab.cleanlab_version,
+                    "verbosity": datalab.verbosity,
+                    "info": datalab.info,
+                    "_labels": datalab._labels,
+                    "_data_hash": datalab._data_hash,
+                },
+                f,
+                default=custom_serializer,
+            )
 
         # Save the issues to disk. Use placeholder method for now.
         cls._save_data_issues(path=path, datalab=datalab)
@@ -106,21 +132,32 @@ class _Serializer:
             raise ValueError(f"No folder found at specified path: {path}")
 
         with open(os.path.join(path, OBJECT_FILENAME), "rb") as f:
-            datalab: Datalab = pickle.load(f)
+            datalab_metadata = json.load(f)
+            task = datalab_metadata["task"]
+            verbosity = datalab_metadata["verbosity"]
+            from cleanlab.datalab.datalab import Datalab
+
+            datalab: Datalab = Datalab(data=[], task=task, verbosity=verbosity)
+            datalab.label_name = datalab_metadata["label_name"]
+            datalab.cleanlab_version = datalab_metadata["cleanlab_version"]
+            datalab.info = datalab_metadata["info"]
+            datalab._data_hash = datalab_metadata["_data_hash"]
+            datalab._labels.labels = datalab_metadata["_labels"]["labels"]
+            datalab._labels.label_map = datalab_metadata["_labels"]["label_map"]
 
         cls._validate_version(datalab)
 
         # Load the issues from disk.
         issues_path = os.path.join(path, ISSUES_FILENAME)
-        if not hasattr(datalab.data_issues, "issues") and os.path.exists(issues_path):
+        if os.path.exists(issues_path):
             datalab.data_issues.issues = pd.read_csv(issues_path)
 
         issue_summary_path = os.path.join(path, ISSUE_SUMMARY_FILENAME)
-        if not hasattr(datalab.data_issues, "issue_summary") and os.path.exists(issue_summary_path):
+        if os.path.exists(issue_summary_path):
             datalab.data_issues.issue_summary = pd.read_csv(issue_summary_path)
 
         if data is not None:
-            if hash(data) != hash(datalab._data):
+            if hash(data) != datalab._data_hash:
                 raise ValueError(
                     "Data has been modified since Lab was saved. "
                     "Cannot load Lab with modified data."

@@ -437,7 +437,7 @@ class TestDatalab:
         assert (tmp_path / "data").is_dir(), "Data directory was not saved"
         assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
         assert (tmp_path / "summary.csv").exists(), "Issue summary file was not saved"
-        assert (tmp_path / "datalab.pkl").exists(), "Datalab file was not saved"
+        assert (tmp_path / "datalab.json").exists(), "Datalab file was not saved"
 
         monkeypatch.setattr(lab, "issues", mock_issues)
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
