@@ -485,12 +485,6 @@ class TestDatalab:
         assert (
             loaded_lab.info == lab.info
         ), f"Mismatch in 'info' property: {loaded_lab.info} != {lab.info}"
-        pd.testing.assert_frame_equal(loaded_lab.issues, mock_issues)
-        pd.testing.assert_frame_equal(loaded_lab.issue_summary, mock_issue_summary)
-
-        # Load accepts a `Dataset`.
-        loaded_lab = Datalab.load(tmp_path, data=dataset)
-        assert loaded_lab.data._data == dataset.data
         assert np.array_equal(
             loaded_lab.labels, lab.labels
         ), f"Mismatch in 'labels' property: {loaded_lab.labels} != {lab.labels}"
@@ -500,6 +494,12 @@ class TestDatalab:
         assert (
             loaded_lab.class_names == lab.class_names
         ), f"Mismatch in 'class_names' property: {loaded_lab.class_names} != {lab.class_names}"
+        pd.testing.assert_frame_equal(loaded_lab.issues, mock_issues)
+        pd.testing.assert_frame_equal(loaded_lab.issue_summary, mock_issue_summary)
+
+        # Load accepts a `Dataset`.
+        loaded_lab = Datalab.load(tmp_path, data=dataset)
+        assert loaded_lab.data._data == dataset.data
 
         # Misaligned dataset raises a ValueError
         with pytest.raises(ValueError) as excinfo:
