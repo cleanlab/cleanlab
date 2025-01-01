@@ -234,38 +234,38 @@ class TestData:
             expected_error_substring = "Failed to load dataset from <class 'str'>.\n"
 
     def test_check_label_nan_with_dict_and_dataset(self):
-        valid_data = {
-            "features": [1, 2, 3],
-            "labels": [0, 1, 0]
-        }
+        valid_data = {"features": [1, 2, 3], "labels": [0, 1, 0]}
         data_instance = Data(data=valid_data, task=Task.CLASSIFICATION, label_name="labels")
         data_instance._check_label_nan(valid_data, "labels")
-        
-        invalid_data = {
-            "features": [1, 2, 3],
-            "labels": [0, np.nan, 0]
-        }
+
+        invalid_data = {"features": [1, 2, 3], "labels": [0, np.nan, 0]}
         with pytest.raises(LabelNanError) as exc_info:
             data_instance._check_label_nan(invalid_data, "labels")
-        assert "Found 1 NaN value(s) in the label column 'labels'. Please handle NaN values in before creating Datalab instance." in str(exc_info.value)
+        assert (
+            "Found 1 NaN value(s) in the label column 'labels'. Please handle NaN values in before creating Datalab instance."
+            in str(exc_info.value)
+        )
 
-        multiple_nan_data = {
-        "features": [1, 2, 3, 4],
-        "labels": [np.nan, 1, np.nan, 0]
-        }
+        multiple_nan_data = {"features": [1, 2, 3, 4], "labels": [np.nan, 1, np.nan, 0]}
         with pytest.raises(LabelNanError) as exc_info:
             data_instance._check_label_nan(multiple_nan_data, "labels")
-        assert "Found 2 NaN value(s) in the label column 'labels'. Please handle NaN values in before creating Datalab instance." in str(exc_info.value)
+        assert (
+            "Found 2 NaN value(s) in the label column 'labels'. Please handle NaN values in before creating Datalab instance."
+            in str(exc_info.value)
+        )
 
-        valid_dataset= Dataset.from_dict(valid_data)
-        
+        valid_dataset = Dataset.from_dict(valid_data)
+
         data_instance = Data(data=valid_dataset, task=Task.CLASSIFICATION, label_name="labels")
         data_instance._check_label_nan(valid_dataset, "labels")
 
         invalid_dataset = Dataset.from_dict(invalid_data)
         with pytest.raises(LabelNanError) as exc_info:
             data_instance._check_label_nan(invalid_dataset, "labels")
-        assert "Found 1 NaN value(s) in the label column 'labels'. Please handle NaN values in before creating Datalab instance." in str(exc_info.value)
+        assert (
+            "Found 1 NaN value(s) in the label column 'labels'. Please handle NaN values in before creating Datalab instance."
+            in str(exc_info.value)
+        )
 
     @given(dataset=dataset_strategy(task=Task.CLASSIFICATION))
     def test_label_map_is_lexicographically_ordered(self, dataset):
