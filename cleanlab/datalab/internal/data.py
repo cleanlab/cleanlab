@@ -84,6 +84,12 @@ class DatasetLoadError(ValueError):
         message = f"Failed to load dataset from {dataset_type}.\n"
         super().__init__(message)
 
+class LabelNanError(ValueError):
+    """Exception raised when NaN values are present in the label column of the dataset."""
+
+    def __init__(self, nan_count: int, label_name: str):
+        message = f"Found {nan_count} NaN value(s) in the label column '{label_name}'. Please handle NaN values in before creating Datalab instance."
+        super().__init__(message)
 
 class Data:
     """
@@ -152,7 +158,11 @@ class Data:
         label_name: Optional[str] = None,
     ) -> None:
         self._validate_data(data)
+        if isinstance(data, dict) and label_name is not None:
+            self._check_label_nan(data,label_name)
         self._data = self._load_data(data)
+        if not isinstance(data, dict) and label_name is not None:
+            self._check_label_nan(self._data,label_name)
         self._data_hash = hash(self._data)
         self.labels: Label
         label_class = MultiLabel if task.is_multilabel else MultiClass
@@ -172,6 +182,24 @@ class Data:
         if not isinstance(data, tuple(dataset_factory_map.keys())):
             raise DataFormatError(data)
         return dataset_factory_map[type(data)](data)
+    
+    def _check_label_nan(self, data: Union[Dataset, Dict], label_name: str) -> None:
+        """
+        Check for NaN values in the label column of the dataset.
+        """
+        if isinstance(data, dict):
+                if label_name not in data:
+                    raise KeyError(f"Label column '{label_name}' not found in the Dataset.")
+                label_series = pd.Series(data[label_name])
+    
+        elif isinstance(data, Dataset):
+                if label_name not in data.features:
+                    raise KeyError(f"Label column '{label_name}' not found in the Dataset.")
+                label_series = pd.Series(data[label_name])
+
+        nan_count = label_series.isna().sum()
+        if nan_count > 0:
+            raise LabelNanError(nan_count, label_name)
 
     def __len__(self) -> int:
         return len(self._data)
