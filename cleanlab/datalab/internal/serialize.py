@@ -22,9 +22,12 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import pandas as pd
+from scipy.sparse import csr_matrix
+from sklearn.neighbors import NearestNeighbors
+from cleanlab.outlier import OutOfDistribution
 
 import cleanlab
-from cleanlab.datalab.internal.data import Data, Label
+from cleanlab.datalab.internal.data import Data, Label, MultiLabel, MultiClass
 
 if TYPE_CHECKING:  # pragma: no cover
     from datasets.arrow_dataset import Dataset
@@ -90,17 +93,55 @@ class _Serializer:
             print(f"WARNING: Existing files will be overwritten by newly saved files at: {path}")
 
         def custom_serializer(obj):
+            """Custom serializer for handling specific data types."""
             if isinstance(obj, np.integer):
-                return int(obj)
-            elif isinstance(obj, np.ndarray):
-                return obj.tolist()
-            elif isinstance(obj, Label):
+                return {"__type__": type(obj).__name__, "value": int(obj)}
+
+            if isinstance(obj, np.ndarray):
+                return {"__type__": "ndarray", "data": obj.tolist()}
+
+            if isinstance(obj, csr_matrix):
                 return {
+                    "__type__": "csr_matrix",
+                    "data": obj.data.tolist(),
+                    "indices": obj.indices.tolist(),
+                    "indptr": obj.indptr.tolist(),
+                    "shape": obj.shape,
+                }
+
+            if isinstance(obj, pd.DataFrame):
+                return {
+                    "__type__": "DataFrame",
+                    "data": obj.to_dict(orient="records"),
+                    "columns": obj.columns.tolist(),
+                }
+
+            if isinstance(obj, Label):
+                return {
+                    "__type__": "Label",
+                    "class_name": obj.__class__.__name__,
                     "label_map": obj.label_map,
                     "labels": obj.labels,
                 }
-            else:
-                raise TypeError(f"Type {type(obj)} is not serializable")
+
+            if isinstance(obj, OutOfDistribution):
+                return {
+                    "__type__": "OutOfDistribution",
+                    "params": {k: v for k, v in obj.params.items() if k != "scaling_factor"},
+                }
+
+            if isinstance(obj, NearestNeighbors):
+                return {
+                    "__type__": "NearestNeighbors",
+                    "n_neighbors": obj.n_neighbors,
+                    "metric": obj.metric,
+                    "algorithm": obj.algorithm,
+                    "leaf_size": obj.leaf_size,
+                    "p": obj.p,
+                    "_fit_X": obj._fit_X.tolist(),
+                }
+
+            raise TypeError(f"Type {type(obj)} is not serializable")
 
         with open(os.path.join(path, OBJECT_FILENAME), "w") as f:
             json.dump(
@@ -130,8 +171,77 @@ class _Serializer:
         if not os.path.exists(path):
             raise ValueError(f"No folder found at specified path: {path}")
 
+        def custom_deserializer(obj):
+            """Custom deserializer for handling specific data types."""
+            if "__type__" in obj:
+                obj_type = obj["__type__"]
+
+                if obj_type.startswith("int") or obj_type.startswith("uint"):
+                    np_type = getattr(np, obj_type, None)
+                    if np_type is not None:
+                        return np_type(obj["value"])
+
+                if obj_type == "ndarray":
+                    return np.array(obj["data"])
+
+                if obj_type == "csr_matrix":
+                    return csr_matrix(
+                        (obj["data"], obj["indices"], obj["indptr"]), shape=obj["shape"]
+                    )
+
+                if obj_type == "DataFrame":
+                    return pd.DataFrame(obj["data"], columns=obj["columns"])
+
+                if obj_type == "Label":
+                    class_name = obj.get("class_name")
+                    if not class_name:
+                        raise ValueError("Missing 'class_name' in serialized Label object.")
+
+                    # Dynamically resolve subclass
+                    subclass = globals().get(class_name)
+                    if not subclass or not issubclass(subclass, Label):
+                        raise ValueError(f"Invalid class '{class_name}' for Label.")
+
+                    # Create instance with placeholders
+                    instance = subclass(data=None, label_name=None, map_to_int=False)
+
+                    # Manually set attributes
+                    instance.label_map = obj["label_map"]
+
+                    # Handle labels dynamically based on subclass
+                    if class_name == "MultiClass":
+                        instance.labels = np.array(obj["labels"])  # Ensure 1D array
+                    elif class_name == "MultiLabel":
+                        instance.labels = [
+                            np.array(label) for label in obj["labels"]
+                        ]  # Ensure 2D format
+
+                    # Final validation
+                    if not isinstance(instance.labels, (np.ndarray, list)):
+                        raise ValueError(
+                            f"Deserialized labels have invalid type: {type(instance.labels)}"
+                        )
+
+                    return instance
+
+                if obj_type == "OutOfDistribution":
+                    return OutOfDistribution(params=obj["params"])
+
+                if obj_type == "NearestNeighbors":
+                    return NearestNeighbors(
+                        n_neighbors=obj["n_neighbors"],
+                        metric=obj["metric"],
+                        algorithm=obj["algorithm"],
+                        leaf_size=obj["leaf_size"],
+                        p=obj["p"],
+                    ).fit(np.array(obj["_fit_X"]))
+
+                raise ValueError(f"Unsupported type during deserialization: {obj_type}")
+
+            return obj
+
         with open(os.path.join(path, OBJECT_FILENAME), "rb") as f:
-            datalab_metadata = json.load(f)
+            datalab_metadata = json.load(f, object_hook=custom_deserializer)
             task = datalab_metadata["task"]
             verbosity = datalab_metadata["verbosity"]
             from cleanlab.datalab.datalab import Datalab
@@ -141,8 +251,7 @@ class _Serializer:
             datalab.cleanlab_version = datalab_metadata["cleanlab_version"]
             datalab.info = datalab_metadata["info"]
             datalab._data_hash = datalab_metadata["_data_hash"]
-            datalab._labels.labels = datalab_metadata["_labels"]["labels"]
-            datalab._labels.label_map = datalab_metadata["_labels"]["label_map"]
+            datalab._labels = datalab_metadata["_labels"]
 
         cls._validate_version(datalab)
 
