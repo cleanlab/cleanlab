@@ -90,7 +90,7 @@ class _Serializer:
             print(f"WARNING: Existing files will be overwritten by newly saved files at: {path}")
 
         def custom_serializer(obj):
-            if isinstance(obj, np.int64):
+            if isinstance(obj, np.integer):
                 return int(obj)
             elif isinstance(obj, np.ndarray):
                 return obj.tolist()
