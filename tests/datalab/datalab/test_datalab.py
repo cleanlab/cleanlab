@@ -17,9 +17,7 @@
 
 import contextlib
 import io
-import os
 import timeit
-from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
