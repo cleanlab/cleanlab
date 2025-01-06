@@ -155,6 +155,7 @@ class _Serializer:
                     "cleanlab_version": datalab.cleanlab_version,
                     "verbosity": datalab.verbosity,
                     "info": datalab.info,
+                    "data_hash": datalab._data_hash,
                 },
                 f,
                 default=custom_serializer,
@@ -254,6 +255,7 @@ class _Serializer:
             )
             datalab.cleanlab_version = json_data["cleanlab_version"]
             datalab.info = json_data["info"]
+            datalab._data_hash = json_data["data_hash"]
 
         cls._validate_version(datalab)
 
@@ -267,7 +269,7 @@ class _Serializer:
             datalab.data_issues.issue_summary = pd.read_csv(issue_summary_path)
 
         if data is not None:
-            if hash(data) != hash(datalab._data):
+            if hash(data) != datalab._data_hash:
                 raise ValueError(
                     "Data has been modified since Lab was saved. "
                     "Cannot load Lab with modified data."
