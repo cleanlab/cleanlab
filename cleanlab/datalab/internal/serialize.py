@@ -116,6 +116,9 @@ class _Serializer:
                     "columns": obj.columns.tolist(),
                 }
 
+            if isinstance(obj, Data):
+                return obj._data.to_dict()
+
             if isinstance(obj, Label):
                 return {
                     "__type__": "Label",
@@ -147,12 +150,11 @@ class _Serializer:
             json.dump(
                 {
                     "task": str(datalab.task),
+                    "data": datalab._data,
                     "label_name": datalab.label_name,
                     "cleanlab_version": datalab.cleanlab_version,
                     "verbosity": datalab.verbosity,
                     "info": datalab.info,
-                    "_labels": datalab._labels,
-                    "_data_hash": datalab._data_hash,
                 },
                 f,
                 default=custom_serializer,
@@ -241,17 +243,17 @@ class _Serializer:
             return obj
 
         with open(os.path.join(path, OBJECT_FILENAME), "rb") as f:
-            datalab_metadata = json.load(f, object_hook=custom_deserializer)
-            task = datalab_metadata["task"]
-            verbosity = datalab_metadata["verbosity"]
+            json_data = json.load(f, object_hook=custom_deserializer)
             from cleanlab.datalab.datalab import Datalab
 
-            datalab: Datalab = Datalab(data=[], task=task, verbosity=verbosity)
-            datalab.label_name = datalab_metadata["label_name"]
-            datalab.cleanlab_version = datalab_metadata["cleanlab_version"]
-            datalab.info = datalab_metadata["info"]
-            datalab._data_hash = datalab_metadata["_data_hash"]
-            datalab._labels = datalab_metadata["_labels"]
+            datalab: Datalab = Datalab(
+                data=json_data["data"],
+                task=json_data["task"],
+                label_name=json_data["label_name"],
+                verbosity=json_data["verbosity"],
+            )
+            datalab.cleanlab_version = json_data["cleanlab_version"]
+            datalab.info = json_data["info"]
 
         cls._validate_version(datalab)
 
@@ -265,7 +267,7 @@ class _Serializer:
             datalab.data_issues.issue_summary = pd.read_csv(issue_summary_path)
 
         if data is not None:
-            if hash(data) != datalab._data_hash:
+            if hash(data) != hash(datalab._data):
                 raise ValueError(
                     "Data has been modified since Lab was saved. "
                     "Cannot load Lab with modified data."
