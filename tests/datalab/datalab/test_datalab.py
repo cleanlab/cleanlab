@@ -490,15 +490,18 @@ class TestDatalab:
 
         # Misaligned dataset raises a ValueError
         with pytest.raises(ValueError) as excinfo:
-            Datalab.load(tmp_path, data=dataset.shard(2, 0))
-            expected_error_msg = "Length of data (2) does not match length of labels (5)"
-            assert expected_error_msg == str(excinfo.value)
-
-        with pytest.raises(ValueError) as excinfo:
             Datalab.load(tmp_path, data=dataset.shuffle())
-            expected_error_msg = (
-                "Data has been modified since Lab was saved. Cannot load Lab with modified data."
-            )
+        expected_error_msg = (
+            "Data has been modified since Lab was saved. Cannot load Lab with modified data."
+        )
+        assert expected_error_msg == str(excinfo.value)
+
+        # Bypass hash check
+        with patch("builtins.hash", return_value=hash(dataset)):
+            with pytest.raises(ValueError) as excinfo:
+                Datalab.load(tmp_path, data=dataset.shard(2, 0))
+
+            expected_error_msg = "Length of data (3) does not match length of labels (5)"
             assert expected_error_msg == str(excinfo.value)
 
     @pytest.mark.parametrize("list_possible_issue_types", [["erroneous_issue_type"]], indirect=True)
