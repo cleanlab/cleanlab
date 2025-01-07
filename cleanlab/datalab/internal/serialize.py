@@ -94,8 +94,8 @@ class _Serializer:
 
         def custom_serializer(obj):
             """Custom serializer for handling specific data types."""
-            if isinstance(obj, np.integer):
-                return {"__type__": type(obj).__name__, "value": int(obj)}
+            if isinstance(obj, np.generic):
+                return {"__type__": "np_scalar", "dtype": str(obj.dtype), "value": obj.item()}
 
             if isinstance(obj, np.ndarray):
                 return {"__type__": "ndarray", "data": obj.tolist()}
@@ -115,6 +115,9 @@ class _Serializer:
                     "data": obj.to_dict(orient="records"),
                     "columns": obj.columns.tolist(),
                 }
+
+            if isinstance(obj, pd.Series):
+                return {"__type__": "Series", "data": obj.tolist()}
 
             if isinstance(obj, Data):
                 return obj._data.to_dict()
@@ -142,6 +145,11 @@ class _Serializer:
                     "leaf_size": obj.leaf_size,
                     "p": obj.p,
                     "_fit_X": obj._fit_X.tolist(),
+                }
+
+            if isinstance(obj, bytes):
+                return {
+                    "__type__": "bytes",
                 }
 
             raise TypeError(f"Type {type(obj)} is not serializable")
@@ -179,10 +187,8 @@ class _Serializer:
             if "__type__" in obj:
                 obj_type = obj["__type__"]
 
-                if obj_type.startswith("int") or obj_type.startswith("uint"):
-                    np_type = getattr(np, obj_type, None)
-                    if np_type is not None:
-                        return np_type(obj["value"])
+                if obj["__type__"] == "np_scalar":
+                    return np.dtype(obj["dtype"]).type(obj["value"])
 
                 if obj_type == "ndarray":
                     return np.array(obj["data"])
@@ -194,6 +200,9 @@ class _Serializer:
 
                 if obj_type == "DataFrame":
                     return pd.DataFrame(obj["data"], columns=obj["columns"])
+
+                if obj_type == "Series":
+                    return pd.Series(obj["data"])
 
                 if obj_type == "Label":
                     class_name = obj.get("class_name")
@@ -238,6 +247,9 @@ class _Serializer:
                         leaf_size=obj["leaf_size"],
                         p=obj["p"],
                     ).fit(np.array(obj["_fit_X"]))
+
+                if obj_type == "bytes":
+                    return None
 
                 raise ValueError(f"Unsupported type during deserialization: {obj_type}")
 
