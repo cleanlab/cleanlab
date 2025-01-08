@@ -21,8 +21,8 @@ class TestNullIssueManager:
     def embeddings_with_null(self):
         np.random.seed(SEED)
         embeddings_array = np.random.random((4, 3))
-        embeddings_array[[0, 3], 0] = np.NaN
-        embeddings_array[1] = np.NaN
+        embeddings_array[[0, 3], 0] = np.nan
+        embeddings_array[1] = np.nan
         return embeddings_array
 
     @pytest.fixture

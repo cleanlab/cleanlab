@@ -175,7 +175,7 @@ def get_label_quality_multiannotator(
         annotator_ids = labels_multiannotator.columns
         index_col = labels_multiannotator.index
         labels_multiannotator = (
-            labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).to_numpy()
+            labels_multiannotator.replace({pd.NA: np.nan}).astype(float).to_numpy()
         )
     elif isinstance(labels_multiannotator, np.ndarray):
         annotator_ids = None
@@ -432,7 +432,7 @@ def get_label_quality_multiannotator_ensemble(
         annotator_ids = labels_multiannotator.columns
         index_col = labels_multiannotator.index
         labels_multiannotator = (
-            labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).to_numpy()
+            labels_multiannotator.replace({pd.NA: np.nan}).astype(float).to_numpy()
         )
     elif isinstance(labels_multiannotator, np.ndarray):
         annotator_ids = None
@@ -643,7 +643,7 @@ def get_active_learning_scores(
 
         if isinstance(labels_multiannotator, pd.DataFrame):
             labels_multiannotator = (
-                labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).to_numpy()
+                labels_multiannotator.replace({pd.NA: np.nan}).astype(float).to_numpy()
             )
         elif not isinstance(labels_multiannotator, np.ndarray):
             raise ValueError(
@@ -795,7 +795,7 @@ def get_active_learning_scores_ensemble(
 
         if isinstance(labels_multiannotator, pd.DataFrame):
             labels_multiannotator = (
-                labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).to_numpy()
+                labels_multiannotator.replace({pd.NA: np.nan}).astype(float).to_numpy()
             )
         elif not isinstance(labels_multiannotator, np.ndarray):
             raise ValueError(
@@ -833,7 +833,7 @@ def get_active_learning_scores_ensemble(
 
         # examples are annotated by multiple annotators
         else:
-            optimal_temp = np.full(len(pred_probs), np.NaN)
+            optimal_temp = np.full(len(pred_probs), np.nan)
             for i, curr_pred_probs in enumerate(pred_probs):
                 curr_optimal_temp = find_best_temp_scaler(labels_multiannotator, curr_pred_probs)
                 pred_probs[i] = temp_scale_pred_probs(curr_pred_probs, curr_optimal_temp)
@@ -943,7 +943,7 @@ def get_majority_vote_label(
     if isinstance(labels_multiannotator, pd.DataFrame):
         annotator_ids = labels_multiannotator.columns
         labels_multiannotator = (
-            labels_multiannotator.replace({pd.NA: np.NaN}).astype(float).to_numpy()
+            labels_multiannotator.replace({pd.NA: np.nan}).astype(float).to_numpy()
         )
     elif isinstance(labels_multiannotator, np.ndarray):
         annotator_ids = None
@@ -1028,7 +1028,7 @@ def get_majority_vote_label(
             labels = nontied_labels_multiannotator[:, i]
             labels_mask = ~np.isnan(labels)
             if np.sum(labels_mask) == 0:
-                annotator_agreement_with_consensus[i] = np.NaN
+                annotator_agreement_with_consensus[i] = np.nan
             else:
                 annotator_agreement_with_consensus[i] = np.mean(
                     labels[labels_mask] == nontied_majority_vote_label[labels_mask]
@@ -1390,7 +1390,7 @@ def _get_single_annotator_agreement(
     """
     adjusted_num_annotations = num_annotations - 1
     if np.sum(adjusted_num_annotations) == 0:
-        return np.NaN
+        return np.nan
 
     multi_annotations_mask = num_annotations > 1
     annotator_agreement_per_example = np.zeros(len(labels_multiannotator))
@@ -1523,7 +1523,7 @@ def _get_post_pred_probs_and_weights(
 
     elif quality_method == "agreement":
         num_classes = get_num_classes(pred_probs=prior_pred_probs)
-        label_counts = np.full((len(labels_multiannotator), num_classes), np.NaN)
+        label_counts = np.full((len(labels_multiannotator), num_classes), np.nan)
         for i, labels in enumerate(labels_multiannotator):
             label_counts[i, :] = value_counts(labels[~np.isnan(labels)], num_classes=num_classes)
 
@@ -1812,7 +1812,7 @@ def _get_annotator_quality(
             # case where annotator does not annotate any examples with any other annotators
             # TODO: do we want to impute the mean or just return np.nan
             if np.sum(labels_mask) == 0:
-                annotator_agreement[i] = np.NaN
+                annotator_agreement[i] = np.nan
             else:
                 annotator_agreement[i] = np.mean(
                     labels[labels_mask] == consensus_label_subset[labels_mask],
@@ -1835,7 +1835,7 @@ def _get_annotator_quality(
             labels_mask = ~np.isnan(labels)
             # case where annotator does not annotate any examples with any other annotators
             if np.sum(labels_mask) == 0:
-                annotator_quality[i] = np.NaN
+                annotator_quality[i] = np.nan
             else:
                 annotator_quality[i] = np.mean(
                     labels[labels_mask] == consensus_label_subset[labels_mask],

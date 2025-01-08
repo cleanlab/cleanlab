@@ -777,7 +777,7 @@ class CleanLearning(BaseEstimator):
         else:
             # conduct coarse search
             coarse_search_range = sorted(coarse_search_range)  # sort to conduct fine search well
-            r2_coarse = np.full(len(coarse_search_range), np.NaN)
+            r2_coarse = np.full(len(coarse_search_range), np.nan)
             for i in range(len(coarse_search_range)):
                 curr_k = coarse_search_range[i]
                 num_examples_kept = math.floor(len(y) * (1 - curr_k))
@@ -824,7 +824,7 @@ class CleanLearning(BaseEstimator):
                         )[1:],
                     )
 
-                r2_fine = np.full(len(fine_search_range), np.NaN)
+                r2_fine = np.full(len(fine_search_range), np.nan)
                 for i in range(len(fine_search_range)):
                     curr_k = fine_search_range[i]
                     num_examples_kept = math.floor(len(y) * (1 - curr_k))

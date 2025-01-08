@@ -147,7 +147,9 @@ class OutlierIssueManager(IssueManager):
 
             # Ensure scaling factor is not too small to avoid numerical issues
             if self.scaling_factor is None:
-                self.scaling_factor = float(max(median_avg_distance, 100 * np.finfo(np.float_).eps))
+                self.scaling_factor = float(
+                    max(median_avg_distance, 100 * np.finfo(np.float64).eps)
+                )
             scores = transform_distances_to_scores(
                 avg_distances, t=self.t, scaling_factor=self.scaling_factor
             )

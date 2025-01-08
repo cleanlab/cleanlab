@@ -113,13 +113,13 @@ def correct_precision_errors(
         An array of scores of shape ``(N,)`` for N examples with scores between 0 and 1.
     """
     if metric == "cosine":
-        tolerance = C * np.finfo(np.float_).epsneg
+        tolerance = C * np.finfo(np.float64).epsneg
     elif metric == "euclidean":
-        tolerance = np.sqrt(C * np.finfo(np.float_).eps)
+        tolerance = np.sqrt(C * np.finfo(np.float64).eps)
     elif metric == "minkowski":
         if p is None:
             raise ValueError("When metric is 'minkowski' you must specify the 'p' parameter")
-        tolerance = (C * np.finfo(np.float_).eps) ** (1 / p)
+        tolerance = (C * np.finfo(np.float64).eps) ** (1 / p)
     else:
         return scores
 
