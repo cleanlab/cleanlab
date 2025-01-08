@@ -29,9 +29,9 @@ from cleanlab.outlier import OutOfDistribution
 import cleanlab
 from cleanlab.datalab.internal.data import Data, Label, MultiLabel, MultiClass
 
-if TYPE_CHECKING:  # pragma: no cover
-    from datasets.arrow_dataset import Dataset
+from datasets.arrow_dataset import Dataset
 
+if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.datalab import Datalab
 
 
@@ -70,7 +70,7 @@ class _Serializer:
             )
 
     @classmethod
-    def serialize(cls, path: str, datalab: Datalab, force: bool) -> None:
+    def serialize(cls, path: str, datalab: Datalab, force: bool, save_dataset: bool = True) -> None:
         """Serializes the datalab object to disk.
 
         Parameters
@@ -83,6 +83,9 @@ class _Serializer:
 
         force : bool
             If True, will overwrite existing files at the specified path.
+
+        save_dataset : bool
+            If True, saves the dataset to the specified path. Defaults to True.
         """
         path_exists = os.path.exists(path)
         if not path_exists:
@@ -173,7 +176,8 @@ class _Serializer:
         cls._save_data_issues(path=path, datalab=datalab)
 
         # Save the dataset to disk
-        cls._save_data(path=path, datalab=datalab)
+        if save_dataset:
+            cls._save_data(path=path, datalab=datalab)
 
     @classmethod
     def deserialize(cls, path: str, data: Optional[Dataset] = None) -> Datalab:
@@ -181,6 +185,8 @@ class _Serializer:
 
         if not os.path.exists(path):
             raise ValueError(f"No folder found at specified path: {path}")
+
+        loaded_data = None
 
         def custom_deserializer(obj):
             """Custom deserializer for handling specific data types."""
@@ -259,8 +265,12 @@ class _Serializer:
             json_data = json.load(f, object_hook=custom_deserializer)
             from cleanlab.datalab.datalab import Datalab
 
+            # Load dataset from disk by default (if saved)
+            if data is None:
+                loaded_data = Dataset.load_from_disk(os.path.join(path, DATA_DIRNAME))
+
             datalab: Datalab = Datalab(
-                data=json_data["data"],
+                data=loaded_data if loaded_data else json_data["data"],
                 task=json_data["task"],
                 label_name=json_data["label_name"],
                 verbosity=json_data["verbosity"],
@@ -292,7 +302,14 @@ class _Serializer:
                     f"Length of data ({len(data)}) does not match length of labels ({len(datalab.labels)})"
                 )
 
+            loaded_data = data
             datalab._data = Data(data, datalab.task, datalab.label_name)
             datalab.data = datalab._data._data
+
+        # Still no dataset loaded
+        if loaded_data is None:
+            print(
+                "WARNING: The Datalab object was loaded without a dataset and will have limited functionality."
+            )
 
         return datalab
