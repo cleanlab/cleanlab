@@ -27,7 +27,7 @@ from sklearn.neighbors import NearestNeighbors
 from cleanlab.outlier import OutOfDistribution
 
 import cleanlab
-from cleanlab.datalab.internal.data import Data, Label, MultiLabel, MultiClass
+from cleanlab.datalab.internal.data import Data, Label
 
 from datasets.arrow_dataset import Dataset
 
@@ -267,7 +267,9 @@ class _Serializer:
 
             # Load dataset from disk by default (if saved)
             if data is None:
-                loaded_data = Dataset.load_from_disk(os.path.join(path, DATA_DIRNAME))
+                dataset_path = os.path.join(path, DATA_DIRNAME)
+                if os.path.exists(dataset_path):
+                    loaded_data = Dataset.load_from_disk(dataset_path)
 
             datalab: Datalab = Datalab(
                 data=loaded_data if loaded_data else json_data["data"],
