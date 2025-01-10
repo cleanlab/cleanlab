@@ -20,7 +20,6 @@ import io
 import timeit
 from unittest.mock import MagicMock, Mock, patch
 
-import json
 import numpy as np
 import pandas as pd
 import pytest
@@ -30,7 +29,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestNeighbors
-from cleanlab.outlier import OutOfDistribution
 from sklearn.datasets import make_blobs
 
 import cleanlab
