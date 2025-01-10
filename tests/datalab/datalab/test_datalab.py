@@ -20,6 +20,7 @@ import io
 import timeit
 from unittest.mock import MagicMock, Mock, patch
 
+import json
 import numpy as np
 import pandas as pd
 import pytest
@@ -29,6 +30,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestNeighbors
+from cleanlab.outlier import OutOfDistribution
 from sklearn.datasets import make_blobs
 
 import cleanlab
@@ -664,6 +666,12 @@ class TestDatalabUsingKNNGraph:
         assert (
             lab.issues.empty
         ), "The issues dataframe should be empty as the issue manager expects an existing knn_graph"
+
+    def test_knn_serialization(self, data_tuple, tmp_path):
+        lab, knn_graph, features = data_tuple
+        lab.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {"k": 3}})
+        lab.save(tmp_path, force=True)
+        lab.load(tmp_path)
 
 
 class TestDatalabIssueManagerInteraction:
