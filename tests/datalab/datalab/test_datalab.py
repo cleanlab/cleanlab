@@ -506,6 +506,20 @@ class TestDatalab:
             expected_error_msg = "Length of data (3) does not match length of labels (5)"
             assert expected_error_msg == str(excinfo.value)
 
+        # Missing issues and issue_summary files raises warnings
+        issues_path = tmp_path / "issues.csv"
+        issue_summary_path = tmp_path / "summary.csv"
+
+        # Remove `issues.csv` and check for warning
+        issues_path.unlink()
+        with pytest.warns(UserWarning, match="File not found: .*issues.csv.*"):
+            loaded_lab = Datalab.load(tmp_path)
+
+        # Remove `issue_summary.csv` and check for warning
+        issue_summary_path.unlink()
+        with pytest.warns(UserWarning, match="File not found: .*summary.csv.*"):
+            loaded_lab = Datalab.load(tmp_path)
+
     @pytest.mark.parametrize("list_possible_issue_types", [["erroneous_issue_type"]], indirect=True)
     def test_failed_issue_managers(self, lab, monkeypatch, list_possible_issue_types):
         """Test that a failed issue manager will not be added to the Datalab instance after

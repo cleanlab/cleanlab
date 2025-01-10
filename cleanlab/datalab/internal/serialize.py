@@ -287,10 +287,14 @@ class _Serializer:
         issues_path = os.path.join(path, ISSUES_FILENAME)
         if os.path.exists(issues_path):
             datalab.data_issues.issues = pd.read_csv(issues_path)
+        else:
+            warnings.warn(f"File not found: {issues_path}. Skipping issues loading.")
 
         issue_summary_path = os.path.join(path, ISSUE_SUMMARY_FILENAME)
         if os.path.exists(issue_summary_path):
             datalab.data_issues.issue_summary = pd.read_csv(issue_summary_path)
+        else:
+            warnings.warn(f"File not found: {issue_summary_path}. Skipping issue summary loading.")
 
         if data is not None:
             if hash(data) != datalab._data_hash:
@@ -310,8 +314,9 @@ class _Serializer:
 
         # Still no dataset loaded
         if loaded_data is None:
-            print(
-                "WARNING: The Datalab object was loaded without a dataset and will have limited functionality."
+            warnings.warn(
+                "The Datalab object was loaded without a dataset and will have limited functionality.",
+                UserWarning,
             )
 
         return datalab
