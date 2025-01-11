@@ -229,7 +229,7 @@ def format_multiannotator_labels(labels: LabelLike) -> Tuple[pd.DataFrame, dict]
         unique_labels = unique_labels[~np.isnan(unique_labels)]
         unique_labels.sort()
     except TypeError:  # np.unique / np.sort cannot handle string values or pd.NA types
-        nan_mask = np.array([(l is np.NaN) or (l is pd.NA) or (l == "nan") for l in unique_labels])
+        nan_mask = np.array([(l is np.nan) or (l is pd.NA) or (l == "nan") for l in unique_labels])
         unique_labels = unique_labels[~nan_mask]
         unique_labels.sort()
 
@@ -275,7 +275,7 @@ def compute_soft_cross_entropy(
     """Compute soft cross entropy between the annotators' empirical label distribution and model pred_probs"""
     num_classes = get_num_classes(pred_probs=pred_probs)
 
-    empirical_label_distribution = np.full((len(labels_multiannotator), num_classes), np.NaN)
+    empirical_label_distribution = np.full((len(labels_multiannotator), num_classes), np.nan)
     for i, labels in enumerate(labels_multiannotator):
         labels_subset = labels[~np.isnan(labels)]
         empirical_label_distribution[i, :] = value_counts(
@@ -299,7 +299,7 @@ def find_best_temp_scaler(
     """Find the best temperature scaling factor that minimizes the soft cross entropy between the annotators' empirical label distribution
     and model pred_probs"""
 
-    soft_cross_entropy_coarse = np.full(len(coarse_search_range), np.NaN)
+    soft_cross_entropy_coarse = np.full(len(coarse_search_range), np.nan)
     log_pred_probs = np.log(
         pred_probs, where=pred_probs > 0, out=np.full(pred_probs.shape, -np.inf)
     )
@@ -313,7 +313,7 @@ def find_best_temp_scaler(
     fine_search_range = _set_fine_search_range(
         coarse_search_range, fine_search_size, min_entropy_ind
     )
-    soft_cross_entropy_fine = np.full(len(fine_search_range), np.NaN)
+    soft_cross_entropy_fine = np.full(len(fine_search_range), np.nan)
     for i, curr_temp in enumerate(fine_search_range):
         scaled_pred_probs = softmax(log_pred_probs, temperature=curr_temp, axis=1, shift=False)
         soft_cross_entropy_fine[i] = np.mean(

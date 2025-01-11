@@ -104,7 +104,7 @@ def make_data(
         "true_labels_train_unlabeled": true_labels_train_unlabeled,
         "labels": s[row_NA_check].reset_index(drop=True),
         "labels_unlabeled": pd.DataFrame(
-            np.full((len(true_labels_train_unlabeled), num_annotators), np.NaN)
+            np.full((len(true_labels_train_unlabeled), num_annotators), np.nan)
         ),
         "complete_labels": complete_labels,
         "pred_probs": latent[4][row_NA_check],
@@ -327,7 +327,7 @@ def test_label_quality_scores_multiannotator():
 
     # try same thing as above but with numpy array
     labels_nan = deepcopy(labels).values.astype(float)
-    labels_nan[:, 1] = np.NaN
+    labels_nan[:, 1] = np.nan
     try:
         multiannotator_dict = get_label_quality_multiannotator(
             labels_nan,
@@ -340,11 +340,11 @@ def test_label_quality_scores_multiannotator():
     # test error catching when labels_multiannotator has NaN rows
     labels_nan = pd.DataFrame(
         [
-            [0, np.NaN, np.NaN],
-            [np.NaN, 1, np.NaN],
-            [np.NaN, np.NaN, 2],
-            [np.NaN, np.NaN, np.NaN],
-            [np.NaN, np.NaN, 2],
+            [0, np.nan, np.nan],
+            [np.nan, 1, np.nan],
+            [np.nan, np.nan, 2],
+            [np.nan, np.nan, np.nan],
+            [np.nan, np.nan, 2],
         ]
     )
     pred_probs = np.random.random((5, 3))
@@ -486,11 +486,11 @@ def test_get_active_learning_scores():
     # test when each example is only labeled by one annotator
     labels = pd.DataFrame(
         [
-            [0, np.NaN, np.NaN],
-            [np.NaN, 1, np.NaN],
-            [np.NaN, np.NaN, 2],
-            [np.NaN, 1, np.NaN],
-            [np.NaN, np.NaN, 2],
+            [0, np.nan, np.nan],
+            [np.nan, 1, np.nan],
+            [np.nan, np.nan, 2],
+            [np.nan, 1, np.nan],
+            [np.nan, np.nan, 2],
         ]
     )
     pred_probs = np.random.random((5, 3))
@@ -545,11 +545,11 @@ def test_get_active_learning_scores_ensemble():
     # test when each example is only labeled by one annotator
     labels = pd.DataFrame(
         [
-            [0, np.NaN, np.NaN],
-            [np.NaN, 1, np.NaN],
-            [np.NaN, np.NaN, 2],
-            [np.NaN, 1, np.NaN],
-            [np.NaN, np.NaN, 2],
+            [0, np.nan, np.nan],
+            [np.nan, 1, np.nan],
+            [np.nan, np.nan, 2],
+            [np.nan, 1, np.nan],
+            [np.nan, np.nan, 2],
         ]
     )
     pred_probs = np.random.random((2, 5, 3))
@@ -636,12 +636,12 @@ def test_single_label_active_learning_ensemble():
 def test_missing_class():
     labels = np.array(
         [
-            [1, np.NaN, 2],
+            [1, np.nan, 2],
             [1, 1, 2],
             [2, 2, 1],
-            [np.NaN, 2, 2],
-            [np.NaN, 2, 1],
-            [np.NaN, 2, 2],
+            [np.nan, 2, 2],
+            [np.nan, 2, 1],
+            [np.nan, 2, 2],
         ]
     )
 
@@ -674,12 +674,12 @@ def test_missing_class():
 def test_rare_class():
     labels = np.array(
         [
-            [1, np.NaN, 2],
+            [1, np.nan, 2],
             [1, 1, 0],
             [2, 2, 0],
-            [np.NaN, 2, 2],
-            [np.NaN, 2, 1],
-            [np.NaN, 2, 2],
+            [np.nan, 2, 2],
+            [np.nan, 2, 1],
+            [np.nan, 2, 2],
         ]
     )
 
@@ -739,12 +739,12 @@ def test_get_consensus_label():
     # more tiebreak testing (without pred_probs + non-overlapping annotators)
     labels_tiebreaks = np.array(
         [
-            [1, np.NaN, np.NaN, 2, np.NaN],
-            [np.NaN, 1, 0, np.NaN, np.NaN],
-            [np.NaN, np.NaN, 0, np.NaN, np.NaN],
-            [np.NaN, 2, np.NaN, np.NaN, np.NaN],
-            [2, np.NaN, 0, 2, np.NaN],
-            [np.NaN, np.NaN, np.NaN, 2, 1],
+            [1, np.nan, np.nan, 2, np.nan],
+            [np.nan, 1, 0, np.nan, np.nan],
+            [np.nan, np.nan, 0, np.nan, np.nan],
+            [np.nan, 2, np.nan, np.nan, np.nan],
+            [2, np.nan, 0, 2, np.nan],
+            [np.nan, np.nan, np.nan, 2, 1],
         ]
     )
     consensus_label = get_majority_vote_label(labels_tiebreaks)
@@ -754,12 +754,12 @@ def test_get_consensus_label():
 def test_impute_nonoverlaping_annotators():
     labels = np.array(
         [
-            [1, np.NaN, np.NaN],
-            [np.NaN, 1, 0],
-            [np.NaN, 0, 0],
-            [np.NaN, 2, 2],
-            [np.NaN, 2, 0],
-            [np.NaN, 2, 0],
+            [1, np.nan, np.nan],
+            [np.nan, 1, 0],
+            [np.nan, 0, 0],
+            [np.nan, 2, 2],
+            [np.nan, 2, 0],
+            [np.nan, 2, 0],
         ]
     )
     pred_probs = np.array(
@@ -783,8 +783,8 @@ def test_format_multiannotator_labels():
     str_labels = np.array(
         [
             ["a", "b", "c"],
-            ["b", "b", np.NaN],
-            ["z", np.NaN, "c"],
+            ["b", "b", np.nan],
+            ["z", np.nan, "c"],
         ]
     )
     labels, label_map = format_multiannotator_labels(str_labels)
@@ -796,8 +796,8 @@ def test_format_multiannotator_labels():
     num_labels = pd.DataFrame(
         [
             [3, 2, 1],
-            [1, 2, np.NaN],
-            [3, np.NaN, 3],
+            [1, 2, np.nan],
+            [3, np.nan, 3],
         ]
     )
     labels, label_map = format_multiannotator_labels(num_labels)

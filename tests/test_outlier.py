@@ -663,7 +663,7 @@ def test_wrong_info_get_ood_predictions_scores():
 
 @given(
     fill_value=st.floats(
-        min_value=5 * float(np.finfo(np.float_).eps),
+        min_value=5 * float(np.finfo(np.float64).eps),
         max_value=5,
         exclude_min=False,
         allow_subnormal=False,
