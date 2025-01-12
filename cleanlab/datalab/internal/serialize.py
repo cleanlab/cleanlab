@@ -27,7 +27,7 @@ from sklearn.neighbors import NearestNeighbors
 from cleanlab.outlier import OutOfDistribution
 
 import cleanlab
-from cleanlab.datalab.internal.data import Data, Label
+from cleanlab.datalab.internal.data import Data
 
 from datasets.arrow_dataset import Dataset
 

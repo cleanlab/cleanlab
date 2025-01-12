@@ -5,7 +5,7 @@ from datasets import load_dataset
 from datasets.arrow_dataset import Dataset
 from PIL import Image
 from io import BytesIO
-from PIL.PngImagePlugin import PngImageFile
+
 from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.datalab.datalab import Datalab
