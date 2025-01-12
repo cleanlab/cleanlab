@@ -1121,6 +1121,13 @@ class TestDatalabFindOutlierIssues:
         assert outlier_issues["is_outlier_issue"].sum() == 0
         np.testing.assert_allclose(outlier_issues["outlier_score"].to_numpy(), 1)
 
+    def test_outlier_serialization(self, tmp_path, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=random_embeddings, issue_types={"outlier": {}})
+        lab.save(tmp_path, force=True)
+        lab.load(tmp_path)
+
 
 class TestDatalabFindNearDuplicateIssues:
     @pytest.fixture
@@ -1247,6 +1254,13 @@ class TestDatalabFindNearDuplicateIssues:
         near_duplicate_issues = lab.get_issues("near_duplicate")
         assert near_duplicate_issues["is_near_duplicate_issue"].sum() == N
         np.testing.assert_allclose(near_duplicate_issues["near_duplicate_score"].to_numpy(), 0)
+
+    def test_near_duplicate_serialization(self, tmp_path, pred_probs, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        lab.save(tmp_path, force=True)
+        lab.load(tmp_path)
 
 
 class TestDatalabWithoutLabels:

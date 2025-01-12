@@ -4,6 +4,8 @@ import pytest
 from datasets import load_dataset
 from datasets.arrow_dataset import Dataset
 from PIL import Image
+from io import BytesIO
+from PIL.PngImagePlugin import PngImageFile
 from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.datalab.datalab import Datalab
@@ -132,10 +134,34 @@ def mock_issue_summary():
     )
 
 
-def generate_image():
-    arr = np.random.randint(low=0, high=256, size=(300, 300, 3), dtype=np.uint8)
-    img = Image.fromarray(arr, mode="RGB")
-    return img
+def generate_png_image():
+    arr = np.random.randint(low=0, high=256, size=(28, 28), dtype=np.uint8)
+    img = Image.fromarray(arr, mode="L")
+
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    return Image.open(buffer)
+
+
+@pytest.fixture
+def synthetic_image_dataset():
+    num_images = 10
+    images = []
+    labels = []
+
+    for _ in range(num_images):
+        images.append(generate_png_image())
+        labels.append(np.random.randint(0, 10))
+
+    data_dict = {
+        "image": images,
+        "label": labels,
+    }
+
+    dataset = Dataset.from_dict(data_dict)
+    return dataset
 
 
 @pytest.fixture
