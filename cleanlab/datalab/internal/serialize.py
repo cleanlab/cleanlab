@@ -50,7 +50,7 @@ class _Serializer:
         if datalab.data_issues.issues.empty:
             print("Warning: The `issue` DataFrame is empty. Skip saving to .csv")
         else:
-            datalab.data_issues.issues.to_csv(issues_path)
+            datalab.data_issues.issues.to_csv(issues_path, index=False)
 
         issue_summary_path = os.path.join(path, ISSUE_SUMMARY_FILENAME)
         if datalab.data_issues.issue_summary.empty:
