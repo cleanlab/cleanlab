@@ -592,7 +592,7 @@ class Datalab:
             default_issue_types.extend(DEFAULT_CLEANVISION_ISSUES.keys())
         return default_issue_types
 
-    def save(self, path: str, force: bool = False) -> None:
+    def save(self, path: str, force: bool = False, save_dataset: bool = True) -> None:
         """Saves this Datalab object to file (all files are in folder at `path/`).
         We do not guarantee saved Datalab can be loaded from future versions of cleanlab.
 
@@ -608,7 +608,7 @@ class Datalab:
         ----
         You have to save the Dataset yourself separately if you want it saved to file.
         """
-        _Serializer.serialize(path=path, datalab=self, force=force)
+        _Serializer.serialize(path=path, datalab=self, force=force, save_dataset=save_dataset)
         save_message = f"Saved Datalab to folder: {path}"
         print(save_message)
 

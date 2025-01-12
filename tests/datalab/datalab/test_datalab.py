@@ -451,6 +451,14 @@ class TestDatalab:
     def test_load(self, lab, tmp_path, dataset, mock_issues, mock_issue_summary, monkeypatch):
         """Test that the save and load methods work."""
 
+        # Load without saved datalab raises warning
+        lab.save(tmp_path, force=True, save_dataset=False)
+        with pytest.warns(
+            UserWarning,
+            match="The Datalab object was loaded without a dataset and will have limited functionality.",
+        ):
+            loaded_lab = Datalab.load(tmp_path)
+
         monkeypatch.setattr(lab, "issues", mock_issues)
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
 

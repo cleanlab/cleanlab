@@ -76,7 +76,7 @@ class _Serializer:
             )
 
     @classmethod
-    def serialize(cls, path: str, datalab: Datalab, force: bool, save_dataset: bool = True) -> None:
+    def serialize(cls, path: str, datalab: Datalab, force: bool, save_dataset: bool) -> None:
         """Serializes the datalab object to disk.
 
         Parameters
