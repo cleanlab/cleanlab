@@ -601,12 +601,17 @@ class Datalab:
         path :
             Folder in which all information about this Datalab should be saved.
 
-        force :
+        force : bool, optional (default=False)
             If ``True``, overwrites any existing files in the folder at `path`. Use this with caution!
+
+        save_dataset : bool, optional (default=True)
+            If ``True``, saves the associated Dataset to the same folder. If ``False``,
+            the Dataset is not saved, and you will need to save it separately if needed.
 
         NOTE
         ----
-        You have to save the Dataset yourself separately if you want it saved to file.
+        If you have already saved the Dataset yourself, set `save_dataset=False` to avoid saving it again,
+        which can save time and storage.
         """
         _Serializer.serialize(path=path, datalab=self, force=force, save_dataset=save_dataset)
         save_message = f"Saved Datalab to folder: {path}"
@@ -614,22 +619,30 @@ class Datalab:
 
     @staticmethod
     def load(path: str, data: Optional[Dataset] = None) -> "Datalab":
-        """Loads Datalab object from a previously saved folder.
+        """Loads a Datalab object from a previously saved folder.
 
         Parameters
         ----------
-        `path` :
+        path : str
             Path to the folder previously specified in ``Datalab.save()``.
 
-        `data` :
-            The dataset used to originally construct the Datalab.
-            Remember the dataset is not saved as part of the Datalab,
-            you must save/load the data separately.
+        data : Optional[Dataset], optional
+            The dataset used to originally construct the Datalab. If not provided, the function
+            will attempt to locate a saved dataset in the specified `path`. If no dataset is
+            provided or found, the Datalab will be loaded with limited functionality.
 
         Returns
         -------
-        `datalab` :
-            A Datalab object that is identical to the one originally saved.
+        datalab : Datalab
+            A Datalab object that is identical to the one originally saved, provided the dataset
+            matches or is loaded correctly.
+
+        WARNING
+        ----
+        If no dataset is loaded (neither provided nor found in `path`), the Datalab object will
+        have limited functionality. This "read-only" mode allows you to access `issues` and
+        `issue_summary`, but operations requiring the dataset, such as generating reports, may
+        not function correctly.
         """
         datalab = _Serializer.deserialize(path=path, data=data)
         load_message = f"Datalab loaded from folder: {path}"
