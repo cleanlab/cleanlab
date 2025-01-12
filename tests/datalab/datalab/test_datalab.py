@@ -432,9 +432,9 @@ class TestDatalab:
         lab.save(tmp_path, force=True)
         assert tmp_path.exists(), "Save directory was not created"
         assert (tmp_path / "data").is_dir(), "Data directory was not saved"
-        assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
-        assert (tmp_path / "summary.csv").exists(), "Issue summary file was not saved"
         assert (tmp_path / "datalab.json").exists(), "Datalab file was not saved"
+        assert not (tmp_path / "issues.csv").exists(), "Empty issues dataframe was saved"
+        assert not (tmp_path / "summary.csv").exists(), "Empty issue_summary dataframe was saved"
 
         monkeypatch.setattr(lab, "issues", mock_issues)
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
@@ -481,6 +481,7 @@ class TestDatalab:
         assert (
             loaded_lab.class_names == lab.class_names
         ), f"Mismatch in 'class_names' property: {loaded_lab.class_names} != {lab.class_names}"
+        print("debug", loaded_lab.issues)
         pd.testing.assert_frame_equal(loaded_lab.issues, mock_issues)
         pd.testing.assert_frame_equal(loaded_lab.issue_summary, mock_issue_summary)
 
