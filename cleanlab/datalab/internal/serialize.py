@@ -131,14 +131,6 @@ class _Serializer:
             if isinstance(obj, Data):
                 return obj._data.to_dict()
 
-            if isinstance(obj, Label):
-                return {
-                    "__type__": "Label",
-                    "class_name": obj.__class__.__name__,
-                    "label_map": obj.label_map,
-                    "labels": obj.labels,
-                }
-
             if isinstance(obj, OutOfDistribution):
                 return {
                     "__type__": "OutOfDistribution",
@@ -215,38 +207,6 @@ class _Serializer:
 
                 if obj_type == "Series":
                     return pd.Series(obj["data"])
-
-                if obj_type == "Label":
-                    class_name = obj.get("class_name")
-                    if not class_name:
-                        raise ValueError("Missing 'class_name' in serialized Label object.")
-
-                    # Dynamically resolve subclass
-                    subclass = globals().get(class_name)
-                    if not subclass or not issubclass(subclass, Label):
-                        raise ValueError(f"Invalid class '{class_name}' for Label.")
-
-                    # Create instance with placeholders
-                    instance = subclass(data=None, label_name=None, map_to_int=False)
-
-                    # Manually set attributes
-                    instance.label_map = obj["label_map"]
-
-                    # Handle labels dynamically based on subclass
-                    if class_name == "MultiClass":
-                        instance.labels = np.array(obj["labels"])  # Ensure 1D array
-                    elif class_name == "MultiLabel":
-                        instance.labels = [
-                            np.array(label) for label in obj["labels"]
-                        ]  # Ensure 2D format
-
-                    # Final validation
-                    if not isinstance(instance.labels, (np.ndarray, list)):
-                        raise ValueError(
-                            f"Deserialized labels have invalid type: {type(instance.labels)}"
-                        )
-
-                    return instance
 
                 if obj_type == "OutOfDistribution":
                     return OutOfDistribution(params=obj["params"])
