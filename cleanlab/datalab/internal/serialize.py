@@ -47,10 +47,16 @@ class _Serializer:
     def _save_data_issues(path: str, datalab: Datalab) -> None:
         """Saves the issues to disk."""
         issues_path = os.path.join(path, ISSUES_FILENAME)
-        datalab.data_issues.issues.to_csv(issues_path, index=False)
+        if datalab.data_issues.issues.empty:
+            print("Warning: The `issue` DataFrame is empty. Skip saving to .csv")
+        else:
+            datalab.data_issues.issues.to_csv(issues_path)
 
         issue_summary_path = os.path.join(path, ISSUE_SUMMARY_FILENAME)
-        datalab.data_issues.issue_summary.to_csv(issue_summary_path, index=False)
+        if datalab.data_issues.issue_summary.empty:
+            print("Warning: The `issue_summary` DataFrame is empty. Skip saving to .csv")
+        else:
+            datalab.data_issues.issue_summary.to_csv(issue_summary_path, index=False)
 
     @staticmethod
     def _save_data(path: str, datalab: Datalab) -> None:
