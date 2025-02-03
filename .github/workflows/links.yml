@@ -28,6 +28,7 @@ jobs:
           ignore_url: |
             https://jair.org/index.php/jair/article/view/12125
             https://stackoverflow.com/questions/41573587/what-is-the-difference-between-venv-pyvenv-pyenv-virtualenv-virtualenvwrappe
+          ignore_url_re: |
             https://www.gnu.org/software/wget
           swap_urls: |
             {"^(\\..*)\\.md(#?.*)$": "\\1.md.html\\2",
