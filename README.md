@@ -29,7 +29,7 @@ cleanlab helps you **clean** data and **lab**els by automatically detecting issu
   <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/datalab_issues.png" width=74% height=74%>
 </p>
 <p align="center">
-    Examples of various issues in Cat/Dog dataset <b>automatically detected</b> by cleanlab via this code:    
+    My Anup Examples of various issues in Cat/Dog dataset <b>automatically detected</b> by cleanlab via this code:    
 </p>
 
 ```python
