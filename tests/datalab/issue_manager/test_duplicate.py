@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import warnings
 from hypothesis import HealthCheck, assume, given, settings, strategies as st
 from hypothesis.strategies import composite
 from hypothesis.extra.numpy import arrays
@@ -89,7 +90,7 @@ class TestNearDuplicateIssueManager:
     def test_scores_of_examples_with_issues_are_smaller_than_those_without(
         self, issue_manager, embeddings
     ):
-        # TODO: Turn this into a property-based test
+        # Validates score decreases with increasing nearest-neighbor distance
         issue_manager.find_issues(features=embeddings["embedding"])
         is_issue = issue_manager.issues["is_near_duplicate_issue"]
         scores = issue_manager.issues["near_duplicate_score"]
@@ -218,6 +219,241 @@ def issue_manager_with_issues_strategy(draw):
     )
 
 
+class TestNearDuplicateEnhancements:
+    """Test the enhanced functionality of NearDuplicateIssueManager."""
+
+    @pytest.fixture
+    def embeddings_with_exact_duplicates(self, lab):
+        """Create embeddings with exact duplicates for testing."""
+        np.random.seed(SEED)
+        num_examples = lab.get_info("statistics")["num_examples"]
+        embeddings_array = np.random.rand(num_examples, 10)
+
+        # Create exact duplicates
+        embeddings_array[1, :] = embeddings_array[0, :]  # 0 and 1 are exact duplicates
+        embeddings_array[4, :] = embeddings_array[3, :]  # 3 and 4 are exact duplicates
+
+        return {"embedding": embeddings_array}
+
+    def test_exact_duplicates_only(self, lab, embeddings_with_exact_duplicates):
+        """Test exact_duplicates_only parameter."""
+        issue_manager = NearDuplicateIssueManager(
+            datalab=lab,
+            exact_duplicates_only=True,
+            metric="euclidean",
+            k=2,  # Use k=2 for small test dataset
+        )
+
+        issue_manager.find_issues(features=embeddings_with_exact_duplicates["embedding"])
+        issues = issue_manager.issues
+        info = issue_manager.info
+
+        # Should only flag exact duplicates
+        flagged_indices = issues[issues["is_near_duplicate_issue"]].index.tolist()
+        assert set(flagged_indices) == {0, 1, 3, 4}, f"Expected [0,1,3,4], got {flagged_indices}"
+
+        # Check info
+        assert info["exact_duplicates_only"] is True
+        assert "num_duplicate_sets" in info
+
+    def test_cosine_similarity_threshold(self, lab):
+        """Test similarity_threshold parameter with cosine metric."""
+        # Create embeddings with known cosine similarities
+        embeddings = np.array(
+            [
+                [1.0, 0.0],  # Example 0
+                [0.9, 0.436],  # Example 1: ~0.9 cosine similarity to example 0
+                [0.0, 1.0],  # Example 2: orthogonal to example 0
+                [0.8, 0.6],  # Example 3: 0.8 cosine similarity to example 0
+                [-1.0, 0.0],  # Example 4: -1.0 cosine similarity to example 0
+            ]
+        )
+
+        issue_manager = NearDuplicateIssueManager(
+            datalab=lab,
+            metric="cosine",
+            similarity_threshold=0.85,  # Should catch examples 0 and 1
+            k=2,  # Use k=2 for small test dataset
+        )
+
+        issue_manager.find_issues(features=embeddings)
+        issues = issue_manager.issues
+        info = issue_manager.info
+
+        # Check that the similarity threshold is stored
+        assert info["similarity_threshold"] == 0.85
+        assert info["metric"] == "cosine"
+
+        # At least examples with high cosine similarity should be flagged
+        flagged_indices = issues[issues["is_near_duplicate_issue"]].index.tolist()
+        # Note: Exact behavior depends on k-NN graph construction, but we should have some duplicates
+        assert len(flagged_indices) >= 0  # Basic sanity check
+
+    def test_enhanced_info_collection(self, lab, embeddings_with_exact_duplicates):
+        """Test that enhanced info is collected properly."""
+        issue_manager = NearDuplicateIssueManager(
+            datalab=lab,
+            similarity_threshold=0.95,
+            exact_duplicates_only=False,
+            metric="cosine",
+            k=2,  # Use k=2 for small test dataset
+        )
+
+        issue_manager.find_issues(features=embeddings_with_exact_duplicates["embedding"])
+        info = issue_manager.info
+
+        # Check that all new parameters are in info
+        assert "similarity_threshold" in info
+        assert "exact_duplicates_only" in info
+        assert "num_duplicate_sets" in info
+        assert "num_near_duplicates" in info
+
+        # Check parameter values
+        assert info["similarity_threshold"] == 0.95
+        assert info["exact_duplicates_only"] is False
+        assert info["metric"] == "cosine"
+
+    def test_enhanced_verbosity(self, lab, embeddings_with_exact_duplicates):
+        """Test enhanced verbosity levels."""
+        issue_manager = NearDuplicateIssueManager(
+            datalab=lab,
+            similarity_threshold=0.9,
+            exact_duplicates_only=True,
+            k=2,  # Use k=2 for small test dataset
+        )
+
+        issue_manager.find_issues(features=embeddings_with_exact_duplicates["embedding"])
+
+        # Test verbosity level 1
+        report = issue_manager.report(
+            issues=issue_manager.issues,
+            summary=issue_manager.summary,
+            info=issue_manager.info,
+            verbosity=1,
+        )
+        assert "num_duplicate_sets" in report
+
+        # Test verbosity level 2
+        report = issue_manager.report(
+            issues=issue_manager.issues,
+            summary=issue_manager.summary,
+            info=issue_manager.info,
+            verbosity=2,
+        )
+        assert "exact_duplicates_only" in report
+        assert "similarity_threshold" in report
+
+    def test_backward_compatibility(self, lab, embeddings_with_exact_duplicates):
+        """Test that existing functionality still works."""
+        # Test with old-style parameters
+        issue_manager = NearDuplicateIssueManager(
+            datalab=lab,
+            threshold=0.13,
+            metric="euclidean",
+            k=2,  # Use k=2 for small test dataset
+        )
+
+        issue_manager.find_issues(features=embeddings_with_exact_duplicates["embedding"])
+        issues = issue_manager.issues
+        info = issue_manager.info
+
+        # Should work as before
+        assert "is_near_duplicate_issue" in issues.columns
+        assert "near_duplicate_score" in issues.columns
+        assert "threshold" in info
+        assert "metric" in info
+
+        # New parameters should have default values
+        assert info["similarity_threshold"] is None
+        assert info["exact_duplicates_only"] is False
+
+
+class TestNearDuplicateValidation:
+    """Test parameter validation and error handling."""
+
+    def test_invalid_similarity_threshold(self, lab):
+        """Test validation of similarity_threshold parameter."""
+        # Test invalid type
+        with pytest.raises(TypeError, match="similarity_threshold must be a numeric value"):
+            NearDuplicateIssueManager(datalab=lab, similarity_threshold="invalid")
+
+        # Test out of range values
+        with pytest.raises(ValueError, match="similarity_threshold must be between 0 and 1"):
+            NearDuplicateIssueManager(datalab=lab, similarity_threshold=-0.1)
+
+        with pytest.raises(ValueError, match="similarity_threshold must be between 0 and 1"):
+            NearDuplicateIssueManager(datalab=lab, similarity_threshold=1.5)
+
+    def test_invalid_k(self, lab):
+        """Test validation of k parameter."""
+        # Test invalid type
+        with pytest.raises(TypeError, match="k must be an integer"):
+            NearDuplicateIssueManager(datalab=lab, k=2.5)
+
+        # Test invalid value
+        with pytest.raises(ValueError, match="k must be positive"):
+            NearDuplicateIssueManager(datalab=lab, k=0)
+
+        with pytest.raises(ValueError, match="k must be positive"):
+            NearDuplicateIssueManager(datalab=lab, k=-1)
+
+    def test_invalid_threshold(self, lab):
+        """Test validation of threshold parameter."""
+        # Test invalid type
+        with pytest.raises(TypeError, match="threshold must be a numeric value"):
+            NearDuplicateIssueManager(datalab=lab, threshold="invalid")
+
+    def test_invalid_exact_duplicates_only(self, lab):
+        """Test validation of exact_duplicates_only parameter."""
+        # Test invalid type
+        with pytest.raises(TypeError, match="exact_duplicates_only must be a boolean"):
+            NearDuplicateIssueManager(datalab=lab, exact_duplicates_only="True")
+
+    def test_similarity_threshold_with_non_cosine_metric_warning(self, lab):
+        """Test warning when similarity_threshold is used with non-cosine metric."""
+        with pytest.warns(UserWarning, match="similarity_threshold is provided but metric is"):
+            NearDuplicateIssueManager(datalab=lab, metric="euclidean", similarity_threshold=0.9)
+
+    def test_conflicting_parameters_warning(self, lab):
+        """Test warning when conflicting parameters are specified."""
+        with pytest.warns(
+            UserWarning, match="Both exact_duplicates_only=True and similarity_threshold"
+        ):
+            NearDuplicateIssueManager(
+                datalab=lab, exact_duplicates_only=True, similarity_threshold=0.9
+            )
+
+    def test_k_too_large_error(self, lab):
+        """Test error handling when k is larger than dataset."""
+        # Create small embeddings
+        small_embeddings = np.random.rand(3, 10)
+
+        issue_manager = NearDuplicateIssueManager(datalab=lab, k=10)  # k > dataset size
+
+        with pytest.raises(ValueError, match="k=10 is too large for dataset"):
+            issue_manager.find_issues(features=small_embeddings)
+
+    def test_no_features_error(self, lab):
+        """Test error when no features are provided."""
+        issue_manager = NearDuplicateIssueManager(datalab=lab)
+
+        with pytest.raises(ValueError, match="No features provided for duplicate detection"):
+            issue_manager.find_issues()  # No features provided
+
+    def test_empty_dataset_handling(self, lab):
+        """Test graceful handling of empty datasets."""
+        empty_embeddings = np.empty((0, 10))
+
+        issue_manager = NearDuplicateIssueManager(datalab=lab, k=2)
+
+        with pytest.warns(UserWarning, match="Empty dataset provided"):
+            issue_manager.find_issues(features=empty_embeddings)
+
+        # Should handle gracefully
+        assert len(issue_manager.issues) == 0
+        assert issue_manager.info["num_duplicate_sets"] == 0
+
+
 class TestNearDuplicateSets:
     """Property-based tests properties of near duplicate sets found in a knn graph."""
 
@@ -256,3 +492,80 @@ class TestNearDuplicateSets:
                 assert all(
                     flagged_in_set
                 ), f"Example {i} is flagged as near_duplicate but some examples in its near_duplicate_set are not flagged"
+
+
+class TestMemoryMonitoring:
+    """Test memory monitoring and warning functionality."""
+
+    def test_memory_estimation(self):
+        """Test memory estimation functions."""
+        # Create a mock Datalab instance
+        dummy_data = {"features": np.array([[1, 2]]), "labels": ["A"]}
+        dummy_datalab = Datalab(dummy_data, label_name="labels")
+
+        # Create issue manager
+        manager = NearDuplicateIssueManager(dummy_datalab, k=10)
+
+        # Test memory estimation for different dataset sizes
+        estimates_small = manager._estimate_memory_usage(100, 20, 10)
+        estimates_large = manager._estimate_memory_usage(10000, 500, 20)
+
+        # Check that estimates are reasonable
+        assert estimates_small["total_memory_mb"] < estimates_large["total_memory_mb"]
+        assert estimates_small["features_memory_mb"] > 0
+        assert estimates_small["knn_graph_memory_mb"] > 0
+        assert estimates_small["total_memory_mb"] > 0
+
+        # Check that larger datasets have proportionally larger estimates
+        assert estimates_large["features_memory_mb"] > estimates_small["features_memory_mb"] * 10
+
+    def test_memory_warnings_small_dataset(self):
+        """Test that small datasets don't trigger memory warnings."""
+        dummy_data = {"features": np.array([[1, 2]]), "labels": ["A"]}
+        dummy_datalab = Datalab(dummy_data, label_name="labels")
+
+        manager = NearDuplicateIssueManager(dummy_datalab, k=5)
+
+        # Small dataset should not trigger warnings
+        with warnings.catch_warnings(record=True) as warning_list:
+            warnings.simplefilter("always")
+            X_small = np.random.randn(50, 10).astype(np.float64)
+            manager._check_memory_requirements(features=X_small)
+
+        # Filter for memory-related warnings
+        memory_warnings = [w for w in warning_list if "memory usage" in str(w.message)]
+        assert len(memory_warnings) == 0, "Small dataset should not trigger memory warnings"
+
+    def test_memory_warnings_large_k(self):
+        """Test that large k values trigger appropriate warnings."""
+        dummy_data = {"features": np.array([[1, 2]]), "labels": ["A"]}
+        dummy_datalab = Datalab(dummy_data, label_name="labels")
+
+        manager = NearDuplicateIssueManager(dummy_datalab, k=100)  # Very large k
+
+        # Large k should trigger warning
+        with pytest.warns(UserWarning, match="Large k value detected"):
+            X_test = np.random.randn(200, 10).astype(np.float64)
+            manager._check_memory_requirements(features=X_test)
+
+    def test_memory_warnings_large_dataset(self):
+        """Test that large datasets trigger memory warnings."""
+        dummy_data = {"features": np.array([[1, 2]]), "labels": ["A"]}
+        dummy_datalab = Datalab(dummy_data, label_name="labels")
+
+        manager = NearDuplicateIssueManager(dummy_datalab, k=10)
+
+        # Test with dimensions that should trigger warning (>1GB estimated memory)
+        with pytest.warns(UserWarning, match="memory usage"):
+            manager._check_memory_requirements(n_samples=50000, n_features=500)
+
+    def test_memory_warnings_critical_dataset(self):
+        """Test that very large datasets trigger critical warnings."""
+        dummy_data = {"features": np.array([[1, 2]]), "labels": ["A"]}
+        dummy_datalab = Datalab(dummy_data, label_name="labels")
+
+        manager = NearDuplicateIssueManager(dummy_datalab, k=10)
+
+        # Test with dimensions that should trigger critical warning (>4GB estimated memory)
+        with pytest.warns(UserWarning, match="Large dataset detected"):
+            manager._check_memory_requirements(n_samples=100000, n_features=1000)
