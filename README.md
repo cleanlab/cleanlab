@@ -313,7 +313,7 @@ Commercial licensing is available for teams and enterprises that want to use cle
 
 ---
 
-## Detect Incorrect Responses from Humans and LLMs with Cleanlab's Trustworthy Language Model
+## Detect Incorrect Responses from LLMs (or Humans) with Cleanlab's Trustworthy Language Model
 
 While this open-source library automatically **detects** data/label issues, it is mostly used for supervised Machine Learning applications.
 
