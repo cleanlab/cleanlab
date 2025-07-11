@@ -17,7 +17,6 @@
         <a href="https://github.com/cleanlab/examples">Examples</a> |
         <a href="https://cleanlab.ai/blog/">Blog</a> |
         <a href="#citation-and-related-publications">Research</a> |
-        <a href="#try-easy-mode-with-cleanlab-studio">Cleanlab Studio</a> |
         <a href="#join-our-community">Community</a>
     <p>
 </h4>
