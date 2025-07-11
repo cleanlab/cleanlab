@@ -123,6 +123,12 @@ Examples of incorrect given labels in various image datasets <a href="https://l7
 While these examples are from image datasets, this also works for text, audio, tabular data.
 </p>
 
+## Detect incorrect responses from LLMs (or humans)
+
+For LLM applications, Cleanlab also offers the [Trustworthy Language Model](https://cleanlab.ai/blog/trustworthy-language-model/) -- a state of the art API for detecting incorrect responses from *any* LLM (or even from humans).
+
+[Try it here!](https://help.cleanlab.ai/tlm/)
+
 
 ## Citation and related publications
 
@@ -310,13 +316,3 @@ You can email us to discuss licensing: team@cleanlab.ai
 ### Commercial licensing
 
 Commercial licensing is available for teams and enterprises that want to use cleanlab in production workflows, but are unable to open-source their code [as is required by the current license](https://github.com/cleanlab/cleanlab/blob/master/LICENSE). Please email us: team@cleanlab.ai
-
----
-
-## Detect Incorrect Responses from LLMs (or Humans) with Cleanlab's Trustworthy Language Model
-
-While this open-source library automatically **detects** data/label issues, it is mostly used for supervised Machine Learning applications.
-
-For LLM applications, Cleanlab offers the [Trustworthy Language Model](https://cleanlab.ai/blog/trustworthy-language-model/) -- a state of the art tool for detecting incorrect responses from *any* LLM (or even from humans).
-
-[Try it here!](https://help.cleanlab.ai/tlm/)
