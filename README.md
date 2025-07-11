@@ -122,9 +122,11 @@ While these examples are from image datasets, this also works for text, audio, t
 
 ## Detect incorrect responses from LLMs (or humans)
 
-For LLM applications, Cleanlab also offers the [Trustworthy Language Model](https://cleanlab.ai/blog/trustworthy-language-model/) -- a state of the art API for detecting incorrect responses from *any* LLM (or even from humans).
+For LLM applications, Cleanlab also offers the [Trustworthy Language Model](https://cleanlab.ai/blog/trustworthy-language-model/) -- a state of the art API for detecting incorrect responses from *any* LLM (or even from humans). [Try it here!](https://help.cleanlab.ai/tlm/)
 
-[Try it here!](https://help.cleanlab.ai/tlm/)
+<div align="center">
+  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/tlm-hallucinations.png" width=70%>
+</div>
 
 
 ## Citation and related publications
