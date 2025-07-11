@@ -1,13 +1,12 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_open_source.png" width=60% height=60%>
-</p>
+<div align="center">
+  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/cleanlab_logo_open_source.png" width=60%>
+</div>
 
 <div align="center">
 <a href="https://pypi.org/pypi/cleanlab/" target="_blank"><img src="https://img.shields.io/pypi/v/cleanlab.svg" alt="pypi_versions"></a>
 <a href="https://pypi.org/pypi/cleanlab/" target="_blank"><img src="https://img.shields.io/badge/python-3.8%2B-blue" alt="py_versions"></a>
 <a href="https://app.codecov.io/gh/cleanlab/cleanlab" target="_blank"><img src="https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg" alt="coverage"></a>
 <a href="https://github.com/cleanlab/cleanlab/stargazers/" target="_blank"><img src="https://img.shields.io/github/stars/cleanlab/cleanlab?style=social&maxAge=2592000" alt="Github Stars"></a>
-<a href="https://cleanlab.ai/slack" target="_blank"><img src="https://img.shields.io/static/v1?logo=slack&style=flat&color=white&label=slack&message=join" alt="Slack Community"></a>
 <a href="https://twitter.com/CleanlabAI" target="_blank"><img src="https://img.shields.io/twitter/follow/CleanlabAI?style=social" alt="Twitter"></a>
 </div>
 
@@ -16,8 +15,7 @@
         <a href="https://docs.cleanlab.ai/">Documentation</a> |
         <a href="https://github.com/cleanlab/examples">Examples</a> |
         <a href="https://cleanlab.ai/blog/">Blog</a> |
-        <a href="#citation-and-related-publications">Research</a> |
-        <a href="#join-our-community">Community</a>
+        <a href="#citation-and-related-publications">Research</a>
     <p>
 </h4>
 
@@ -25,7 +23,7 @@ Cleanlab’s open-source library helps you **clean** data and **lab**els by auto
  
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/datalab_issues.png" width=74% height=74%>
+  <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/datalab_issues.png" width=74%>
 </p>
 <p align="center">
     Examples of various issues in Cat/Dog dataset <b>automatically detected</b> by cleanlab via this code:    
@@ -292,14 +290,12 @@ To understand/cite other cleanlab functionality not described above, check out o
 
 ## Join our community
 
-* Learn, discuss, and shape the future of cleanlab in our 1000+ member [Slack community](https://cleanlab.ai/slack).
-
-* Interested in contributing? See the [contributing guide](CONTRIBUTING.md), [development guide](DEVELOPMENT.md), and [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab). We welcome your help building a standard open-source platform for data-centric AI!
+* Interested in contributing? See the [contributing guide](CONTRIBUTING.md), [development guide](DEVELOPMENT.md), and [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab). We welcome your help building the open-source platform for data-centric AI!
 
 * Have questions? Check out [our FAQ](https://docs.cleanlab.ai/stable/tutorials/faq.html), [Github Issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue), or [Slack](https://cleanlab.ai/slack).
 
-* Need professional help with your Data/AI project? Email us: team@cleanlab.ai <br>
-For instance, we can help you **monitor incoming data and detect issues in real-time**.
+* Need professional help with your Data/AI project? Email us: team@cleanlab.ai
+
 
 ## License
 
