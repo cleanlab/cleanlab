@@ -22,7 +22,7 @@
     <p>
 </h4>
 
-cleanlab helps you **clean** data and **lab**els by automatically detecting issues in a ML dataset. To facilitate **machine learning with messy, real-world data**, this data-centric AI package uses your *existing* models to estimate dataset problems that can be fixed to train even *better* models. Improve reliability across supervised learning, LLM, and RAG applications.
+Cleanlab’s open-source library helps you **clean** data and **lab**els by automatically detecting issues in a ML dataset. To facilitate **machine learning with messy, real-world data**, this data-centric AI package uses your *existing* models to estimate dataset problems that can be fixed to train even *better* models. Improve reliability across supervised learning, LLM, and RAG applications.
  
 
 <p align="center">
