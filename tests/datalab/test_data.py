@@ -32,7 +32,14 @@ def multiclass_dataset_strategy(draw):
         name: draw(st.lists(column_data_strategy, min_size=5, max_size=5)) for name in col_names
     }
     dataset = Dataset.from_dict(data)
-    dataset = dataset.rename_column(label_name, "label")
+
+    if label_name != "label":
+        # If a column named 'label' already exists, it's a conflict. Remove it.
+        if "label" in dataset.column_names:
+            dataset = dataset.remove_columns("label")
+        
+        # Now, it's safe to rename our chosen label_name to "label".
+        dataset = dataset.rename_column(label_name, "label")
 
     # Make assertions about drawn values
     assume(len(set(dataset["label"])) > 1)
@@ -90,7 +97,14 @@ def multilabel_dataset_strategy(draw):
     }
     data[label_name] = draw(labels_strategy)
     dataset = Dataset.from_dict(data)
-    dataset = dataset.rename_column(label_name, "label")
+
+    if label_name != "label":
+        # If a column named 'label' already exists, it's a conflict. Remove it.
+        if "label" in dataset.column_names:
+            dataset = dataset.remove_columns("label")
+        
+        # Now, it's safe to rename our chosen label_name to "label".
+        dataset = dataset.rename_column(label_name, "label")
 
     # Make assertions about drawn values
     assume(len(set(l for labels in dataset["label"] for l in labels)) > 1)

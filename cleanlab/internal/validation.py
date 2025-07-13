@@ -235,8 +235,12 @@ def labels_to_list_multilabel(y: List) -> List[List[int]]:
     labels_list : List[List[int]]
         Nested list of labels.
     """
+    # Handle numpy arrays, the most common alternative to a list.
+    if isinstance(y, np.ndarray):
+        y = y.tolist()
+
     if not isinstance(y, list):
-        raise ValueError("Unsupported Label format")
+        raise ValueError(f"Unsupported Label format. Expected list or numpy array, but got {type(y)}.")
     if not all(isinstance(x, list) for x in y):
         raise ValueError("Each element in list of labels must be a list.")
 

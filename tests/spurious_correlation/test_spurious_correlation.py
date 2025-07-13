@@ -27,6 +27,11 @@ import io
 from unittest import mock
 from cleanlab.datalab.internal.adapter.constants import SPURIOUS_CORRELATION_ISSUE
 
+pytestmark = [
+    pytest.mark.filterwarnings("ignore:divide by zero encountered in log:RuntimeWarning"),
+    pytest.mark.filterwarnings("ignore:invalid value encountered in divide:RuntimeWarning"),
+]
+
 seed = 42
 np.random.seed(seed=seed)
 
