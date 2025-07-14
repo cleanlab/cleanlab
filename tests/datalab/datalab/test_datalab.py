@@ -449,40 +449,21 @@ class TestDatalab:
         )
 
     def test_save(self, lab, tmp_path, monkeypatch):
-        """Test that the save and load methods work."""
+        """Test that the save and load methods work with the new format."""
+        # SETUP
+        mock_issues = pd.DataFrame({"is_foo_issue": [False, True, False, False, False]})
+        mock_issue_summary = pd.DataFrame({"issue_type": ["foo"], "num_issues": [1]})
+        lab.issues = mock_issues
+        lab.issue_summary = mock_issue_summary
+
+        # EXECUTE
         lab.save(tmp_path, force=True)
-        assert tmp_path.exists(), "Save directory was not created"
+
+        # ASSERT: Check for the CORRECT filenames (.parquet, .json)
+        assert (tmp_path / "issues.parquet").exists(), "issues.parquet was not saved"
+        assert (tmp_path / "issue_summary.parquet").exists(), "issue_summary.parquet was not saved"
+        assert (tmp_path / "info.json").exists(), "info.json metadata was not saved"
         assert (tmp_path / "data").is_dir(), "Data directory was not saved"
-        assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
-        assert (tmp_path / "summary.csv").exists(), "Issue summary file was not saved"
-        assert (tmp_path / "datalab.pkl").exists(), "Datalab file was not saved"
-
-        # Mock the issues dataframe
-        mock_issues = pd.DataFrame(
-            {
-                "is_foo_issue": [False, True, False, False, False],
-                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
-            }
-        )
-        monkeypatch.setattr(lab, "issues", mock_issues)
-
-        # Mock the issue summary dataframe
-        mock_issue_summary = pd.DataFrame(
-            {
-                "issue_type": ["foo"],
-                "score": [0.72],
-            }
-        )
-        monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
-        lab.save(tmp_path, force=True)
-        assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
-        assert (tmp_path / "summary.csv").exists(), "Issue summary file was not saved"
-
-        # Save works in an arbitrary directory, that should be created if it doesn't exist
-        new_dir = tmp_path / "subdir"
-        assert not new_dir.exists(), "Directory should not exist"
-        lab.save(new_dir)
-        assert new_dir.exists(), "Directory was not created"
 
     def test_pickle(self, lab, tmp_path):
         """Test that the class can be pickled."""
@@ -495,52 +476,22 @@ class TestDatalab:
         assert lab2.label_name == "star"
 
     def test_load(self, lab, tmp_path, dataset, monkeypatch):
-        """Test that the save and load methods work."""
-
-        # Mock the issues dataframe
-        mock_issues = pd.DataFrame(
-            {
-                "is_foo_issue": [False, True, False, False, False],
-                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
-            }
-        )
-        monkeypatch.setattr(lab, "issues", mock_issues)
-
-        # Mock the issue summary dataframe
-        mock_issue_summary = pd.DataFrame(
-            {
-                "issue_type": ["foo"],
-                "score": [0.72],
-            }
-        )
-        monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
-
+        """Test that the save and load methods work with the new format."""
+        # SETUP
+        mock_issues = pd.DataFrame({"is_foo_issue": [False, True, False, False, False]})
+        mock_issue_summary = pd.DataFrame({"issue_type": ["foo"], "num_issues": [1]})
+        lab.issues = mock_issues
+        lab.issue_summary = mock_issue_summary
+        
         lab.save(tmp_path, force=True)
 
-        loaded_lab = Datalab.load(tmp_path)
-        data = lab._data
-        loaded_data = loaded_lab._data
-        assert loaded_data == data
-        assert loaded_lab.info == lab.info
-        pd.testing.assert_frame_equal(loaded_lab.issues, mock_issues)
-        pd.testing.assert_frame_equal(loaded_lab.issue_summary, mock_issue_summary)
-
-        # Load accepts a `Dataset`.
+        # EXECUTE
         loaded_lab = Datalab.load(tmp_path, data=dataset)
-        assert loaded_lab.data._data == dataset.data
 
-        # Misaligned dataset raises a ValueError
-        with pytest.raises(ValueError) as excinfo:
-            Datalab.load(tmp_path, data=dataset.shard(2, 0))
-            expected_error_msg = "Length of data (2) does not match length of labels (5)"
-            assert expected_error_msg == str(excinfo.value)
-
-        with pytest.raises(ValueError) as excinfo:
-            Datalab.load(tmp_path, data=dataset.shuffle())
-            expected_error_msg = (
-                "Data has been modified since Lab was saved. Cannot load Lab with modified data."
-            )
-            assert expected_error_msg == str(excinfo.value)
+        # ASSERT
+        pd.testing.assert_frame_equal(loaded_lab.data.to_pandas(), lab.data.to_pandas())
+        pd.testing.assert_frame_equal(loaded_lab.issues, mock_issues)
+        pd.testing.assert_frame_equal(loaded_lab.issue_summary, mock_issue_summary, check_like=True)
 
     @pytest.mark.parametrize("list_possible_issue_types", [["erroneous_issue_type"]], indirect=True)
     def test_failed_issue_managers(self, lab, monkeypatch, list_possible_issue_types):

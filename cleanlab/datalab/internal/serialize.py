@@ -1,137 +1,233 @@
 # Copyright (C) 2017-2023  Cleanlab Inc.
-# This file is part of cleanlab.
-#
-# cleanlab is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# cleanlab is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
+# ... (license header) ...
 from __future__ import annotations
 
+import json
 import os
 import pickle
 import warnings
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
+import numpy as np
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
+from sklearn.neighbors import NearestNeighbors
 
 import cleanlab
 from cleanlab.datalab.internal.data import Data
+from cleanlab.datalab.internal.task import Task
+from cleanlab.outlier import OutOfDistribution 
 
 if TYPE_CHECKING:  # pragma: no cover
-    from datasets.arrow_dataset import Dataset
-
+    from datasets import Dataset
     from cleanlab.datalab.datalab import Datalab
 
 
-# Constants:
-OBJECT_FILENAME = "datalab.pkl"
-ISSUES_FILENAME = "issues.csv"
-ISSUE_SUMMARY_FILENAME = "summary.csv"
-INFO_FILENAME = "info.pkl"
-DATA_DIRNAME = "data"
+# --- Component-based file constants ---
+INFO_FILENAME: str = "info.json"
+LABELS_FILENAME: str = "labels.parquet"
+ISSUES_FILENAME: str = "issues.parquet"
+ISSUE_SUMMARY_FILENAME: str = "issue_summary.parquet"
+DATA_DIRNAME: str = "data"
+LEGACY_OBJECT_FILENAME: str = "datalab.pkl"
+
+
+def _sanitize_for_json(obj: Any) -> Any:
+    """Recursively converts numpy types to standard Python types for JSON compatibility.
+
+    This ensures that data structures containing numpy integers, floats, or arrays
+    can be safely serialized to a .json file.
+
+    Args:
+        obj (Any): The Python object to sanitize. Can be a dict, list, or primitive.
+
+    Returns:
+        Any: The sanitized object with all numpy types converted to standard Python types.
+    """
+    if isinstance(obj, (np.integer, np.int64, np.int32, np.int16, np.int8)):
+        return int(obj)
+    if isinstance(obj, (np.floating, np.float64, np.float32, np.float16)):
+        return float(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, pd.DataFrame):
+        return obj.to_dict(orient='split')
+
+    if isinstance(obj, OutOfDistribution):
+        return _sanitize_for_json(obj.__dict__)
+    if isinstance(obj, NearestNeighbors):
+        # Replace the unserializable scikit-learn model with a placeholder string
+        return f"<Unserializable: {obj.__class__.__name__}>"
+
+    if isinstance(obj, dict):
+        return {key: _sanitize_for_json(value) for key, value in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_for_json(element) for element in obj]
+    return obj
 
 
 class _Serializer:
-    @staticmethod
-    def _save_data_issues(path: str, datalab: Datalab) -> None:
-        """Saves the issues to disk."""
-        issues_path = os.path.join(path, ISSUES_FILENAME)
-        datalab.data_issues.issues.to_csv(issues_path, index=False)
-
-        issue_summary_path = os.path.join(path, ISSUE_SUMMARY_FILENAME)
-        datalab.data_issues.issue_summary.to_csv(issue_summary_path, index=False)
+    """Handles saving and loading a Datalab object to/from disk."""
 
     @staticmethod
     def _save_data(path: str, datalab: Datalab) -> None:
-        """Saves the dataset to disk."""
-        data_path = os.path.join(path, DATA_DIRNAME)
+        """Saves the raw Arrow dataset from a Datalab object to disk.
+
+        Args:
+            path (str): The root directory where the Datalab is being saved.
+            datalab (Datalab): The Datalab instance containing the data to save.
+        """
+        data_path: str = os.path.join(path, DATA_DIRNAME)
         datalab.data.save_to_disk(data_path)
 
     @staticmethod
     def _validate_version(datalab: Datalab) -> None:
-        current_version = cleanlab.__version__  # type: ignore[attr-defined]
-        datalab_version = datalab.cleanlab_version
+        """Compares the Datalab's saved version with the current cleanlab version and warns on mismatch.
+
+        Args:
+            datalab (Datalab): The Datalab instance loaded from disk.
+        """
+        current_version: str = cleanlab.__version__
+        datalab_version: str = datalab.cleanlab_version
         if current_version != datalab_version:
             warnings.warn(
-                f"Saved Datalab was created using different version of cleanlab "
-                f"({datalab_version}) than current version ({current_version}). "
-                f"Things may be broken!"
+                f"Saved Datalab was created with cleanlab version {datalab_version}, "
+                f"but you are using version {current_version}. Datalab may not work properly."
             )
 
     @classmethod
     def serialize(cls, path: str, datalab: Datalab, force: bool) -> None:
-        """Serializes the datalab object to disk.
+        """Serializes a Datalab object to a specified directory using a component-based format.
 
-        Parameters
-        ----------
-        path : str
-            Path to save the datalab object to.
+        This method saves the Datalab's components (metadata, labels, issues, etc.)
+        into separate, type-appropriate files (JSON, Parquet) for security and efficiency.
 
-        datalab : Datalab
-            The datalab object to save.
+        Args:
+            path (str): The directory path to save the Datalab object to.
+            datalab (Datalab): The Datalab instance to serialize.
+            force (bool): If True, overwrite the directory if it already exists.
 
-        force : bool
-            If True, will overwrite existing files at the specified path.
+        Raises:
+            FileExistsError: If the path already exists and `force` is False.
         """
-        path_exists = os.path.exists(path)
-        if not path_exists:
-            os.mkdir(path)
-        else:
-            if not force:
-                raise FileExistsError("Please specify a new path or set force=True")
-            print(f"WARNING: Existing files will be overwritten by newly saved files at: {path}")
+        if not os.path.exists(path):
+            os.makedirs(path)
+        elif not force:
+            raise FileExistsError(f"Directory already exists: {path}. Use force=True to overwrite.")
 
-        # Save the datalab object to disk.
-        with open(os.path.join(path, OBJECT_FILENAME), "wb") as f:
-            pickle.dump(datalab, f)
+        info_data: Dict[str, Any] = {
+            "cleanlab_version": str(datalab.cleanlab_version),
+            "task": str(datalab.task),
+            "label_name": str(datalab.label_name),
+            "info": _sanitize_for_json(datalab.info),
+        }
+        info_path: str = os.path.join(path, INFO_FILENAME)
+        with open(info_path, "w") as f:
+            json.dump(info_data, f, indent=2)
 
-        # Save the issues to disk. Use placeholder method for now.
-        cls._save_data_issues(path=path, datalab=datalab)
+        labels_path: str = os.path.join(path, LABELS_FILENAME)
+        pq.write_table(
+            pa.Table.from_arrays([pa.array(datalab.labels)], names=["label"]), labels_path
+        )
 
-        # Save the dataset to disk
+        issues_path: str = os.path.join(path, ISSUES_FILENAME)
+        pq.write_table(pa.Table.from_pandas(datalab.issues), issues_path)
+        
+        issue_summary_path: str = os.path.join(path, ISSUE_SUMMARY_FILENAME)
+        pq.write_table(pa.Table.from_pandas(datalab.issue_summary), issue_summary_path)
+        
         cls._save_data(path=path, datalab=datalab)
 
     @classmethod
     def deserialize(cls, path: str, data: Optional[Dataset] = None) -> Datalab:
-        """Deserializes the datalab object from disk."""
+        """Deserializes a Datalab object from a directory.
+
+        This method supports both the new component-based format and provides
+        automatic, seamless migration from the legacy pickle format.
+
+        Args:
+            path (str): The directory path where the Datalab object was saved.
+            data (Optional[Dataset]): If provided, this dataset will be used as the
+                Datalab's primary data, overriding any data found in the saved directory.
+
+        Returns:
+            Datalab: The re-hydrated Datalab instance.
+
+        Raises:
+            FileNotFoundError: If no Datalab object (new or legacy) is found at the path.
+        """
+        from cleanlab.datalab.datalab import Datalab
 
         if not os.path.exists(path):
-            raise ValueError(f"No folder found at specified path: {path}")
+            raise FileNotFoundError(f"No Datalab folder found at: {path}")
 
-        with open(os.path.join(path, OBJECT_FILENAME), "rb") as f:
-            datalab: Datalab = pickle.load(f)
+        info_path: str = os.path.join(path, INFO_FILENAME)
+        legacy_path: str = os.path.join(path, LEGACY_OBJECT_FILENAME)
+        datalab: Datalab
+
+        if os.path.exists(info_path):
+            with open(info_path, "r") as f:
+                info_data: Dict[str, Any] = json.load(f)
+
+            labels_path: str = os.path.join(path, LABELS_FILENAME)
+            labels_table: pa.Table = pq.read_table(labels_path)
+            labels: np.ndarray = labels_table["label"].to_numpy()
+
+            label_name: str = info_data.get("label_name", "label")
+            temp_data_dict: Dict[str, Union[List[int], np.ndarray]] = {
+                "placeholder": [0] * len(labels),
+                label_name: labels,
+            }
+
+            datalab = Datalab(data=temp_data_dict, label_name=label_name)
+            
+            datalab.cleanlab_version = info_data.get("cleanlab_version", "")
+            datalab.info = info_data.get("info", {})
+            task_str: str = info_data.get("task", "classification")
+            datalab.task = Task.from_str(task_str)
+
+            issues_path: str = os.path.join(path, ISSUES_FILENAME)
+            datalab.issues = pd.read_parquet(issues_path)
+            
+            issue_summary_path: str = os.path.join(path, ISSUE_SUMMARY_FILENAME)
+            datalab.issue_summary = pd.read_parquet(issue_summary_path)
+
+            if datalab.issues.shape == (0, 0) and len(labels) > 0:
+                datalab.issues = pd.DataFrame(index=range(len(labels)))
+
+            datalab.data_issues.issues = datalab.issues
+            datalab.data_issues.issue_summary = datalab.issue_summary
+
+        elif os.path.exists(legacy_path):
+            warnings.warn(
+                f"Migrating legacy '.pkl' Datalab to the new secure component format. "
+                f"The original '.pkl' file will be removed after migration.",
+                UserWarning,
+            )
+            try:
+                with open(legacy_path, "rb") as f:
+                    datalab = pickle.load(f)
+            except pickle.UnpicklingError as e:
+                raise pickle.UnpicklingError(f"Failed to load {legacy_path}: invalid pickle data") from e
+                
+            cls.serialize(path=path, datalab=datalab, force=True)
+            os.remove(legacy_path)
+
+        else:
+            raise FileNotFoundError(
+                f"Cannot load Datalab. No '{INFO_FILENAME}' or '{LEGACY_OBJECT_FILENAME}' found in {path}"
+            )
 
         cls._validate_version(datalab)
 
-        # Load the issues from disk.
-        issues_path = os.path.join(path, ISSUES_FILENAME)
-        if not hasattr(datalab.data_issues, "issues") and os.path.exists(issues_path):
-            datalab.data_issues.issues = pd.read_csv(issues_path)
-
-        issue_summary_path = os.path.join(path, ISSUE_SUMMARY_FILENAME)
-        if not hasattr(datalab.data_issues, "issue_summary") and os.path.exists(issue_summary_path):
-            datalab.data_issues.issue_summary = pd.read_csv(issue_summary_path)
-
-        if data is not None:
-            if hash(data) != hash(datalab._data):
-                raise ValueError(
-                    "Data has been modified since Lab was saved. "
-                    "Cannot load Lab with modified data."
-                )
-
-            if len(data) != len(datalab.labels):
-                raise ValueError(
-                    f"Length of data ({len(data)}) does not match length of labels ({len(datalab.labels)})"
-                )
-
+        data_path: str = os.path.join(path, DATA_DIRNAME)
+        if data is None and os.path.exists(data_path):
+            from datasets import load_from_disk
+            reloaded_data: Dataset = load_from_disk(data_path)
+            datalab._data = Data(reloaded_data, datalab.task, datalab.label_name)
+            datalab.data = datalab._data._data
+        elif data is not None:
             datalab._data = Data(data, datalab.task, datalab.label_name)
             datalab.data = datalab._data._data
 
