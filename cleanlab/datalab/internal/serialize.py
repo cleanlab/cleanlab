@@ -17,7 +17,7 @@ from sklearn.neighbors import NearestNeighbors
 import cleanlab
 from cleanlab.datalab.internal.data import Data
 from cleanlab.datalab.internal.task import Task
-from cleanlab.outlier import OutOfDistribution 
+from cleanlab.outlier import OutOfDistribution
 
 if TYPE_CHECKING:  # pragma: no cover
     from datasets import Dataset
@@ -52,7 +52,7 @@ def _sanitize_for_json(obj: Any) -> Any:
     if isinstance(obj, np.ndarray):
         return obj.tolist()
     if isinstance(obj, pd.DataFrame):
-        return obj.to_dict(orient='split')
+        return obj.to_dict(orient="split")
 
     if isinstance(obj, OutOfDistribution):
         return _sanitize_for_json(obj.__dict__)
@@ -133,10 +133,10 @@ class _Serializer:
 
         issues_path: str = os.path.join(path, ISSUES_FILENAME)
         pq.write_table(pa.Table.from_pandas(datalab.issues), issues_path)
-        
+
         issue_summary_path: str = os.path.join(path, ISSUE_SUMMARY_FILENAME)
         pq.write_table(pa.Table.from_pandas(datalab.issue_summary), issue_summary_path)
-        
+
         cls._save_data(path=path, datalab=datalab)
 
     @classmethod
@@ -181,7 +181,7 @@ class _Serializer:
             }
 
             datalab = Datalab(data=temp_data_dict, label_name=label_name)
-            
+
             datalab.cleanlab_version = info_data.get("cleanlab_version", "")
             datalab.info = info_data.get("info", {})
             task_str: str = info_data.get("task", "classification")
@@ -189,7 +189,7 @@ class _Serializer:
 
             issues_path: str = os.path.join(path, ISSUES_FILENAME)
             datalab.issues = pd.read_parquet(issues_path)
-            
+
             issue_summary_path: str = os.path.join(path, ISSUE_SUMMARY_FILENAME)
             datalab.issue_summary = pd.read_parquet(issue_summary_path)
 
@@ -209,8 +209,10 @@ class _Serializer:
                 with open(legacy_path, "rb") as f:
                     datalab = pickle.load(f)
             except pickle.UnpicklingError as e:
-                raise pickle.UnpicklingError(f"Failed to load {legacy_path}: invalid pickle data") from e
-                
+                raise pickle.UnpicklingError(
+                    f"Failed to load {legacy_path}: invalid pickle data"
+                ) from e
+
             cls.serialize(path=path, datalab=datalab, force=True)
             os.remove(legacy_path)
 
@@ -224,6 +226,7 @@ class _Serializer:
         data_path: str = os.path.join(path, DATA_DIRNAME)
         if data is None and os.path.exists(data_path):
             from datasets import load_from_disk
+
             reloaded_data: Dataset = load_from_disk(data_path)
             datalab._data = Data(reloaded_data, datalab.task, datalab.label_name)
             datalab.data = datalab._data._data

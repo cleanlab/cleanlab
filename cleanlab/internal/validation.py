@@ -240,7 +240,9 @@ def labels_to_list_multilabel(y: List) -> List[List[int]]:
         y = y.tolist()
 
     if not isinstance(y, list):
-        raise ValueError(f"Unsupported Label format. Expected list or numpy array, but got {type(y)}.")
+        raise ValueError(
+            f"Unsupported Label format. Expected list or numpy array, but got {type(y)}."
+        )
     if not all(isinstance(x, list) for x in y):
         raise ValueError("Each element in list of labels must be a list.")
 

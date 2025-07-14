@@ -21,7 +21,6 @@ from cleanlab.token_classification.summary import (
 import numpy as np
 import pandas as pd
 import pytest
-import termcolor
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -170,7 +169,7 @@ def test_color_sentence(monkeypatch: pytest.MonkeyPatch, sentence, word, expecte
 
     # Patch termcolor.colored with our simple, reliable mock function.
     monkeypatch.setattr("cleanlab.internal.token_classification_utils.colored", _mock_colored)
-    
+
     colored = color_sentence(sentence, word)
     assert colored == expected
 

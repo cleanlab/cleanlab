@@ -3,6 +3,7 @@ This script is the core of our bulk-migration strategy. It finds every legacy
 .pkl file matching a user's pattern and migrates it automatically. It's designed
 to be run from the command line, providing clear feedback as it works.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -22,6 +23,7 @@ from cleanlab.datalab.datalab import Datalab
 
 logger: logging.Logger = logging.getLogger("cleanlab.migration")
 
+
 def setup_logging(log_file: str | None = None) -> None:
     """Configures the logger to output to console and optionally a file."""
     log_format = logging.Formatter("[%(levelname)s] %(message)s")
@@ -38,6 +40,7 @@ def setup_logging(log_file: str | None = None) -> None:
         file_handler.setFormatter(log_format)
         logger.addHandler(file_handler)
 
+
 def main() -> None:
     """
     Command-line interface for migrating legacy Datalab .pkl files
@@ -50,7 +53,7 @@ def main() -> None:
         "glob_pattern",
         type=str,
         help="Glob pattern to find Datalab directories (e.g., './projects/**/'). "
-             "The pattern should find directories containing 'datalab.pkl'.",
+        "The pattern should find directories containing 'datalab.pkl'.",
     )
     parser.add_argument(
         "--dry-run",
@@ -104,12 +107,13 @@ def main() -> None:
             # We catch any failure during load.
             tqdm.write(f"[ERROR] Failed to migrate {project_dir}. Reason: {e}")
             fail_count += 1
-            
+
     logger.info("--- Migration Complete ---")
     logger.info(f"  Successfully migrated: {success_count}")
     logger.info(f"  Failed migrations: {fail_count}")
     if fail_count > 0:
         logger.warning("Some projects failed to migrate. Check the logs for details.")
+
 
 if __name__ == "__main__":
     main()

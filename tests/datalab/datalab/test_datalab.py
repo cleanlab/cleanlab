@@ -482,7 +482,7 @@ class TestDatalab:
         mock_issue_summary = pd.DataFrame({"issue_type": ["foo"], "num_issues": [1]})
         lab.issues = mock_issues
         lab.issue_summary = mock_issue_summary
-        
+
         lab.save(tmp_path, force=True)
 
         # EXECUTE

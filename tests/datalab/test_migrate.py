@@ -26,13 +26,14 @@ def nested_temp_dir() -> Generator[Path, None, None]:
     base_path = Path("test_migration_temp_dir")
     if base_path.exists():
         shutil.rmtree(base_path)
-    
+
     (base_path / "deep" / "project_b").mkdir(parents=True, exist_ok=True)
     (base_path / "project_a").mkdir(exist_ok=True)
     (base_path / "project_c_corrupted").mkdir(exist_ok=True)
 
     yield base_path
     shutil.rmtree(base_path)
+
 
 @pytest.fixture
 def populated_legacy_projects(nested_temp_dir: Path, simple_datalab: Datalab) -> Path:
@@ -54,6 +55,7 @@ def populated_legacy_projects(nested_temp_dir: Path, simple_datalab: Datalab) ->
             simple_datalab.data.save_to_disk(str(data_path))
     return nested_temp_dir
 
+
 def test_migration_cli_e2e(populated_legacy_projects: Path) -> None:
     """
     Tests the full command-line migration script via a subprocess call.
@@ -71,13 +73,15 @@ def test_migration_cli_e2e(populated_legacy_projects: Path) -> None:
         [sys.executable, "-Wd", str(migrate_script_path), glob_pattern],
         capture_output=True,
         text=True,
-        check=False, # Don't raise an exception on non-zero exit codes
+        check=False,  # Don't raise an exception on non-zero exit codes
     )
 
     # 1. Assert script execution and output.
-    assert result.returncode == 0, f"Script failed unexpectedly.\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+    assert (
+        result.returncode == 0
+    ), f"Script failed unexpectedly.\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
 
-   # 2. Assert the specific ERROR for the corrupted file is in STDOUT (from tqdm.write).
+    # 2. Assert the specific ERROR for the corrupted file is in STDOUT (from tqdm.write).
     assert "[ERROR] Failed to migrate" in result.stdout
     assert str(base_dir / "project_c_corrupted") in result.stdout
 
@@ -88,10 +92,18 @@ def test_migration_cli_e2e(populated_legacy_projects: Path) -> None:
     # 4. Verify file system state for successfully migrated projects.
     # Note: We check one of the nested projects to ensure recursive search works.
     successful_project_path: Path = base_dir / "deep" / "project_b"
-    assert not (successful_project_path / LEGACY_FILENAME).exists(), f"Legacy file not deleted in {successful_project_path}"
-    assert (successful_project_path / NEW_INFO_FILENAME).exists(), f"New info file not created in {successful_project_path}"
+    assert not (
+        successful_project_path / LEGACY_FILENAME
+    ).exists(), f"Legacy file not deleted in {successful_project_path}"
+    assert (
+        successful_project_path / NEW_INFO_FILENAME
+    ).exists(), f"New info file not created in {successful_project_path}"
 
     # 5. Verify file system state for the corrupted project.
     corrupted_path: Path = base_dir / "project_c_corrupted"
-    assert (corrupted_path / LEGACY_FILENAME).exists(), "FAIL: Corrupted file was incorrectly deleted."
-    assert not (corrupted_path / NEW_INFO_FILENAME).exists(), "FAIL: New files were created for a failed migration."
+    assert (
+        corrupted_path / LEGACY_FILENAME
+    ).exists(), "FAIL: Corrupted file was incorrectly deleted."
+    assert not (
+        corrupted_path / NEW_INFO_FILENAME
+    ).exists(), "FAIL: New files were created for a failed migration."
