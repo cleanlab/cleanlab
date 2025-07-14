@@ -28,31 +28,31 @@ meaning it must define three functions:
 * ``model.predict(X)``
 * ``model.score(X, y, sample_weight=None)``
 
-where ``X`` contains the data (i.e. features, covariates, independant variables) and ``y`` contains the target 
-value (i.e. label, response/dependant variable). The first index of ``X`` and of ``y`` should correspond to the different 
+where ``X`` contains the data (i.e. features, covariates, independant variables) and ``y`` contains the target
+value (i.e. label, response/dependant variable). The first index of ``X`` and of ``y`` should correspond to the different
 examples in the dataset, such that ``len(X) = len(y) = N`` (sample-size).
 
 Your model should be correctly clonable via
 `sklearn.base.clone <https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html>`_:
-cleanlab internally creates multiple instances of the model, and if you e.g. manually wrap a 
-PyTorch model, ensure that every call to the estimator's ``__init__()`` creates an independent 
-instance of the model (for sklearn compatibility, the weights of neural network models should typically 
+cleanlab internally creates multiple instances of the model, and if you e.g. manually wrap a
+PyTorch model, ensure that every call to the estimator's ``__init__()`` creates an independent
+instance of the model (for sklearn compatibility, the weights of neural network models should typically
 be initialized inside of ``clf.fit()``).
 
 Example
 -------
 >>> from cleanlab.regression.learn import CleanLearning
->>> from sklearn.linear_model import LinearRegression 
+>>> from sklearn.linear_model import LinearRegression
 >>> cl = CleanLearning(clf=LinearRegression()) # Pass in any model.
 >>> cl.fit(X, y_with_noise)
 >>> # Estimate the predictions as if you had trained without label issues.
 >>> predictions = cl.predict(y)
 
-If your model is not sklearn-compatible by default, it might be the case that standard packages can adapt 
-the model. For example, you can adapt PyTorch models using `skorch <https://skorch.readthedocs.io/>`_ 
+If your model is not sklearn-compatible by default, it might be the case that standard packages can adapt
+the model. For example, you can adapt PyTorch models using `skorch <https://skorch.readthedocs.io/>`_
 and adapt Keras models using `SciKeras <https://www.adriangb.com/scikeras/>`_.
 
-If an adapter doesn't already exist, you can manually wrap your 
+If an adapter doesn't already exist, you can manually wrap your
 model to be sklearn-compatible. This is made easy by inheriting from
 `sklearn.base.BaseEstimator
 <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`_:
@@ -70,7 +70,7 @@ model to be sklearn-compatible. This is made easy by inheriting from
             pass
         def score(self, X, y):
             pass
-            
+
 """
 
 from typing import Optional, Union, Tuple

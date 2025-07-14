@@ -466,21 +466,21 @@ def visualize(
         # Import Path at the top of the file: from pathlib import Path
 
         # Ensure save_path is a Path object for consistent, robust handling
-        save_path = Path(save_path)
+        save_path_obj: Path = Path(save_path)
 
         allowed_image_formats = {"png", "pdf", "ps", "eps", "svg"}
 
         # Use the correct attribute `.suffix` to get the extension (e.g., '.pdf')
         # Then slice off the leading dot to get 'pdf'
-        image_format = save_path.suffix[1:] if save_path.suffix else ""
+        image_format = save_path_obj.suffix[1:] if save_path_obj.suffix else ""
 
         if image_format not in allowed_image_formats:
             image_format = "png"
             # Use the .with_suffix() method to safely change the extension
-            save_path = save_path.with_suffix(f".{image_format}")
+            save_path_obj = save_path_obj.with_suffix(f".{image_format}")
 
         plt.savefig(
-            save_path,
+            save_path_obj,
             format=image_format,
             dpi=300,
             bbox_inches="tight",

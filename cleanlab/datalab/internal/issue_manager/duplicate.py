@@ -173,11 +173,20 @@ class NearDuplicateIssueManager(IssueManager):
         graph_key = "weighted_knn_graph"
         old_knn_graph = self.datalab.get_info("statistics").get(graph_key, None)
         old_graph_exists = old_knn_graph is not None
-        prefer_new_graph = (
-            not old_graph_exists
-            or knn_graph.nnz > old_knn_graph.nnz
-            or self.metric != self.datalab.get_info("statistics").get("knn_metric", None)
-        )
+        prefer_new_graph = False
+        # We can only prefer the new graph if it actually exists.
+        if knn_graph is not None:
+            # If there's no old graph, we must use the new one.
+            if not old_graph_exists:
+                prefer_new_graph = True
+            else:
+                # At this point, we know both old_knn_graph and knn_graph exist.
+                # It is now safe to compare their .nnz attributes.
+                if knn_graph.nnz > old_knn_graph.nnz:
+                    prefer_new_graph = True
+                elif self.metric != self.datalab.get_info("statistics").get("knn_metric", None):
+                    prefer_new_graph = True
+
         if prefer_new_graph:
             statistics_dict["statistics"][graph_key] = knn_graph
             if self.metric is not None:

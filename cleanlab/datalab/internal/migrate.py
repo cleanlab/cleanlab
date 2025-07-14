@@ -1,5 +1,5 @@
 """
-This script is the core of our bulk-migration strategy. It finds every legacy 
+This script is the core of our bulk-migration strategy. It finds every legacy
 .pkl file matching a user's pattern and migrates it automatically. It's designed
 to be run from the command line, providing clear feedback as it works.
 """
