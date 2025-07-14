@@ -184,7 +184,9 @@ class DataValuationIssueManager(IssueManager):
 
         return info_dict
 
-    def _build_statistics_dictionary(self, knn_graph: csr_matrix) -> Dict[str, Dict[str, Any]]:
+    def _build_statistics_dictionary(
+        self, knn_graph: Optional[csr_matrix]
+    ) -> Dict[str, Dict[str, Any]]:
         statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
 
         # Add the knn graph as a statistic if necessary

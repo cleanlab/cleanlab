@@ -243,7 +243,9 @@ class NonIIDIssueManager(IssueManager):
         }
         return info_dict
 
-    def _build_statistics_dictionary(self, knn_graph: csr_matrix) -> Dict[str, Dict[str, Any]]:
+    def _build_statistics_dictionary(
+        self, knn_graph: Optional[csr_matrix]
+    ) -> Dict[str, Dict[str, Any]]:
         statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
 
         if self._skip_storing_knn_graph_for_pred_probs:
