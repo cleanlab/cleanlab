@@ -278,23 +278,20 @@ def find_label_issues(
     # even for faily large input arrays, so we default to n_jobs=1 in this case
     os_name = platform.system()
     if n_jobs is None:
-        if multi_label and os_name != "Linux":
-            n_jobs = 1
-        else:
-            if psutil_exists:
-                n_jobs = psutil.cpu_count(logical=False)  # physical cores
-            elif big_dataset:
-                print(
-                    "To default `n_jobs` to the number of physical cores for multiprocessing in find_label_issues(), please: `pip install psutil`.\n"
-                    "Note: You can safely ignore this message. `n_jobs` only affects runtimes, results will be the same no matter its value.\n"
-                    "Since psutil is not installed, `n_jobs` was set to the number of logical cores by default.\n"
-                    "Disable this message by either installing psutil or specifying the `n_jobs` argument."
-                )  # pragma: no cover
-            if not n_jobs:
-                # either psutil does not exist
-                # or psutil can return None when physical cores cannot be determined
-                # switch to logical cores
-                n_jobs = multiprocessing.cpu_count()
+        if psutil_exists:
+            n_jobs = psutil.cpu_count(logical=False)  # physical cores
+        elif big_dataset:
+            print(
+                "To default `n_jobs` to the number of physical cores for multiprocessing in find_label_issues(), please: `pip install psutil`.\n"
+                "Note: You can safely ignore this message. `n_jobs` only affects runtimes, results will be the same no matter its value.\n"
+                "Since psutil is not installed, `n_jobs` was set to the number of logical cores by default.\n"
+                "Disable this message by either installing psutil or specifying the `n_jobs` argument."
+            )  # pragma: no cover
+        if not n_jobs:
+            # either psutil does not exist
+            # or psutil can return None when physical cores cannot be determined
+            # switch to logical cores
+            n_jobs = multiprocessing.cpu_count()
     else:
         assert n_jobs >= 1
 
