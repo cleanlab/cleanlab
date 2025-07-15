@@ -788,7 +788,7 @@ def test_sklearn_gridsearchcv():
         "converge_latent_estimates": [True, False],
     }
 
-    clf = LogisticRegression(random_state=0, solver="lbfgs")
+    clf = LogisticRegression(random_state=0, solver="newton-cg")
 
     cv = GridSearchCV(
         estimator=CleanLearning(clf),
