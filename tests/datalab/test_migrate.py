@@ -88,6 +88,7 @@ def test_migration_cli_e2e(populated_legacy_projects: Path) -> None:
     # 3. Assert the final summary in STDERR shows one failure.
     assert "Failed migrations: 1" in result.stderr
     assert "Successfully migrated: 3" in result.stderr
+    assert "Some projects failed to migrate" in result.stderr
 
     # 4. Verify file system state for successfully migrated projects.
     # Note: We check one of the nested projects to ensure recursive search works.
@@ -107,3 +108,74 @@ def test_migration_cli_e2e(populated_legacy_projects: Path) -> None:
     assert not (
         corrupted_path / NEW_INFO_FILENAME
     ).exists(), "FAIL: New files were created for a failed migration."
+
+
+def test_migration_cli_dry_run(populated_legacy_projects: Path) -> None:
+    """
+    Tests that the --dry-run flag finds projects but performs no actions.
+    A dry run that modifies data is a critical failure. This test ensures it's read-only.
+    """
+    base_dir: Path = populated_legacy_projects
+    glob_pattern: str = str(base_dir / "**" / LEGACY_FILENAME)
+    project_root: Path = Path(__file__).resolve().parent.parent.parent
+    migrate_script_path: Path = project_root / "cleanlab" / "datalab" / "internal" / "migrate.py"
+
+    result: subprocess.CompletedProcess[str] = subprocess.run(
+        [sys.executable, str(migrate_script_path), glob_pattern, "--dry-run"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    # 1. Assert the output indicates a dry run.
+    assert "--- Dry Run Mode ---" in result.stderr
+    assert "Would migrate:" in result.stderr
+
+    # 2. CRITICAL: Assert that no files were changed.
+    # We check one of the projects to confirm the legacy file still exists.
+    project_a_path: Path = base_dir / "project_a"
+    assert (project_a_path / LEGACY_FILENAME).exists(), "FAIL: Dry run deleted a legacy file."
+    assert not (project_a_path / NEW_INFO_FILENAME).exists(), "FAIL: Dry run created a new file."
+
+
+def test_migration_cli_log_file(populated_legacy_projects: Path, tmp_path: Path) -> None:
+    """Tests that the --log-file argument successfully creates and writes to a log file."""
+    base_dir: Path = populated_legacy_projects
+    glob_pattern: str = str(base_dir / "**" / LEGACY_FILENAME)
+    log_file: Path = tmp_path / "migration.log"
+
+    project_root: Path = Path(__file__).resolve().parent.parent.parent
+    migrate_script_path: Path = project_root / "cleanlab" / "datalab" / "internal" / "migrate.py"
+
+    subprocess.run(
+        [sys.executable, str(migrate_script_path), glob_pattern, "--log-file", str(log_file)],
+        check=True,
+    )
+
+    # Assert the log file was created and contains expected output.
+    assert log_file.exists(), "Log file was not created."
+    log_content: str = log_file.read_text()
+    assert "--- Migration Complete ---" in log_content
+    assert "Successfully migrated: 3" in log_content
+
+
+def test_migration_no_files_found(tmp_path: Path) -> None:
+    """
+    Tests the script's behavior when the glob pattern finds no files.
+    This covers the 'if not legacy_pkl_paths:' branch in the script.
+    """
+    empty_dir: Path = tmp_path
+    glob_pattern: str = str(empty_dir / "**" / LEGACY_FILENAME)
+
+    project_root: Path = Path(__file__).resolve().parent.parent.parent
+    migrate_script_path: Path = project_root / "cleanlab" / "datalab" / "internal" / "migrate.py"
+
+    result: subprocess.CompletedProcess[str] = subprocess.run(
+        [sys.executable, str(migrate_script_path), glob_pattern],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    # Assert we get the specific "not found" message.
+    assert "No legacy 'datalab.pkl' files found" in result.stderr

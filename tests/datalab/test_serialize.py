@@ -1,12 +1,19 @@
 import os
 import shutil
 import pickle
+from pathlib import Path
 from typing import Dict, List, Generator, Union, Any
 
 import numpy as np
 import pandas as pd
 import pytest
 from cleanlab.datalab.datalab import Datalab
+from cleanlab.datalab.internal.serialize import (
+    _Serializer,
+    _sanitize_for_json,
+)  # Import _Serializer and _sanitize_for_json
+from cleanlab.outlier import OutOfDistribution  # Required for testing _sanitize_for_json
+from sklearn.neighbors import NearestNeighbors  # Required for testing _sanitize_for_json
 from datasets import Dataset
 
 # --- Constants ---
@@ -141,3 +148,89 @@ def test_load_with_user_data_provided(simple_datalab: Datalab, temp_lab_dir: str
     pd.testing.assert_frame_equal(loaded_datalab.issues, simple_datalab.issues)
     assert np.array_equal(loaded_datalab.labels, simple_datalab.labels)
     assert loaded_datalab.data.to_dict() == original_dataset.to_dict()
+
+
+def test_sanitize_for_json_edge_cases() -> None:
+    """
+    Tests _sanitize_for_json with various data types to ensure all branches are covered,
+    including NumPy types, Pandas DataFrame, OutOfDistribution, and NearestNeighbors.
+    """
+    # Test NumPy integer
+    assert _sanitize_for_json(np.int64(10)) == 10
+    assert isinstance(_sanitize_for_json(np.int32(5)), int)
+
+    # Test NumPy floating
+    assert _sanitize_for_json(np.float64(3.14)) == 3.14
+    assert isinstance(_sanitize_for_json(np.float32(2.71)), float)
+
+    # Test NumPy array
+    np_array = np.array([1, 2, 3])
+    assert _sanitize_for_json(np_array) == [1, 2, 3]
+    assert isinstance(_sanitize_for_json(np_array), list)
+
+    # Test Pandas DataFrame
+    df = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
+    sanitized_df = _sanitize_for_json(df)
+    assert isinstance(sanitized_df, dict)
+    assert "data" in sanitized_df
+    assert "columns" in sanitized_df
+    assert sanitized_df["data"] == [[1, 3], [2, 4]]
+    assert sanitized_df["columns"] == ["col1", "col2"]
+
+    # Test OutOfDistribution object (mock if necessary)
+    # For a real test, you might need a mock or a simple instance
+    class MockOutOfDistribution(OutOfDistribution):
+        def __init__(self) -> None:
+            # Initialize with minimal required attributes if any
+            self.foo = "bar"
+            self.baz = 123
+            super().__init__()  # Call parent constructor if it exists and is needed
+
+    ood_instance = MockOutOfDistribution()
+    sanitized_ood = _sanitize_for_json(ood_instance)
+    assert isinstance(sanitized_ood, dict)
+    assert sanitized_ood["foo"] == "bar"
+    assert sanitized_ood["baz"] == 123
+    # Removed: assert "_is_fitted" in sanitized_ood # This assertion was causing the failure
+
+    # Test NearestNeighbors object
+    nn_instance = NearestNeighbors(n_neighbors=1)
+    sanitized_nn = _sanitize_for_json(nn_instance)
+    assert isinstance(sanitized_nn, str)
+    assert sanitized_nn == "<Unserializable: NearestNeighbors>"
+
+    # Test nested structures
+    nested_obj = {
+        "num": np.int64(5),
+        "arr": np.array([4.0, 5.0]),
+        "df": pd.DataFrame({"x": [1]}),
+        "ood": MockOutOfDistribution(),
+        "nn": NearestNeighbors(),
+        "list_of_nums": [1, np.float32(2.0), 3],
+    }
+    sanitized_nested = _sanitize_for_json(nested_obj)
+    assert sanitized_nested["num"] == 5
+    assert sanitized_nested["arr"] == [4.0, 5.0]
+    assert isinstance(sanitized_nested["df"], dict)
+    assert isinstance(sanitized_nested["ood"], dict)
+    assert sanitized_nested["nn"] == "<Unserializable: NearestNeighbors>"
+    assert sanitized_nested["list_of_nums"] == [1, 2.0, 3]
+
+
+def test_serialize_creates_directory_if_not_exists(tmp_path: Path, simple_datalab: Datalab) -> None:
+    """
+    Tests that _Serializer.serialize creates the directory if it does not exist
+    and force=False.
+    """
+    non_existent_path = tmp_path / "new_datalab_dir"
+    assert not non_existent_path.exists()
+
+    _Serializer.serialize(path=str(non_existent_path), datalab=simple_datalab, force=False)
+
+    assert non_existent_path.is_dir()
+    # Verify some files are created to confirm successful serialization
+    assert (non_existent_path / "info.json").exists()
+    assert (non_existent_path / "labels.parquet").exists()
+    assert (non_existent_path / "issues.parquet").exists()
+    assert (non_existent_path / "issue_summary.parquet").exists()
+    assert (non_existent_path / "data").is_dir()

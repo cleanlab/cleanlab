@@ -171,13 +171,6 @@ class NearDuplicateIssueManager(IssueManager):
     ) -> Dict[str, Dict[str, Any]]:
         statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
 
-        # This block is only present in noniid.py. Omit it for the other two files.
-        if (
-            hasattr(self, "_skip_storing_knn_graph_for_pred_probs")
-            and self._skip_storing_knn_graph_for_pred_probs
-        ):
-            return statistics_dict
-
         # Add the knn graph as a statistic if necessary
         graph_key = "weighted_knn_graph"
         old_knn_graph = self.datalab.get_info("statistics").get(graph_key, None)
