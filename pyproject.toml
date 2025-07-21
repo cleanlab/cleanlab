@@ -9,7 +9,7 @@ name = "cleanlab"
 # requirements files see:
 # https://packaging.python.org/en/latest/discussions/install-requires-vs-requirements/
 dependencies = [
-  "numpy~=1.22",
+  "numpy~=2.0",
   "scikit-learn>=1.1",
   "tqdm>=4.53.0",
   "pandas>=1.4.0",
