@@ -19,7 +19,7 @@
     <p>
 </h4>
 
-Cleanlab’s open-source library helps you **clean** data and **lab**els by automatically detecting issues in a ML dataset. To facilitate **machine learning with messy, real-world data**, this data-centric AI package uses your *existing* models to estimate dataset problems that can be fixed to train even *better* models. Improve reliability across supervised learning, LLM, and RAG applications.
+Cleanlab’s open-source library helps you **clean** data and **lab**els by automatically detecting issues in a ML dataset. To facilitate **machine learning with messy, real-world data**, this data-centric AI package uses your *existing* models to estimate dataset problems that can be fixed to train even *better* models.
  
 
 <p align="center">
@@ -122,7 +122,7 @@ While these examples are from image datasets, this also works for text, audio, t
 
 ## Detect incorrect responses from LLMs (or humans)
 
-For LLM applications, Cleanlab also offers the [Trustworthy Language Model](https://cleanlab.ai/blog/trustworthy-language-model/) -- a state of the art API for detecting incorrect responses from *any* LLM (or even from humans). [Try it here!](https://help.cleanlab.ai/tlm/)
+For LLM applications, Cleanlab also offers the [Trustworthy Language Model](https://cleanlab.ai/blog/trustworthy-language-model/) -- a state of the art API for **detecting incorrect responses from any LLM** (or even from humans). [Try it here!](https://help.cleanlab.ai/tlm/)
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/tlm-hallucinations.png" width=70%>
