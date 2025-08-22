@@ -20,12 +20,14 @@ Methods to rank and score sentences in a token classification dataset (text data
 The underlying algorithms are described in `this paper <https://arxiv.org/abs/2210.03920>`_.
 """
 
-import pandas as pd
-import numpy as np
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Tuple, Union
 
-from cleanlab.rank import get_label_quality_scores as main_get_label_quality_scores
+import numpy as np
+import pandas as pd
+
 from cleanlab.internal.numerics import softmax
+from cleanlab.internal.segmentation_utils import _get_valid_optional_params
+from cleanlab.rank import get_label_quality_scores as main_get_label_quality_scores
 
 
 def get_label_quality_scores(
@@ -36,7 +38,8 @@ def get_label_quality_scores(
     token_score_method: str = "self_confidence",
     sentence_score_method: str = "min",
     sentence_score_kwargs: dict = {},
-) -> Tuple[np.ndarray, list]:
+    batch_size: Optional[int] = None,
+) -> Tuple[np.ndarray, List[pd.Series]]:
     """
     Returns overall quality scores for the labels in each sentence, as well as for the individual tokens' labels in a token classification dataset.
 
@@ -119,38 +122,51 @@ def get_label_quality_scores(
     assert sentence_score_method in methods, "Select from the following methods:\n%s" % "\n".join(
         methods
     )
-
-    labels_flatten = np.array([l for label in labels for l in label])
-    pred_probs_flatten = np.array([p for pred_prob in pred_probs for p in pred_prob])
-
-    sentence_length = [len(label) for label in labels]
-
-    def nested_list(x, sentence_length):
-        i = iter(x)
-        return [[next(i) for _ in range(length)] for length in sentence_length]
-
-    token_scores = main_get_label_quality_scores(
-        labels=labels_flatten, pred_probs=pred_probs_flatten, method=token_score_method
-    )
-    scores_nl = nested_list(token_scores, sentence_length)
-
-    if sentence_score_method == "min":
-        sentence_scores = np.array(list(map(np.min, scores_nl)))
-    else:
-        assert sentence_score_method == "softmin"
+    batch_size, _ = _get_valid_optional_params(batch_size)
+    if sentence_score_method != "min":
         temperature = sentence_score_kwargs.get("temperature", 0.05)
-        sentence_scores = _softmin_sentence_score(scores_nl, temperature=temperature)
 
-    if tokens:
-        token_info = [pd.Series(scores, index=token) for scores, token in zip(scores_nl, tokens)]
-    else:
-        token_info = [pd.Series(scores) for scores in scores_nl]
+    total = len(labels)
+    sentence_scores = np.empty(total)
+    token_info: List[pd.Series] = []
+
+    for i in range(0, total, batch_size):
+        ib = i + batch_size
+        label_batch = labels[i:ib]
+        pred_batch = pred_probs[i:ib]
+
+        labels_flatten = np.array([l for label in label_batch for l in label])
+        pred_probs_flatten = np.vstack([p for p in pred_batch])
+
+        sentence_length = (len(label) for label in label_batch)
+
+        token_scores = main_get_label_quality_scores(
+            labels=labels_flatten, pred_probs=pred_probs_flatten, method=token_score_method
+        )
+        scores_nl: List[np.ndarray] = []
+        start = 0
+        for length in sentence_length:
+            end = start + length
+            scores_nl.append(token_scores[start:end])
+            start = end
+
+        if sentence_score_method == "min":
+            sentence_scores[i:ib] = np.fromiter(map(np.min, scores_nl), dtype=np.float64)
+        else:
+            sentence_scores[i:ib] = _softmin_sentence_score(scores_nl, temperature=temperature)
+
+        if tokens:
+            token_info.extend(
+                (pd.Series(scores, index=token) for scores, token in zip(scores_nl, tokens))
+            )
+        else:
+            token_info.extend((pd.Series(scores) for scores in scores_nl))
     return sentence_scores, token_info
 
 
 def issues_from_scores(
     sentence_scores: np.ndarray, *, token_scores: Optional[list] = None, threshold: float = 0.1
-) -> Union[list, np.ndarray]:
+) -> Union[List[Tuple[int, int]], np.ndarray]:
     """
     Converts scores output by `~cleanlab.token_classification.rank.get_label_quality_scores`
     to a list of issues of similar format as output by :py:func:`token_classification.filter.find_label_issues <cleanlab.token_classification.filter.find_label_issues>`.
@@ -226,20 +242,23 @@ def issues_from_scores(
     [(1, 0), (3, 1), (4, 2), (5, 3), (8, 0)]
     """
     if token_scores:
-        issues_with_scores = []
+        scores_list = []
+        unsorted_issues = []
         for sentence_index, scores in enumerate(token_scores):
             for token_index, score in enumerate(scores):
                 if score < threshold:
-                    issues_with_scores.append((sentence_index, token_index, score))
+                    scores_list.append(score)
+                    unsorted_issues.append((sentence_index, token_index))
 
-        issues_with_scores = sorted(issues_with_scores, key=lambda x: x[2])
-        issues = [(i, j) for i, j, _ in issues_with_scores]
+        scores_argsort = np.argsort(scores_list)
+        issues = [unsorted_issues[index] for index in scores_argsort]
         return issues
 
     else:
         ranking = np.argsort(sentence_scores)
         cutoff = 0
-        while sentence_scores[ranking[cutoff]] < threshold and cutoff < len(ranking):
+        length = len(ranking)
+        while cutoff < length and sentence_scores[ranking[cutoff]] < threshold:
             cutoff += 1
         return ranking[:cutoff]
 
