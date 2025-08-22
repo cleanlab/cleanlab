@@ -170,6 +170,56 @@ class TestNonIIDIssueManager:
         assert info_perm.get("p-value", None) is not None, "Should have p-value"
         assert summary_perm["score"][0] == pytest.approx(expected=info_perm["p-value"], abs=1e-7)
 
+    def test_find_issues_replaces_knn_graph_with_larger_one(self, lab, embeddings) -> None:
+        """
+        Tests that a new, larger KNN graph replaces an existing smaller one.
+
+        This test covers the specific branch in `_build_statistics_dictionary`
+        where an existing `weighted_knn_graph` is updated because the new
+        graph has more non-zero elements (a larger `k`).
+        """
+        # 1. Run with a smaller k to generate a report.
+        initial_manager = NonIIDIssueManager(
+            datalab=lab,
+            metric="euclidean",
+            k=5,
+            seed=SEED,
+        )
+        initial_manager.find_issues(features=embeddings)
+
+        # The computed graph is in the manager's .info "report", not the lab.
+        initial_info = initial_manager.info
+        initial_stats = initial_info.get("statistics", {})
+        assert (
+            "weighted_knn_graph" in initial_stats
+        ), "Initial graph was not computed and put in the report."
+        old_graph = initial_stats["weighted_knn_graph"]
+        assert old_graph.nnz == len(embeddings) * 5
+
+        # 2. Manually update the lab's state, simulating the Datalab runner.
+        # This is the step we were missing.
+        lab.get_info("statistics")["weighted_knn_graph"] = old_graph
+        lab.get_info("statistics")["knn_metric"] = initial_manager.metric
+
+        # 3. Run again with a larger k. This manager will now find the old
+        #    graph in the lab's statistics and trigger the update logic.
+        new_manager = NonIIDIssueManager(
+            datalab=lab,
+            metric="euclidean",
+            k=10,
+            seed=SEED,
+        )
+        new_manager.find_issues(features=embeddings)
+
+        # 4. Verify the *new manager's report* contains the new, larger graph.
+        # This is the direct output of the logic we are testing.
+        new_info_stats = new_manager.info.get("statistics", {})
+        assert "weighted_knn_graph" in new_info_stats, "New graph was not computed."
+        new_graph = new_info_stats["weighted_knn_graph"]
+
+        assert new_graph.nnz > old_graph.nnz
+        assert new_graph.nnz == len(embeddings) * 10
+
     def test_report(self, issue_manager, embeddings):
         np.random.seed(SEED)
         issue_manager.find_issues(features=embeddings)

@@ -166,22 +166,34 @@ class NearDuplicateIssueManager(IssueManager):
         }
         return info_dict
 
-    def _build_statistics_dictionary(self, knn_graph: csr_matrix) -> Dict[str, Dict[str, Any]]:
+    def _build_statistics_dictionary(
+        self, knn_graph: Optional[csr_matrix]
+    ) -> Dict[str, Dict[str, Any]]:
         statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
 
         # Add the knn graph as a statistic if necessary
         graph_key = "weighted_knn_graph"
         old_knn_graph = self.datalab.get_info("statistics").get(graph_key, None)
         old_graph_exists = old_knn_graph is not None
-        prefer_new_graph = (
-            not old_graph_exists
-            or knn_graph.nnz > old_knn_graph.nnz
-            or self.metric != self.datalab.get_info("statistics").get("knn_metric", None)
-        )
+        prefer_new_graph = False
+
+        # We can only prefer the new graph if it actually exists.
+        if knn_graph is not None:
+            # If there's no old graph, we must use the new one.
+            if not old_graph_exists:
+                prefer_new_graph = True
+            # if an old graph exists, check if new graph is better
+            elif old_knn_graph is not None and knn_graph.nnz > old_knn_graph.nnz:
+                prefer_new_graph = True
+            # if graphs have same sparsity, check if metric has changed
+            elif self.metric != self.datalab.get_info("statistics").get("knn_metric", None):
+                prefer_new_graph = True
+
         if prefer_new_graph:
-            statistics_dict["statistics"][graph_key] = knn_graph
-            if self.metric is not None:
-                statistics_dict["statistics"]["knn_metric"] = self.metric
+            if knn_graph is not None:  # Final safety check for mypy
+                statistics_dict["statistics"][graph_key] = knn_graph
+                if self.metric is not None:
+                    statistics_dict["statistics"]["knn_metric"] = self.metric
 
         return statistics_dict
 
