@@ -15,7 +15,7 @@
 # along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 
 """Methods to rank and score images in an object detection dataset (object detection data), based on how likely they
-are to contain label errors. """
+are to contain label errors."""
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
 import warnings
@@ -554,7 +554,7 @@ def _get_valid_subtype_score_params(
 
 
 def _get_aggregation_weights(
-    aggregation_weights: Optional[Dict[str, Any]] = None
+    aggregation_weights: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """This function validates aggregation weights, returning the default weights if none are provided."""
     if aggregation_weights is None:
