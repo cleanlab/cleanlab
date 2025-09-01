@@ -33,6 +33,7 @@ import numpy as np
 import pandas as pd
 from datasets.arrow_dataset import Dataset
 from datasets import ClassLabel
+import pyarrow as pa
 
 from cleanlab.internal.validation import labels_to_array, labels_to_list_multilabel
 
@@ -310,7 +311,10 @@ class Label(ABC):
         if self.label_name not in self._data.column_names:
             raise ValueError(f"Label column '{self.label_name}' not found in dataset.")
         labels = self._data[self.label_name]
-        assert isinstance(labels, (np.ndarray, list))
+        # Convert dataset column to a list to ensure type compatibility.
+        labels = self._data[self.label_name][:]
+
+        assert isinstance(labels, (np.ndarray, list, pa.Array, pa.ChunkedArray))
         assert len(labels) == len(self._data)
 
     @abstractmethod
@@ -326,7 +330,7 @@ class MultiLabel(Label):
     def _extract_labels(
         self, data: Dataset, label_name: str, map_to_int: bool
     ) -> Tuple[List[List[int]], Dict[int, Any]]:
-        labels: List[List[int]] = labels_to_list_multilabel(data[label_name])
+        labels: List[List[int]] = labels_to_list_multilabel(data[label_name][:])
         # label_map needs to be lexicographically sorted. np.unique should sort it
         unique_labels = np.unique([x for ele in labels for x in ele])
         label_map = {label: i for i, label in enumerate(unique_labels)}

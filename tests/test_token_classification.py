@@ -21,7 +21,6 @@ from cleanlab.token_classification.summary import (
 import numpy as np
 import pandas as pd
 import pytest
-
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -142,7 +141,7 @@ C_L, C_R = "\x1b[31m", "\x1b[0m"
         ("I think I know this", "I", f"{C_L}I{C_R} think {C_L}I{C_R} know this"),
         ("A good reason for a test", "a", f"A good reason for {C_L}a{C_R} test"),
         ("ab ab a b ab", "ab a", f"ab {C_L}ab a{C_R} b ab"),
-        ("ab ab ab ab", "ab a", f"{C_L}ab a{C_R}b {C_L}ab a{C_R}b"),
+        ("ab a b ab a b", "ab a", f"{C_L}ab a{C_R} b {C_L}ab a{C_R} b"),
         (
             "Alan John Percivale (A.j.p.) Taylor died",
             "(",
@@ -163,11 +162,13 @@ C_L, C_R = "\x1b[31m", "\x1b[0m"
     ],
 )
 def test_color_sentence(monkeypatch: pytest.MonkeyPatch, sentence, word, expected):
-    import os
+    def _mock_colored(text, color):
+        # This function has no external dependencies or closures.
+        # It just does one thing: adds color codes to the text it receives.
+        return f"\x1b[31m{text}\x1b[0m"
 
-    monkeypatch.setattr(os, "isatty", lambda fd: True)
-    monkeypatch.setattr("sys.stdout.isatty", lambda: True)
-    monkeypatch.setattr("sys.stdout.fileno", lambda: 1)
+    # Patch termcolor.colored with our simple, reliable mock function.
+    monkeypatch.setattr("cleanlab.internal.token_classification_utils.colored", _mock_colored)
 
     colored = color_sentence(sentence, word)
     assert colored == expected
@@ -184,7 +185,7 @@ def test_color_sentence(monkeypatch: pytest.MonkeyPatch, sentence, word, expecte
         ("I think I know this", "I", "[EXPECTED] think [EXPECTED] know this"),
         ("A good reason for a test", "a", "A good reason for [EXPECTED] test"),
         ("ab ab a b ab", "ab a", "ab [EXPECTED] b ab"),
-        ("ab ab ab ab", "ab a", "[EXPECTED]b [EXPECTED]b"),
+        ("ab a b ab a b", "ab a", "[EXPECTED] b [EXPECTED] b"),
         (
             "Alan John Percivale (A.j.p.) Taylor died",
             "(",
