@@ -314,18 +314,22 @@ def _calculate_ap_per_class(
     return ap_per_class_list
 
 
-def _filter_by_class(
-    labels: List[Dict[str, Any]], predictions: List[np.ndarray], class_num: int
-) -> Tuple[List, List]:
-    """
-    Filters predictions and labels based on a specific class number.
-    """
-    pred_bboxes = [prediction[class_num] for prediction in predictions]
+def _filter_by_class(labels, predictions, class_num):
+    """Filters bounding boxes and labels by a given class number."""
+    pred_bboxes = []
     lab_bboxes = []
+
     for label in labels:
-        gt_inds = label["labels"] == class_num
-        lab_bboxes.append(label["bboxes"][gt_inds, :])
+        gt_inds = np.where(label["labels"] == class_num)[0]
+
+        # FIX: Handle case when `bboxes` is empty
+        if "bboxes" not in label or label["bboxes"].size == 0:
+            lab_bboxes.append(np.array([]))  # Append empty array
+        else:
+            lab_bboxes.append(label["bboxes"][gt_inds, :])  # Safe indexing
+
     return pred_bboxes, lab_bboxes
+
 
 
 def _calculate_true_positives_false_positives(
