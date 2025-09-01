@@ -34,9 +34,15 @@ class Task(Enum):
 
     Example
     -------
-    >>> task = Task.CLASSIFICATION
-    >>> task
-    <Task.CLASSIFICATION: 'classification'>
+    .. testsetup::
+
+        from cleanlab.datalab.internal.task import Task
+
+    .. doctest::
+
+        >>> task = Task.CLASSIFICATION
+        >>> task
+        <Task.CLASSIFICATION: 'classification'>
     """
 
     CLASSIFICATION = "classification"
@@ -77,10 +83,16 @@ class Task(Enum):
 
         Examples
         --------
-        >>> Task.from_str("classification")
-        <Task.CLASSIFICATION: 'classification'>
-        >>> print(Task.from_str("regression"))
-        regression
+        .. testsetup::
+
+            from cleanlab.datalab.internal.task import Task
+
+        .. doctest::
+
+            >>> Task.from_str("classification")
+            <Task.CLASSIFICATION: 'classification'>
+            >>> print(Task.from_str("regression"))
+            regression
         """
         _value_to_enum = {task.value: task for task in Task}
         try:
@@ -101,9 +113,15 @@ class Task(Enum):
 
         Examples
         --------
-        >>> task = Task.CLASSIFICATION
-        >>> print(task.is_classification)
-        True
+        .. testsetup::
+
+            from cleanlab.datalab.internal.task import Task
+
+        ..doctest::
+
+            >>> task = Task.CLASSIFICATION
+            >>> print(task.is_classification)
+            True
         """
         return self == Task.CLASSIFICATION
 
@@ -119,9 +137,15 @@ class Task(Enum):
 
         Examples
         --------
-        >>> task = Task.CLASSIFICATION
-        >>> print(task.is_regression)
-        False
+        .. testsetup::
+
+            from cleanlab.datalab.internal.task import Task
+
+        .. doctest::
+
+            >>> task = Task.CLASSIFICATION
+            >>> print(task.is_regression)
+            False
         """
         return self == Task.REGRESSION
 
@@ -137,8 +161,14 @@ class Task(Enum):
 
         Examples
         --------
-        >>> task = Task.CLASSIFICATION
-        >>> print(task.is_multilabel)
-        False
+        .. testsetup::
+
+            from cleanlab.datalab.internal.task import Task
+
+        .. doctest::
+
+            >>> task = Task.CLASSIFICATION
+            >>> print(task.is_multilabel)
+            False
         """
         return self == Task.MULTILABEL
