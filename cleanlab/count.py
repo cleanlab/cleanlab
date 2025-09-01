@@ -600,14 +600,19 @@ def compute_confident_joint(
     # The indices where this is false, are often outliers (not confident of any label)
     at_least_one_confident = num_confident_bins > 0
     more_than_one_confident = num_confident_bins > 1
-    pred_probs_argmax = pred_probs.argmax(axis=1)
+    # Only classes whose prediction probabilities exceed the threshold are treated as confident;
+    # set all others to -inf
+    confident_pred_probs = np.where(pred_probs_bool, pred_probs, -np.inf)
+    # In the case of collision (multiple classes pass thresholds), select the one with the highest probability 
+    # as true label.
+    confident_pred_probs_argmax = confident_pred_probs.argmax(axis=1)
     # Note that confident_argmax is meaningless for rows of all False
     confident_argmax = pred_probs_bool.argmax(axis=1)
     # For each example, choose the confident class (greater than threshold)
     # When there is 2+ confident classes, choose the class with largest prob.
     true_label_guess = np.where(
         more_than_one_confident,
-        pred_probs_argmax,
+        confident_pred_probs_argmax,
         confident_argmax,
     )
     # true_labels_confident omits meaningless all-False rows
