@@ -17,9 +17,10 @@
 """Methods to rank and score images in an object detection dataset (object detection data), based on how likely they
 are to contain label errors. """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
-import warnings
 import copy
+import warnings
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
+
 import numpy as np
 
 from cleanlab.internal.constants import (
@@ -30,16 +31,16 @@ from cleanlab.internal.constants import (
     EPSILON,
     EUC_FACTOR,
     HIGH_PROBABILITY_THRESHOLD,
+    LABEL_OVERLAP_THRESHOLD,
     LOW_PROBABILITY_THRESHOLD,
     MAX_ALLOWED_BOX_PRUNE,
-    TINY_VALUE,
     TEMPERATURE,
-    LABEL_OVERLAP_THRESHOLD,
+    TINY_VALUE,
 )
 from cleanlab.internal.object_detection_utils import (
-    softmin1d,
     assert_valid_aggregation_weights,
     assert_valid_inputs,
+    softmin1d,
 )
 
 
@@ -281,12 +282,13 @@ def _separate_prediction_single_box(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Separates predictions into class labels, bounding boxes and pred_prob lists"""
     labels = []
-    boxes = []
+    bboxes = []
+    pred_probs = []
     for idx, prediction_class in enumerate(prediction):
         labels.extend([idx] * len(prediction_class))
-        boxes.extend(prediction_class.tolist())
-    bboxes = [box[:4] for box in boxes]
-    pred_probs = [box[-1] for box in boxes]
+        for inner_pred_class in prediction_class:
+            bboxes.append(inner_pred_class[:4])
+            pred_probs.append(inner_pred_class[-1])
     return np.array(bboxes), np.array(labels), np.array(pred_probs)
 
 
@@ -313,73 +315,64 @@ def _separate_prediction(
     return boxes, labels, pred_probs
 
 
-def _mod_coordinates(x: List[float]) -> Dict[str, Any]:
-    """Takes is a list of xyxy coordinates and returns them in dictionary format."""
-
-    wd = {"x1": x[0], "y1": x[1], "x2": x[2], "y2": x[3]}
-    return wd
-
-
-def _get_overlap(bb1: List[float], bb2: List[float]) -> float:
-    """Takes in two bounding boxes `bb1` and `bb2` and returns their IoU overlap."""
-
-    return _get_iou(_mod_coordinates(bb1), _mod_coordinates(bb2))
-
-
 def _get_overlap_matrix(bb1_list: np.ndarray, bb2_list: np.ndarray) -> np.ndarray:
     """Takes in two lists of bounding boxes and returns an IoU matrix where IoU[i][j] is the overlap between
     the i-th box in `bb1_list` and the j-th box in `bb2_list`."""
-    wd = np.zeros(shape=(len(bb1_list), len(bb2_list)))
-    for i in range(len(bb1_list)):
-        for j in range(len(bb2_list)):
-            wd[i][j] = _get_overlap(bb1_list[i], bb2_list[j])
-    return wd
+    if not len(bb1_list) or not len(bb2_list):
+        return np.zeros(shape=(len(bb1_list), len(bb2_list)))
+    return _get_iou(bb1_list, bb2_list)
 
 
-def _get_iou(bb1: Dict[str, Any], bb2: Dict[str, Any]) -> float:
+def _get_iou(bb1: np.ndarray, bb2: np.ndarray) -> np.ndarray:
     """
-    Calculate the Intersection over Union (IoU) of two bounding boxes.
+    Calculate the Intersection over Union (IoU) of an array of bounding box with an array of bounding_boxes.
     I've modified this to calculate overlap ratio in the line:
-    iou = np.clip(intersection_area / float(min(bb1_area,bb2_area)),0.0,1.0)
+    iou = np.clip(intersection_area / (bb1_area + bb2_area - intersection_area), 0.0, 1.0)
 
     Parameters
     ----------
-    bb1 : dict
-        Keys: {'x1', 'x2', 'y1', 'y2'}
-        The (x1, y1) position is at the top left corner,
-        the (x2, y2) position is at the bottom right corner
-    bb2 : dict
-        Keys: {'x1', 'x2', 'y1', 'y2'}
-        The (x, y) position is at the top left corner,
-        the (x2, y2) position is at the bottom right corner
+    bb1 : np.ndarray
+        An array of shape [N1, 4] where N1 is the number of bounding boxes, and each row represents the coordinates of the top-left and bottom-right corners of a bounding box.
+    bb2 : np.ndarray
+        An array of shape [N2, 4] where N2 is the number of bounding boxes, and each row represents the coordinates of the top-left and bottom-right corners of a bounding box.
+
+    Notes
+    -----
+    - Each bounding box is defined by four values [x1, y1, x2, y2], where (x1, y1) is the top-left corner coordinate and (x2, y2) is the bottom-right corner coordinate.
+    - Ensure that the bounding box coordinates follow the format [x1, y1, x2, y2] for consistency and compatibility with the expected functionality.
     Returns
     -------
-    float
-        in [0, 1]
+    iou: np.ndarray
+        An array of shape [N1, N2] with values in [0, 1], where iou[i, j] shows the Intersection over Union between bounding box i in bb1 and bounding box j in bb2.
     """
-    # determine the coordinates of the intersection rectangle
-    x_left = max(bb1["x1"], bb2["x1"])
-    y_top = max(bb1["y1"], bb2["y1"])
-    x_right = min(bb1["x2"], bb2["x2"])
-    y_bottom = min(bb1["y2"], bb2["y2"])
+    # Transpose bounding boxes and extend dimensions for easier broadcasting
+    bb1, bb2 = bb1.T, bb2.T
+    bb1_ext = np.expand_dims(bb1, 2)  # Extending dimension for bb1
+    bb2_ext = np.expand_dims(bb2, 1)  # Extending dimension for bb2
 
-    if x_right < x_left or y_bottom < y_top:
-        return 0.0
+    # Indices for readability
+    X1, Y1, X2, Y2 = 0, 1, 2, 3
+
+    # determine the coordinates of the intersection rectangle
+    x_left = np.maximum(bb1_ext[X1], bb2_ext[X1])
+    y_top = np.maximum(bb1_ext[Y1], bb2_ext[Y1])
+    x_right = np.minimum(bb1_ext[X2], bb2_ext[X2])
+    y_bottom = np.minimum(bb1_ext[Y2], bb2_ext[Y2])
 
     # The intersection of two axis-aligned bounding boxes is always an
     # axis-aligned bounding box
-    intersection_area = (x_right - x_left) * (y_bottom - y_top)
+    intersection_area = np.maximum(0, x_right - x_left) * np.maximum(0, y_bottom - y_top)
 
     # compute the area of both AABBs
-    bb1_area = (bb1["x2"] - bb1["x1"]) * (bb1["y2"] - bb1["y1"])
-    bb2_area = (bb2["x2"] - bb2["x1"]) * (bb2["y2"] - bb2["y1"])
+    bb1_area = (bb1[X2] - bb1[X1]) * (bb1[Y2] - bb1[Y1])
+    bb2_area = (bb2[X2] - bb2[X1]) * (bb2[Y2] - bb2[Y1])
 
     # compute the intersection over union by taking the intersection
     # area and dividing it by the sum of prediction + ground-truth
     # areas - the interesection area
-    iou = intersection_area / np.clip(
-        float(bb1_area + bb2_area - intersection_area), a_min=EPSILON, a_max=None
-    )  # avoid division by 0
+    union_area = bb1_area[:, np.newaxis] + bb2_area[np.newaxis, :] - intersection_area
+    iou = intersection_area / np.clip(union_area, a_min=EPSILON, a_max=None)  # avoid division by 0
+
     # There are some hyper-parameters here like consider tile area/object area
     return iou
 
@@ -401,23 +394,23 @@ def _has_overlap(bbox_list, labels):
     return np.array(results_overlap)
 
 
-def _euc_dis(box1: List[float], box2: List[float]) -> float:
+def _euc_dis(box1: np.ndarray, box2: np.ndarray) -> np.ndarray:
     """Calculates the Euclidean distance between `box1` and `box2`."""
-    x1, y1 = (box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2
-    x2, y2 = (box2[0] + box2[2]) / 2, (box2[1] + box2[3]) / 2
-    p1 = np.array([x1, y1])
-    p2 = np.array([x2, y2])
-    val2 = np.exp(-np.linalg.norm(p1 - p2) * EUC_FACTOR)
-    return val2
+    p1 = np.empty((box1.shape[0], 2))
+    p1[:, 0] = (box1[:, 0] + box1[:, 2]) / 2
+    p1[:, 1] = (box1[:, 1] + box1[:, 3]) / 2
+
+    p2 = np.empty((box2.shape[0], 2))
+    p2[:, 0] = (box2[:, 0] + box2[:, 2]) / 2
+    p2[:, 1] = (box2[:, 1] + box2[:, 3]) / 2
+    return np.exp(-np.linalg.norm(p1[:, np.newaxis] - p2[np.newaxis, :], axis=2) * EUC_FACTOR)
 
 
 def _get_dist_matrix(bb1_list: np.ndarray, bb2_list: np.ndarray) -> np.ndarray:
     """Returns a distance matrix of distances from all of boxes in bb1_list to all of boxes in bb2_list."""
-    wd = np.zeros(shape=(len(bb1_list), len(bb2_list)))
-    for i in range(len(bb1_list)):
-        for j in range(len(bb2_list)):
-            wd[i][j] = _euc_dis(bb1_list[i], bb2_list[j])
-    return wd
+    if not len(bb2_list) or not len(bb1_list):
+        return np.zeros(shape=(len(bb1_list), len(bb2_list)))
+    return _euc_dis(bb1_list, bb2_list)
 
 
 def _get_min_possible_similarity(
