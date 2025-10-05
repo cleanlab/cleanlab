@@ -310,6 +310,25 @@ class Label(ABC):
         if self.label_name not in self._data.column_names:
             raise ValueError(f"Label column '{self.label_name}' not found in dataset.")
         labels = self._data[self.label_name]
+        # Accept Hugging Face Column objects (or similar) by converting to python list for validation.
+        try:
+            from datasets.arrow_dataset import Column as _HFColumn  # type: ignore
+        except Exception:
+            _HFColumn = ()  # type: ignore
+
+        try:
+            if (_HFColumn and isinstance(labels, _HFColumn)) or hasattr(labels, "to_pylist"):
+                labels = labels.to_pylist()  # convert to plain list if available
+        except Exception:
+            pass
+
+        # Fallback: accept any sequence-like label container as long as length matches.
+        if not isinstance(labels, (np.ndarray, list)):
+            try:
+                labels = list(labels)
+            except Exception:
+                pass
+
         assert isinstance(labels, (np.ndarray, list))
         assert len(labels) == len(self._data)
 
