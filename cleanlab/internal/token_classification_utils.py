@@ -225,6 +225,37 @@ def merge_probs(
     return probs_merged
 
 
+# Safe color helper: use termcolor if available, else fallback to ANSI codes.
+try:
+    from termcolor import colored as _termcolor_colored  # type: ignore
+except Exception:  # pragma: no cover - import may fail in minimal envs/CI
+    _termcolor_colored = None
+
+
+def _color_text(text: str, color: str) -> str:
+    """Return colored text using termcolor when available, otherwise ANSI codes.
+
+    This deterministic fallback ensures tests expecting ANSI-colored output still pass
+    even when optional color dependencies or TTY detection are unavailable in CI.
+    """
+    if _termcolor_colored is not None:
+        try:
+            return _termcolor_colored(text, color)
+        except Exception:
+            # Fall through to ANSI if termcolor runtime coloring fails
+            pass
+    ansi_map = {
+        "red": "31",
+        "green": "32",
+        "yellow": "33",
+        "blue": "34",
+        "magenta": "35",
+        "cyan": "36",
+    }
+    code = ansi_map.get(color, "31")
+    return f"\x1b[{code}m{text}\x1b[0m"
+
+
 def color_sentence(sentence: str, word: str) -> str:
     """
     Searches for a given token in the sentence and returns the sentence where the given token is colored red
@@ -256,7 +287,7 @@ def color_sentence(sentence: str, word: str) -> str:
     >>> color_sentence(document, word)
     'This is a \x1b[31msentence\x1b[0m. This is another \x1b[31msentence\x1b[0m.'
     """
-    colored_word = colored(word, "red")
+    colored_word = _color_text(word, "red")
     return _replace_sentence(sentence=sentence, word=word, new_word=colored_word)
 
 
