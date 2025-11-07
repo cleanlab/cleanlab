@@ -14,7 +14,7 @@
     <p>
         <a href="https://docs.cleanlab.ai/">Documentation</a> |
         <a href="https://github.com/cleanlab/examples">Examples</a> |
-        <a href="https://cleanlab.ai/blog/">Blog</a> |
+        <a href="https://cleanlab.ai/blog/learn/">Blog</a> |
         <a href="#citation-and-related-publications">Research</a>
     <p>
 </h4>
@@ -78,7 +78,7 @@ cleanlab is useful across a wide variety of Machine Learning tasks. Specific tas
 9. [Outlier detection](https://docs.cleanlab.ai/stable/tutorials/outliers.html) (identify atypical data that appears out of distribution)
 
 For other ML tasks, cleanlab can still help you improve your dataset if appropriately applied.
-See our [Example Notebooks](https://github.com/cleanlab/examples) and [Blog](https://cleanlab.ai/blog/).
+See our [Example Notebooks](https://github.com/cleanlab/examples) and [Blog](https://cleanlab.ai/blog/learn/).
 
 
 ## So fresh, so cleanlab
@@ -122,7 +122,7 @@ While these examples are from image datasets, this also works for text, audio, t
 
 ## Detect incorrect responses from LLMs (or humans)
 
-For LLM applications, Cleanlab also offers the [Trustworthy Language Model](https://cleanlab.ai/blog/trustworthy-language-model/) -- a state of the art API for **detecting incorrect responses from any LLM** (or even from humans). [Try it here!](https://help.cleanlab.ai/tlm/)
+For LLM applications, Cleanlab also offers the [Trustworthy Language Model](https://cleanlab.ai/blog/learn/trustworthy-language-model/) -- a state of the art API for **detecting incorrect responses from any LLM** (or even from humans). [Try it here!](https://help.cleanlab.ai/tlm/)
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/tlm-hallucinations.png" width=70%>
@@ -279,7 +279,7 @@ To understand/cite other cleanlab functionality not described above, check out o
 
 - [Example Notebooks demonstrating practical applications of this package](https://github.com/cleanlab/examples)
 
-- [Cleanlab Blog](https://cleanlab.ai/blog/)
+- [Cleanlab Blog](https://cleanlab.ai/blog/learn)
 
 - [Blog post: Introduction to Confident Learning](https://l7.curtisnorthcutt.com/confident-learning)
 
