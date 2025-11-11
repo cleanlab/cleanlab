@@ -4,9 +4,13 @@
 cleanlab open-source documentation
 ==================================
 
-`cleanlab <https://github.com/cleanlab/cleanlab>`_ **automatically detects data and label issues in your ML datasets, to improve reliability in supervised learning, LLM, and RAG applications.**
+**Cleanlab’s** |open-source-library| **automatically detects data and label issues in your ML datasets, to improve reliability in supervised learning, LLM, and RAG applications.**
 
 | This helps you improve your data and train reliable ML models on noisy real-world datasets. cleanlab has already found thousands of `label errors <https://labelerrors.com>`_ in ImageNet, MNIST, and other popular ML benchmarking datasets. Beyond handling label errors, this is a comprehensive open-source library implementing many data-centric AI capabilities. Start using automation to improve your data in 5 minutes!
+
+.. |open-source-library| raw:: html
+
+   <a href="https://github.com/cleanlab/cleanlab"><strong>open source library</strong></a>
 
 Quickstart
 ==========
