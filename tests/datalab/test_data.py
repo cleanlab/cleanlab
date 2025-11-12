@@ -6,7 +6,7 @@ from datasets import Dataset, ClassLabel
 import numpy as np
 import hypothesis.strategies as st
 from hypothesis import given, assume, settings, HealthCheck
-
+import pandas as pd
 from cleanlab.datalab.internal.task import Task
 
 
@@ -32,7 +32,14 @@ def multiclass_dataset_strategy(draw):
         name: draw(st.lists(column_data_strategy, min_size=5, max_size=5)) for name in col_names
     }
     dataset = Dataset.from_dict(data)
-    dataset = dataset.rename_column(label_name, "label")
+
+    if label_name != "label":
+        # If a column named 'label' already exists, it's a conflict. Remove it.
+        if "label" in dataset.column_names:
+            dataset = dataset.remove_columns("label")
+
+        # Now, it's safe to rename our chosen label_name to "label".
+        dataset = dataset.rename_column(label_name, "label")
 
     # Make assertions about drawn values
     assume(len(set(dataset["label"])) > 1)
@@ -90,7 +97,14 @@ def multilabel_dataset_strategy(draw):
     }
     data[label_name] = draw(labels_strategy)
     dataset = Dataset.from_dict(data)
-    dataset = dataset.rename_column(label_name, "label")
+
+    if label_name != "label":
+        # If a column named 'label' already exists, it's a conflict. Remove it.
+        if "label" in dataset.column_names:
+            dataset = dataset.remove_columns("label")
+
+        # Now, it's safe to rename our chosen label_name to "label".
+        dataset = dataset.rename_column(label_name, "label")
 
     # Make assertions about drawn values
     assume(len(set(l for labels in dataset["label"] for l in labels)) > 1)
@@ -104,8 +118,50 @@ def dataset_strategy(draw, task=Task.CLASSIFICATION):
         return draw(multiclass_dataset_strategy())
     elif task == Task.MULTILABEL:
         return draw(multilabel_dataset_strategy())
+    elif task == Task.REGRESSION:  # Add this case
+        return draw(regression_dataset_strategy())
     else:
         raise ValueError(f"Unsupported task: {task}")
+
+
+@st.composite
+def regression_dataset_strategy(draw):
+    # Define strategies
+    int_feature_strategy = st.integers(min_value=-10, max_value=10)
+    float_feature_strategy = st.floats(
+        min_value=-10, max_value=10, allow_nan=False, allow_infinity=False
+    )
+    column_name_strategy = st.text(
+        alphabet=st.characters(blacklist_categories=["Cs", "Cc", "Cn"]), min_size=5, max_size=5
+    )
+    column_data_strategy = st.one_of(int_feature_strategy, float_feature_strategy)
+
+    # Draw values
+    col_names = draw(
+        st.lists(column_name_strategy, min_size=NUM_COLS, max_size=NUM_COLS + 1, unique=True)
+    )
+    label_name = draw(st.sampled_from(col_names))
+    data = {
+        name: draw(st.lists(column_data_strategy, min_size=5, max_size=5)) for name in col_names
+    }
+
+    # For the chosen label column, overwrite it with floats to ensure it's a regression task
+    data[label_name] = draw(st.lists(float_feature_strategy, min_size=5, max_size=5))
+
+    dataset = Dataset.from_dict(data)
+
+    if label_name != "label":
+        # If a column named 'label' already exists, it's a conflict. Remove it.
+        if "label" in dataset.column_names:
+            dataset = dataset.remove_columns("label")
+
+        # Now, it's safe to rename our chosen label_name to "label".
+        dataset = dataset.rename_column(label_name, "label")
+
+    # Make sure we have more than one unique float value to avoid trivial cases
+    assume(len(set(dataset["label"])) > 1)
+
+    return dataset
 
 
 class TestData:
@@ -145,6 +201,18 @@ class TestData:
         dataset = [{"X": 0, "label": 0}, {"X": 1, "label": 1}, {"X": 2, "label": 1}]
         data = Data(data=dataset, task=Task.CLASSIFICATION, label_name="label")
         assert isinstance(data._data, Dataset)
+
+    @given(dataset=dataset_strategy(task=Task.REGRESSION))
+    @settings(max_examples=10, suppress_health_check=[HealthCheck.too_slow])
+    def test_init_data_regression(self, dataset: Dataset) -> None:
+        """Tests that regression data is handled correctly (labels are not mapped to ints)."""
+        data = Data(data=dataset, task=Task.REGRESSION, label_name="label")
+
+        # Verify the labels are floats, not integers mapped from 0 to K-1
+        assert pd.api.types.is_float_dtype(data.labels.labels)
+
+        # The label_map should be empty for regression tasks
+        assert data.labels.label_map == {}
 
     def test_init_raises_format_error(self):
         data = np.random.rand(10, 2)

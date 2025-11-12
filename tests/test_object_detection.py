@@ -1,7 +1,6 @@
 import os
 from collections import Counter, defaultdict
 from multiprocessing import Pool
-
 import numpy as np
 
 from cleanlab.internal.constants import (
@@ -729,7 +728,8 @@ def test_plot_class_distribution(monkeypatch):
 
 
 @pytest.mark.usefixtures("generate_single_image_file")
-def test_visualize(monkeypatch, generate_single_image_file):
+def test_visualize(monkeypatch, generate_single_image_file, tmp_path):
+    # Add `tmp_path` to the function signature
     monkeypatch.setattr(plt, "show", lambda: None)
 
     arr = np.random.randint(low=0, high=256, size=(300, 300, 3), dtype=np.uint8)
@@ -738,18 +738,30 @@ def test_visualize(monkeypatch, generate_single_image_file):
     img = Image.fromarray(arr, mode="RGB")
     visualize(img)
 
-    visualize(img, save_path="./fake_path.pdf")
-    assert os.path.exists("./fake_path.pdf")
+    # --- REFACTOR ---
+    # Create file paths inside the secure, auto-deleting temporary directory
+    # instead of hardcoding them in the project's root.
+    pdf_path = tmp_path / "fake_path.pdf"
+    no_ext_path = tmp_path / "fake_path_no_ext"
+    ps_path = tmp_path / "fake_path.ps"
+    another_pdf_path = tmp_path / "fake.path.pdf"
 
-    visualize(img, save_path="./fake_path_no_ext")
-    assert os.path.exists("./fake_path_no_ext.png")
+    # Use the new, clean paths
+    visualize(img, save_path=pdf_path)
+    assert os.path.exists(pdf_path)
 
-    visualize(img, save_path="./fake_path.ps")
-    assert os.path.exists("./fake_path.ps")
+    # The function adds the .png extension, so we check for the correct final path
+    visualize(img, save_path=no_ext_path)
+    assert os.path.exists(str(no_ext_path) + ".png")
 
-    visualize(img, save_path="./fake.path.pdf")
-    assert os.path.exists("./fake.path.pdf")
+    visualize(img, save_path=ps_path)
+    assert os.path.exists(ps_path)
 
+    visualize(img, save_path=another_pdf_path)
+    assert os.path.exists(another_pdf_path)
+    # --- END REFACTOR ---
+
+    # The rest of the test doesn't create files, so it can remain the same.
     visualize(generate_single_image_file, label=labels[0], prediction=predictions[0])
     visualize(generate_single_image_file, label=None, prediction=predictions[0])
     visualize(generate_single_image_file, label=labels[0], prediction=None)

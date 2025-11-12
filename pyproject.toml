@@ -91,7 +91,8 @@ exclude = '''
 
 [tool.pytest.ini_options]
 filterwarnings = [
-  "ignore:.*The least populated class in y has only 1 members,*"
+  "ignore:.*The least populated class in y has only 1 members,*",
+  "ignore:The `disp` and `iprint` options of the L-BFGS-B solver are deprecated",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",

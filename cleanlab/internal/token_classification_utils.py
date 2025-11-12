@@ -282,8 +282,9 @@ def _replace_sentence(sentence: str, word: str, new_word: str) -> str:
         `sentence` where the every occurrence of the word is replaced by `colored_word`
     """
 
+    replacement_func = lambda match: new_word
     new_sentence, number_of_substitions = re.subn(
-        r"\b{}\b".format(re.escape(word)), new_word, sentence
+        r"\b{}\b".format(re.escape(word)), replacement_func, sentence
     )
     if number_of_substitions == 0:
         # Use basic string manipulation if regex fails
