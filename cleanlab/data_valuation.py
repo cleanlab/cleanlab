@@ -1,23 +1,7 @@
-# Copyright (C) 2017-2024  Cleanlab Inc.
-# This file is part of cleanlab.
-#
-# cleanlab is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# cleanlab is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 """
 Methods for quantifying the value of each data point in a Machine Learning dataset.
 Data Valuation helps us assess individual training data points' contributions to a ML model's predictive performance.
 """
-
 
 from typing import Callable, Optional, Union
 
