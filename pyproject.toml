@@ -28,7 +28,6 @@ classifiers = [
   "Intended Audience :: Education",
   "Intended Audience :: Science/Research",
   "Intended Audience :: Information Technology",
-  "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
   "Natural Language :: English",
   # We believe this package works will these versions, but we do not guarantee it!
   "Programming Language :: Python :: 3",
@@ -57,7 +56,8 @@ keywords = [
   "datacentric_ai",
   "datacentric",
 ]
-license = {file = "LICENSE"}
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 dynamic = [
   "version",
   "optional-dependencies",
