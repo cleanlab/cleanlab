@@ -1,19 +1,3 @@
-# Copyright (C) 2017-2023  Cleanlab Inc.
-# This file is part of cleanlab.
-#
-# cleanlab is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# cleanlab is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
-
 """
 Wrapper class you can use to make any Keras model compatible with :py:class:`CleanLearning <cleanlab.classification.CleanLearning>` and sklearn.
 Use :py:class:`KerasWrapperModel<cleanlab.experimental.keras.KerasWrapperModel>` to wrap existing functional API code for ``keras.Model`` objects,
@@ -24,21 +8,21 @@ see the `Keras documentation <https://keras.io/>`_ for details.
 This is a good example of making any bespoke neural network compatible with cleanlab.
 
 You must have `Tensorflow 2 installed <https://www.tensorflow.org/install>`_ (only compatible with Python versions >= 3.7).
-This wrapper class is only fully compatible with ``tensorflow<2.11``, if using ``tensorflow>=2.11``, 
+This wrapper class is only fully compatible with ``tensorflow<2.11``, if using ``tensorflow>=2.11``,
 please replace your Optimizer class with the legacy Optimizer `here <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/legacy/Optimizer>`_.
 
 .. warning::
 
     For those on TensorFlow version 2.16 or higher, please note that direct compatibility is not yet fully established.
     We are actively working to extend support to these newer versions.
-    
+
     In the interim, users are advised to use TensorFlow versions up to 2.15 to ensure stability and maintain compatibility.
     This can be done by specifying the TensorFlow version in your package manager, for example:
-    
+
     .. code-block::
-        
+
         pip install tensorflow<2.16
-    
+
     This approach ensures that you can continue utilizing the full functionality of this wrapper class until an update accommodating newer TensorFlow versions is released.
 
 Tips:

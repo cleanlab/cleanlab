@@ -284,14 +284,3 @@ To understand/cite other cleanlab functionality not described above, check out o
 **Interested in contributing?**  See the [contributing guide](CONTRIBUTING.md), [development guide](DEVELOPMENT.md), and [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab).
 
 **Have questions?**  Check out [our FAQ](https://docs.cleanlab.ai/stable/tutorials/faq.html) and [Github Issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue).
-
-
-## License
-
-Copyright (c) 2017 Cleanlab Inc.
-
-cleanlab is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-
-cleanlab is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See [GNU Affero General Public LICENSE](https://github.com/cleanlab/cleanlab/blob/master/LICENSE) for details.
