@@ -58,13 +58,3 @@ Here is pseudocode for manually implementing K-fold cross-validation with K = 3:
         out_of_sample_pred_probs_for_B,
         out_of_sample_pred_probs_for_C,
     ])
-
-
-Spending too much time on data quality?
-----
-This notebook demonstrates a toy ML model to quickly produce pred_probs. Because the performance of Cleanlab critically depends on the quality of your ML model, you should try to use a better ML model than the one demonstrated here. 
-If you are unsure how to produce a better ML model for your data, or want a platform to actually fix your issues automatically, use Cleanlab Studio which will automatically produce the best model for your dataset via cutting-edge AutoML with Foundation models.
-`Try Cleanlab Studio for free! <https://cleanlab.ai/signup/>`_
-
-.. image:: https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/ml-with-cleanlab-studio.png
-    :alt: The modern AI pipeline automated with Cleanlab Studio
