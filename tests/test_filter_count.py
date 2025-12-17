@@ -382,6 +382,62 @@ def test_compute_confident_joint():
     assert np.shape(cj) == (data["m"], data["m"])
 
 
+@pytest.mark.parametrize("calibrate", [True, False])
+@pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
+@pytest.mark.filterwarnings("error")
+def test_compute_confident_joint_all_zero_pred_probs_minimal_compat_shim(
+    calibrate, return_indices_of_off_diagonals
+):
+    """Regression test for scikit-learn>=1.8: confusion_matrix raises an error on empty inputs.
+
+    When pred_probs are degenerate (e.g., all zeros), no example may be deemed confident under strict
+    thresholds. cleanlab should avoid calling sklearn.metrics.confusion_matrix on empty inputs.
+
+    This test asserts the minimal backwards-compatible behavior:
+    - calibrate=False yields an identity matrix (due to the existing 'min 1 on diagonal' rule).
+    - calibrate=True yields diag(bincount(labels)) after calibration.
+    """
+
+    labels = np.array([0, 0, 1, 1, 2, 2, 2])
+    K = 3
+    # Edge-case not typically encountered in practice, but we should handle it gracefully
+    pred_probs = np.zeros((len(labels), K))
+    thresholds = np.full(K, 1.0)  # Force zero confident examples regardless of how defaults are set
+
+    if return_indices_of_off_diagonals:
+        cj, indices = count.compute_confident_joint(
+            labels=labels,
+            pred_probs=pred_probs,
+            thresholds=thresholds,
+            calibrate=calibrate,
+            return_indices_of_off_diagonals=True,
+        )
+        # No off-diagonal counts expected in this edge-case.
+        assert len(indices) == 0
+    else:
+        cj = count.compute_confident_joint(
+            labels=labels,
+            pred_probs=pred_probs,
+            thresholds=thresholds,
+            calibrate=calibrate,
+            return_indices_of_off_diagonals=False,
+        )
+
+    if calibrate:
+        expected = np.array(
+            [
+                [2, 0, 0],
+                [0, 2, 0],
+                [0, 0, 3],
+            ]
+        )  # equal to np.diag(np.bincount(labels, minlength=K))
+    else:
+        expected = np.eye(K, dtype=int)
+
+    assert cj.shape == (K, K)
+    assert np.array_equal(cj, expected)
+
+
 def test_estimate_latent_py_method():
     for py_method in ["cnt", "eqn", "marginal"]:
         py, nm, inv = count.estimate_latent(
