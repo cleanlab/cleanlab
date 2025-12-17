@@ -24,7 +24,7 @@ exec(open("cleanlab/version.py").read())
 DATALAB_REQUIRE = [
     # Mainly for Datalab's data storage class.
     # Still some type hints that require datasets
-    "datasets>=2.7.0,<4.0.0",
+    "datasets>=2.7.0",
 ]
 
 IMAGE_REQUIRE = DATALAB_REQUIRE + ["cleanvision>=0.3.6"]
