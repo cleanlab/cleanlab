@@ -4,7 +4,7 @@
 
 <div align="center">
 <a href="https://pypi.org/pypi/cleanlab/" target="_blank"><img src="https://img.shields.io/pypi/v/cleanlab.svg" alt="pypi_versions"></a>
-<a href="https://pypi.org/pypi/cleanlab/" target="_blank"><img src="https://img.shields.io/badge/python-3.8%2B-blue" alt="py_versions"></a>
+<a href="https://pypi.org/pypi/cleanlab/" target="_blank"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="py_versions"></a>
 <a href="https://app.codecov.io/gh/cleanlab/cleanlab" target="_blank"><img src="https://codecov.io/gh/cleanlab/cleanlab/branch/master/graph/badge.svg" alt="coverage"></a>
 <a href="https://github.com/cleanlab/cleanlab/stargazers/" target="_blank"><img src="https://img.shields.io/github/stars/cleanlab/cleanlab?style=social&maxAge=2592000" alt="Github Stars"></a>
 <a href="https://twitter.com/CleanlabAI" target="_blank"><img src="https://img.shields.io/twitter/follow/CleanlabAI?style=social" alt="Twitter"></a>
@@ -45,7 +45,7 @@ Cleanlab’s open-source library helps you **clean** data and **lab**els by auto
 
 ## Run cleanlab open-source
 
-This cleanlab package runs on Python 3.8+ and supports Linux, macOS, as well as Windows.
+This cleanlab package runs on Python 3.10+ and supports Linux, macOS, as well as Windows.
 
 - Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda`.
 - Developers who install the bleeding-edge from source should refer to [this master branch documentation](https://docs.cleanlab.ai/master/index.html).
