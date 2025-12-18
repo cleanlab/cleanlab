@@ -1,18 +1,3 @@
-# Copyright (C) 2017-2023  Cleanlab Inc.
-# This file is part of cleanlab.
-#
-# cleanlab is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# cleanlab is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 """Classes and methods for datasets that are loaded into Datalab."""
 
 import os
@@ -33,6 +18,15 @@ import numpy as np
 import pandas as pd
 from datasets.arrow_dataset import Dataset
 from datasets import ClassLabel
+
+# Import Column types for compatibility with datasets 4.0.0+
+try:
+    from datasets.arrow_dataset import Column
+    from datasets.iterable_dataset import IterableColumn
+except ImportError:
+    # For backwards compatibility with older datasets versions
+    Column = None
+    IterableColumn = None
 
 from cleanlab.internal.validation import labels_to_array, labels_to_list_multilabel
 
@@ -310,7 +304,10 @@ class Label(ABC):
         if self.label_name not in self._data.column_names:
             raise ValueError(f"Label column '{self.label_name}' not found in dataset.")
         labels = self._data[self.label_name]
-        assert isinstance(labels, (np.ndarray, list))
+        error_message = (
+            f"Expected labels to be numpy array, list, or Column type, got {type(labels)}"
+        )
+        assert _is_valid_label_column(labels), error_message
         assert len(labels) == len(self._data)
 
     @abstractmethod
@@ -326,7 +323,10 @@ class MultiLabel(Label):
     def _extract_labels(
         self, data: Dataset, label_name: str, map_to_int: bool
     ) -> Tuple[List[List[int]], Dict[int, Any]]:
-        labels: List[List[int]] = labels_to_list_multilabel(data[label_name])
+        # Convert Column types to list for compatibility with validation functions
+        raw_labels = data[label_name]
+        converted_labels = _convert_column_to_list(raw_labels)
+        labels: List[List[int]] = labels_to_list_multilabel(converted_labels)
         # label_map needs to be lexicographically sorted. np.unique should sort it
         unique_labels = np.unique([x for ele in labels for x in ele])
         label_map = {label: i for i, label in enumerate(unique_labels)}
@@ -388,3 +388,44 @@ class MultiClass(Label):
         inverse_map = {i: label for label, i in label_map.items()}
 
         return formatted_labels, inverse_map
+
+
+def _is_valid_label_column(labels: Any) -> bool:
+    """Helper function to check if labels are a valid type including datasets 4.0.0+ Column types.
+
+    Parameters
+    ----------
+    labels : Any
+        The labels object to validate.
+
+    Returns
+    -------
+    bool
+        True if labels are a valid type (numpy array, list, or Column types).
+    """
+    valid_types = [np.ndarray, list]
+    if Column is not None:
+        valid_types.append(Column)
+    if IterableColumn is not None:
+        valid_types.append(IterableColumn)
+    return isinstance(labels, tuple(valid_types))
+
+
+def _convert_column_to_list(labels):
+    """Helper function to convert Column types to list for compatibility with validation functions.
+
+    Parameters
+    ----------
+    labels : Any
+        The labels object to convert.
+
+    Returns
+    -------
+    list or original type
+        Converted to list if it's a Column type, otherwise returns original object.
+    """
+    if Column is not None and isinstance(labels, Column):
+        return list(labels)
+    elif IterableColumn is not None and isinstance(labels, IterableColumn):
+        return list(labels)
+    return labels

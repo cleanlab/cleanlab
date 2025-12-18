@@ -4,9 +4,9 @@
 cleanlab open-source documentation
 ==================================
 
-`cleanlab <https://github.com/cleanlab/cleanlab>`_ **automatically detects data and label issues in your ML datasets, to improve reliability in supervised learning, LLM, and RAG applications.**
+`cleanlab <https://github.com/cleanlab/cleanlab>`_ **automatically detects data and label issues in your ML datasets.**
 
-| This helps you improve your data and train reliable ML models on noisy real-world datasets. cleanlab has already found thousands of `label errors <https://labelerrors.com>`_ in ImageNet, MNIST, and other popular ML benchmarking datasets. Beyond handling label errors, this is a comprehensive open-source library implementing many data-centric AI capabilities. Start using automation to improve your data in 5 minutes!
+| This helps you improve your data and train robust ML models on noisy real-world datasets. cleanlab has already found thousands of `label errors <https://labelerrors.com>`_ in ImageNet, MNIST, and other popular ML benchmarking datasets. Beyond handling label errors, this is a comprehensive open-source library implementing many data-centric AI capabilities. Start using automation to improve your data!
 
 Quickstart
 ==========
@@ -131,21 +131,6 @@ As cleanlab is an open-source project, we welcome contributions from the communi
 
 Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md>`_ for more information.
 
-Easy Mode
----------
-
-While this open-source library **finds** data issues, its utility depends on you having a good ML model and  interface to efficiently **fix** these issues in your dataset.
-Providing all these pieces, `Cleanlab Studio <https://cleanlab.ai/blog/data-centric-ai/>`_ is a *no-code* platform to **find and fix** problems in text/image/tabular datasets.
-Cleanlab Studio integrates the data quality algorithms from this library on top of cutting-edge AutoML & Foundation models fit to your data, and presents detected issues in a smart data editing interface.
-Data quality is essential for all AI/ML, and while this package is useful across AI applications, reliable Retrieval-Augmented Generation requires specific Data-Centric AI tools for your company's data sources, which you can learn about `here <https://cleanlab.ai/sales/>`_.
-
-.. image:: https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/ml-with-cleanlab-studio.png
-   :width: 800
-   :alt: Stages of modern AI pipeline that can now be automated with Cleanlab Studio
-
-There is no faster way to turn *unreliable* raw data into *reliable* models/analytics. `Try it for free! <https://cleanlab.ai/signup/>`_
-
-Link to Cleanlab Studio docs: `help.cleanlab.ai <https://help.cleanlab.ai/>`_
 
 .. toctree::
    :hidden:
@@ -210,8 +195,6 @@ Link to Cleanlab Studio docs: `help.cleanlab.ai <https://help.cleanlab.ai/>`_
    GitHub <https://github.com/cleanlab/cleanlab>
    PyPI <https://pypi.org/project/cleanlab/>
    Conda <https://anaconda.org/conda-forge/cleanlab>
-   Community Discussions <https://cleanlab.ai/slack>
    Blog <https://cleanlab.ai/blog/>
    Videos <https://www.youtube.com/@CleanlabAI/playlists>
-   Cleanlab Studio (Easy Mode) <https://cleanlab.ai/blog/data-centric-ai/>
-   Cleanlab Studio Docs <https://help.cleanlab.ai>
+   

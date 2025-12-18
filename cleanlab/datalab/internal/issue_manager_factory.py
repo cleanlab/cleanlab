@@ -1,18 +1,3 @@
-# Copyright (C) 2017-2023  Cleanlab Inc.
-# This file is part of cleanlab.
-#
-# cleanlab is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# cleanlab is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with cleanlab.  If not, see <https://www.gnu.org/licenses/>.
 """The factory module provides a factory class for constructing concrete issue managers
 and a decorator for registering new issue managers.
 
@@ -36,6 +21,7 @@ Warning
 -------
 Neither the :class:`REGISTRY` variable nor the factory class should be used directly by users.
 """
+
 from __future__ import annotations
 
 from typing import Dict, List, Type
@@ -103,7 +89,7 @@ Currently, the following issue managers are registered by default for a given ta
     - ``"underperforming_group"``: :py:class:`UnderperformingGroupIssueManager <cleanlab.datalab.internal.issue_manager.underperforming_group.UnderperformingGroupIssueManager>`
     - ``"data_valuation"``: :py:class:`DataValuationIssueManager <cleanlab.datalab.internal.issue_manager.data_valuation.DataValuationIssueManager>`
     - ``"null"``: :py:class:`NullIssueManager <cleanlab.datalab.internal.issue_manager.null.NullIssueManager>`
-    
+
 - Regression:
 
     - ``"label"``: :py:class:`RegressionLabelIssueManager <cleanlab.datalab.internal.issue_manager.regression.label.RegressionLabelIssueManager>`
