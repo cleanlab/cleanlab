@@ -31,8 +31,6 @@ classifiers = [
   "Natural Language :: English",
   # We believe this package works will these versions, but we do not guarantee it!
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python",
@@ -43,7 +41,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 # What does your project relate to?
 keywords = [
   "machine_learning",
