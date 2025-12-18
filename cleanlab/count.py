@@ -552,12 +552,6 @@ def compute_confident_joint(
                 confident_joint[s_label][np.argmax(confident_bins)] += 1
             elif num_confident_bins > 1:
                 confident_joint[s_label][np.argmax(row)] += 1
-
-    Note
-    ----
-    In degenerate settings where no example is deemed "confident" for any class, the confident joint
-    will be constructed as an identity matrix (when `calibrate=False`) or adjusted accordingly
-    (when `calibrate=True`).
     """
 
     if multi_label:
@@ -605,18 +599,23 @@ def compute_confident_joint(
     labels_confident = labels[at_least_one_confident]
 
     if true_labels_confident.size == 0:
-        # Edge-case: if there are no confident examples, calling confusion_matrix() on empty
-        # inputs raises ValueError in scikit-learn>=1.8. For maintainability (and backwards-compatibility
-        # with scikit-learn<1.8 behavior), we construct an all-zero matrix here and let the existing
-        # diagonal-minimum rule below handle it (yielding an identity matrix when calibrate=False, and a
-        # diagonal label-counts matrix when calibrate=True).
-        confident_joint = np.zeros((pred_probs.shape[1], pred_probs.shape[1]), dtype=int)
-    else:
-        confident_joint = confusion_matrix(
-            y_true=true_labels_confident,
-            y_pred=labels_confident,
-            labels=range(pred_probs.shape[1]),
-        ).T
+        # Edge-case: no examples are "confident" for any class.
+        #
+        # This can happen if predicted probabilities are degenerate/uninformative (e.g., uniform or all zeros),
+        # or if thresholds are too strict. In scikit-learn>=1.8, calling confusion_matrix() with empty inputs
+        # raises ValueError, so we raise a clearer error message here.
+        raise ValueError(
+            "No confident examples were found for any class while computing the confident joint. "
+            "This can happen if `pred_probs` are degenerate/uninformative or if `thresholds` are too strict. "
+            "Provide meaningful predicted probabilities (typically each row sums to 1) and/or use less-strict "
+            "`thresholds`."
+        )
+
+    confident_joint = confusion_matrix(
+        y_true=true_labels_confident,
+        y_pred=labels_confident,
+        labels=range(pred_probs.shape[1]),
+    ).T
     # Guarantee at least one correctly labeled example is represented in every class
     np.fill_diagonal(confident_joint, confident_joint.diagonal().clip(min=1))
     if calibrate:
