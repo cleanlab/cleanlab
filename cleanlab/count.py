@@ -597,6 +597,20 @@ def compute_confident_joint(
     # true_labels_confident omits meaningless all-False rows
     true_labels_confident = true_label_guess[at_least_one_confident]
     labels_confident = labels[at_least_one_confident]
+
+    if true_labels_confident.size == 0:
+        # Edge-case: no examples are "confident" for any class.
+        #
+        # This can happen if predicted probabilities are degenerate/uninformative (e.g., uniform or all zeros),
+        # or if thresholds are too strict. In scikit-learn>=1.8, calling confusion_matrix() with empty inputs
+        # raises ValueError, so we raise a clearer error message here.
+        raise ValueError(
+            "No confident examples were found for any class while computing the confident joint. "
+            "This can happen if `pred_probs` are degenerate/uninformative or if `thresholds` are too strict. "
+            "Provide meaningful predicted probabilities (typically each row sums to 1) and/or use less-strict "
+            "`thresholds`."
+        )
+
     confident_joint = confusion_matrix(
         y_true=true_labels_confident,
         y_pred=labels_confident,

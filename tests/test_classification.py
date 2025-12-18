@@ -610,7 +610,7 @@ def test_no_fit_sample_weight(format):
 
     n = np.shape(data["true_labels_test"])[0]
     m = len(np.unique(data["true_labels_test"]))
-    pred_probs = np.zeros(shape=(n, m))
+    pred_probs = np.full(shape=(n, m), fill_value=1.0 / m)
     cl = CleanLearning(clf=Struct())
     cl.fit(
         data["X_train"],
@@ -619,6 +619,30 @@ def test_no_fit_sample_weight(format):
         noise_matrix=data["noise_matrix"],
     )
     # If we make it here, without any error:
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
+@pytest.mark.parametrize("format", list(DATA_FORMATS.keys()))
+def test_no_fit_sample_weight_degenerate_pred_probs_raise_error(format):
+    data = DATA_FORMATS[format]
+
+    class Struct:
+        def fit(self, X, y):
+            pass
+
+        def predict_proba(self):
+            pass
+
+        def predict(self, X):
+            return data["true_labels_test"]
+
+    n = np.shape(data["true_labels_test"])[0]
+    m = len(np.unique(data["true_labels_test"]))
+
+    pred_probs = np.zeros(shape=(n, m))
+    cl = CleanLearning(clf=Struct())
+    with pytest.raises(ValueError, match=r"No confident examples were found for any class"):
+        cl.fit(data["X_train"], data["true_labels_train"], pred_probs=pred_probs)
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")

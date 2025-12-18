@@ -382,6 +382,36 @@ def test_compute_confident_joint():
     assert np.shape(cj) == (data["m"], data["m"])
 
 
+@pytest.mark.parametrize("calibrate", [True, False])
+@pytest.mark.parametrize("return_indices_of_off_diagonals", [True, False])
+@pytest.mark.filterwarnings("error")
+def test_compute_confident_joint_all_zero_pred_probs_minimal_compat_shim(
+    calibrate, return_indices_of_off_diagonals
+):
+    """Regression test for scikit-learn>=1.8: confusion_matrix raises an error on empty inputs.
+
+    When pred_probs are degenerate (e.g., all zeros), no example may be deemed confident under strict
+    thresholds. Should avoid calling sklearn.metrics.confusion_matrix on empty inputs.
+
+    This test should raise a clear ValueError that helps users diagnose this edge-case.
+    """
+
+    labels = np.array([0, 0, 1, 1, 2, 2, 2])
+    K = 3
+    # Edge-case not typically encountered in practice, but we should handle it gracefully
+    pred_probs = np.zeros((len(labels), K))
+    thresholds = np.full(K, 1.0)  # Force zero confident examples regardless of how defaults are set
+
+    with pytest.raises(ValueError, match=r"No confident examples were found for any class"):
+        count.compute_confident_joint(
+            labels=labels,
+            pred_probs=pred_probs,
+            thresholds=thresholds,
+            calibrate=calibrate,
+            return_indices_of_off_diagonals=return_indices_of_off_diagonals,
+        )
+
+
 def test_estimate_latent_py_method():
     for py_method in ["cnt", "eqn", "marginal"]:
         py, nm, inv = count.estimate_latent(
