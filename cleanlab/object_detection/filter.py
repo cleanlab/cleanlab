@@ -298,7 +298,9 @@ def _calculate_ap_per_class(
     return ap_per_class_list
 
 
-def _filter_by_class(labels, predictions, class_num):
+def _filter_by_class(
+    labels: List[Dict[str, Any]], predictions: List[np.ndarray], class_num: int
+) -> Tuple[List, List]:
     """Filters bounding boxes and labels by a given class number."""
     pred_bboxes = []
     lab_bboxes = []
