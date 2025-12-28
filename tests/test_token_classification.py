@@ -168,6 +168,7 @@ def test_color_sentence(monkeypatch: pytest.MonkeyPatch, sentence, word, expecte
     monkeypatch.setattr(os, "isatty", lambda fd: True)
     monkeypatch.setattr("sys.stdout.isatty", lambda: True)
     monkeypatch.setattr("sys.stdout.fileno", lambda: 1)
+    monkeypatch.setenv("FORCE_COLOR", "1")
 
     colored = color_sentence(sentence, word)
     assert colored == expected

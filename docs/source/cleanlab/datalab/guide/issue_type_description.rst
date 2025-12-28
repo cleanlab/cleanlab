@@ -208,7 +208,7 @@ A smaller value for an example indicates that it is less common or typical in th
 ----------------------
 
 A (near) duplicate issue refers to two or more examples in a dataset that are extremely similar to each other, relative to the rest of the dataset.
-The examples flagged with this issue may be exactly duplicated, or lie atypically close together when represented as vectors (i.e. feature embeddings).
+The examples flagged with this issue may be exactly duplicated (identical), or lie atypically close together when represented as vectors (i.e. feature embeddings).
 Near duplicated examples may record the same information with different:
 
 - Abbreviations, misspellings, typos, formatting, etc. in text data.
@@ -218,7 +218,28 @@ Near duplicated examples may record the same information with different:
 Near Duplicate issues are calculated based on provided `features` or `knn_graph`.
 If you do not provide one of these arguments, this type of issue will not be considered.
 
-Datalab defines near duplicates as those examples whose distance to their nearest neighbor (in the space of provided `features`) in the dataset is less than `c * D`, where `0 < c < 1` is a small constant, and `D` is the median (over the full dataset) of such distances between each example and its nearest neighbor.
+**Detection Modes**
+
+Datalab offers two modes for duplicate detection:
+
+1. **Near Duplicate Detection** (default): Finds examples whose distance to their nearest neighbor is less than `c * D`, where `0 < c < 1` is a small constant (controlled by `threshold`), and `D` is the median distance between each example and its nearest neighbor.
+
+2. **Exact Duplicate Detection**: When `exact_duplicates_only=True`, only flags examples that are completely identical (distance = 0). This is useful for finding true duplicates rather than similar examples.
+
+**Similarity Thresholds**
+
+For datasets with cosine similarity (e.g., text embeddings), you can use `similarity_threshold` instead of distance-based thresholds:
+
+.. code-block:: python
+
+    # Find examples with >95% cosine similarity
+    lab.find_issues(features=embeddings, issue_types={
+        "near_duplicate": {
+            "metric": "cosine", 
+            "similarity_threshold": 0.95
+        }
+    })
+
 Scoring the numeric quality of an example in terms of the near duplicate issue type is done proportionally to its distance to its nearest neighbor.
 
 Including near-duplicate examples in a dataset may negatively impact a ML model's generalization performance and lead to overfitting.
@@ -712,10 +733,37 @@ Duplicate Issue Parameters
 .. code-block:: python
 
     near_duplicate_kwargs = {
-    	"metric": # string or callable representing the distance metric used in nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary,
+    	"metric": # string or callable representing the distance metric used in nearest neighbors search (e.g., "euclidean", "cosine")
     	"k": # integer representing the number of nearest neighbors for nearest neighbors search (passed as argument to `NearestNeighbors`), if necessary,
-    	"threshold": # `threshold` argument to constructor of `NearDuplicateIssueManager()`. Non-negative floating value that determines the maximum distance between two examples to be considered outliers, relative to the median distance to the nearest neighbors,
+    	"threshold": # Non-negative floating value that determines the maximum distance between two examples to be considered duplicates, relative to the median distance to the nearest neighbors (default: 0.13),
+    	"similarity_threshold": # Floating value between 0 and 1 for cosine similarity threshold. If provided with metric="cosine", overrides distance threshold. Examples with similarity >= this value are considered duplicates,
+    	"exact_duplicates_only": # Boolean flag. If True, only flags examples that are exactly identical (distance = 0). Useful for finding true duplicates rather than similar examples (default: False),
     }
+
+**Parameter Examples:**
+
+.. code-block:: python
+
+    # Example 1: Find exact duplicates only
+    lab.find_issues(features=embeddings, issue_types={
+        "near_duplicate": {"exact_duplicates_only": True}
+    })
+
+    # Example 2: Use cosine similarity threshold for text embeddings  
+    lab.find_issues(features=text_embeddings, issue_types={
+        "near_duplicate": {
+            "metric": "cosine",
+            "similarity_threshold": 0.90  # 90% similarity
+        }
+    })
+
+    # Example 3: Custom distance threshold
+    lab.find_issues(features=embeddings, issue_types={
+        "near_duplicate": {
+            "metric": "euclidean", 
+            "threshold": 0.05  # Stricter than default
+        }
+    })
 
 .. attention::
 
