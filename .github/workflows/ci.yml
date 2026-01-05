@@ -12,7 +12,7 @@ jobs:
       matrix:
         os:
           - ubuntu-22.04
-          - macos-13
+          - macos-latest
           - windows-latest
         python:
           - "3.10"
