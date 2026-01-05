@@ -1,4 +1,5 @@
 """This script fetches minimum dependencies of cleanlab package and writes them to the file requirements-min.txt"""
+
 import json
 
 

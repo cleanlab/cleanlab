@@ -1,20 +1,11 @@
-# Python dependencies for development
-coverage != 6.3, != 6.3.*
-datasets<4.0.0
-hypothesis
-mypy
-pandas-stubs
+# Python dependencies for development (all dependencies)
+# This file now includes both core and ML framework dependencies
+# For lighter installs, see:
+# - requirements-test-core.txt (lightweight core testing)  
+# - requirements-test-ml.txt (includes ML frameworks)
+
+# Include all ML framework dependencies
+-r requirements-test-ml.txt
+
+# Additional dev-only tools
 pre-commit
-psutil
-pytest~=7.4
-pytest-cov
-requests
-scipy
-skorch
-tensorflow<2.16
-torch
-torchvision
-typing-extensions>=4.8.0
-wget
-matplotlib
-pillow

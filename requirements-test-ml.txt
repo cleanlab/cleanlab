@@ -1,0 +1,13 @@
+# ML framework testing dependencies
+# Include core test deps
+-r requirements-test-core.txt
+
+# Heavy ML frameworks
+tensorflow<2.16
+torch
+torchvision
+skorch
+datasets<4.0.0
+
+# Additional tools for ML framework tests
+pre-commit
