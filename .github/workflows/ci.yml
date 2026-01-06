@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-22.04
+          - ubuntu-latest
           - macos-latest
           - windows-latest
         python:
@@ -42,8 +42,8 @@ jobs:
           version: "v0.7.3"
   
   test-ml-frameworks:
-    name: "ML Framework Tests: Python ${{ matrix.python }} on ubuntu-22.04"
-    runs-on: ubuntu-22.04
+    name: "ML Framework Tests: Python ${{ matrix.python }} on ubuntu-latest"
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python:
@@ -71,7 +71,7 @@ jobs:
         run: pytest --verbose --maxfail=30 tests/test_frameworks.py tests/test_model_pytorch_cnn.py
   test-without-extras-min-versions:
     name: Test without optional dependencies and with minimum compatible versions of dependencies
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -94,7 +94,7 @@ jobs:
           pytest tests/test_multilabel_classification.py tests/test_multiannotator.py tests/test_filter_count.py
   typecheck:
     name: Type check
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -109,13 +109,13 @@ jobs:
         run: mypy --install-types --non-interactive cleanlab
   fmt:
     name: Format
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: psf/black@stable
   flake8:
     name: Check for unused/wildcard imports
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -127,7 +127,7 @@ jobs:
         run: flake8 cleanlab tests
   nblint:
     name: Lint Notebooks
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: cleanlab/nblint-action@v1
