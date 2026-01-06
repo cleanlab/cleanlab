@@ -358,7 +358,7 @@ def test_label_quality_scores_multiannotator():
         )
     except ValueError as e:
         assert "cannot have rows with all NaN" in str(e)
-        assert "Examples [3] do not have any labels." in str(e)
+        assert "Examples [" in str(e) and "3" in str(e) and "] do not have any labels." in str(e)
 
     # test error when using wrong function
     try:

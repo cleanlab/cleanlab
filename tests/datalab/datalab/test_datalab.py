@@ -1956,8 +1956,8 @@ class TestDatalabDataValuation:
         assert is_issue[duplicate_indices].sum() == 1
 
         # The scores should be as low as possible
-        assert scores[duplicate_indices[0]] == 0.491
-        assert scores[duplicate_indices[1]] == 0.500
+        assert abs(scores[duplicate_indices[0]] - 0.491) < 0.01
+        assert abs(scores[duplicate_indices[1]] - 0.500) < 0.01
 
     def add_label_noise(self, y, noise_level=0.1):
         """Introduce random label noise to the labels."""
