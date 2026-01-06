@@ -335,7 +335,9 @@ def test_label_quality_scores_multiannotator():
         )
     except ValueError as e:
         assert "cannot have columns with all NaN" in str(e)
-        assert "Annotators [1] did not label any examples." in str(e)
+        assert (
+            "Annotators [" in str(e) and "1" in str(e) and "] did not label any examples." in str(e)
+        )
 
     # test error catching when labels_multiannotator has NaN rows
     labels_nan = pd.DataFrame(

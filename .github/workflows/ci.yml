@@ -36,7 +36,7 @@ jobs:
       - name: Install core test dependencies
         run: pip install --no-cache-dir -r requirements-test-core.txt
       - name: Run core tests (excluding ML framework tests)
-        run: pytest --verbose --maxfail=3 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py
+        run: pytest --verbose --maxfail=30 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py
       - uses: codecov/codecov-action@v3
         with:
           version: "v0.7.3"
@@ -68,7 +68,7 @@ jobs:
       - name: Install ML framework dependencies
         run: pip install --no-cache-dir -r requirements-test-ml.txt
       - name: Run ML framework tests
-        run: pytest --verbose --maxfail=3 tests/test_frameworks.py tests/test_model_pytorch_cnn.py
+        run: pytest --verbose --maxfail=30 tests/test_frameworks.py tests/test_model_pytorch_cnn.py
   test-without-extras-min-versions:
     name: Test without optional dependencies and with minimum compatible versions of dependencies
     runs-on: ubuntu-22.04
