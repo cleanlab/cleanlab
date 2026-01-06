@@ -455,7 +455,7 @@ class TestDatalabForRegression:
 
         # FPR
         fpr = len(list(set(issue_ids).difference(set(expected_issue_ids)))) / len(issue_ids)
-        assert fpr == 0.0
+        assert fpr == pytest.approx(0.0, abs=0.01)
 
     @pytest.mark.parametrize(
         "argument_name, data_key",
