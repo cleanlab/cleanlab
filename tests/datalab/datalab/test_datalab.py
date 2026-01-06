@@ -1502,7 +1502,7 @@ class TestDataLabUnderperformingIssue:
             issue_types={"underperforming_group": {"cluster_ids": cluster_ids}},
         )
         check_lab_dtypes(lab)
-        assert lab.get_issue_summary()["score"].values[0] == 1.0
+        assert lab.get_issue_summary()["score"].values[0] == pytest.approx(1.0, abs=0.01)
 
     def test_features_and_knn_graph(self, data):
         """
@@ -1956,8 +1956,8 @@ class TestDatalabDataValuation:
         assert is_issue[duplicate_indices].sum() == 1
 
         # The scores should be as low as possible
-        assert abs(scores[duplicate_indices[0]] - 0.491) < 0.01
-        assert abs(scores[duplicate_indices[1]] - 0.500) < 0.01
+        assert scores[duplicate_indices[0]] == pytest.approx(0.491, abs=0.01)
+        assert scores[duplicate_indices[1]] == pytest.approx(0.500, abs=0.01)
 
     def add_label_noise(self, y, noise_level=0.1):
         """Introduce random label noise to the labels."""

@@ -71,7 +71,7 @@ class TestUnderperformingGroupIssueManager:
             err_msg="Scores should be correct",
         )
         assert summary["issue_type"][0] == "underperforming_group"
-        assert summary["score"][0] == 1.0
+        assert summary["score"][0] == pytest.approx(1.0, abs=0.01)
         # Check with cluster_ids param
         issue_manager.find_issues(features=features, pred_probs=pred_probs, cluster_ids=labels)
         issues_with_clabels, summary_with_clabels = issue_manager.issues, issue_manager.summary

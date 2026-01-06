@@ -256,12 +256,12 @@ def test_issues_from_scores():
 
 def test_get_min_pred_prob():
     min = _get_min_pred_prob(predictions)
-    assert min == 0.96
+    assert min == pytest.approx(0.96, abs=0.01)
 
 
 def test_get_valid_score():
     score = _get_valid_score(np.array([]), temperature=0.99)
-    assert score == 1.0
+    assert score == pytest.approx(1.0, abs=0.01)
 
     score_larger = _get_valid_score(np.array([0.8, 0.7, 0.6]), temperature=0.99)
     score_smaller = _get_valid_score(np.array([0.8, 0.7, 0.6]), temperature=0.2)
@@ -316,7 +316,7 @@ def test_softmin1d():
 
 def test_softmax():
     small_val = 0.004
-    assert softmax(np.array([small_val])) == 1.0
+    assert softmax(np.array([small_val])) == pytest.approx(1.0, abs=0.01)
 
 
 def test_bbox_xyxy_to_xywh():

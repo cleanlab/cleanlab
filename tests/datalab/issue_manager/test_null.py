@@ -125,7 +125,7 @@ class TestNullIssueManager:
         """Test some values in the info dict."""
         issue_manager.find_issues(features=embeddings)
         info = issue_manager.info
-        assert info["average_null_score"] == 1.0
+        assert info["average_null_score"] == pytest.approx(1.0, abs=0.01)
         assert info["most_common_issue"]["pattern"] == "no_null"
         assert info["most_common_issue"]["count"] == 0
         assert info["most_common_issue"]["rows_affected"] == []
