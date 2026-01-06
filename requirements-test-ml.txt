@@ -7,7 +7,7 @@ tensorflow>=2.12,<2.16
 torch
 torchvision
 skorch
-datasets<4.0.0
+datasets
 
 # Additional tools for ML framework tests
 pre-commit
