@@ -3,7 +3,7 @@
 -r requirements-test-core.txt
 
 # Heavy ML frameworks
-tensorflow>=2.12,<2.16
+tensorflow>=2.12
 torch
 torchvision
 skorch
