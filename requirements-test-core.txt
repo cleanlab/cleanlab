@@ -3,7 +3,7 @@ coverage != 6.3, != 6.3.*
 hypothesis
 mypy
 pandas-stubs
-pytest~=7.4
+pytest>=7.4
 pytest-cov
 requests
 scipy
