@@ -40,11 +40,6 @@ import keras  # type: ignore
 import numpy as np
 from typing import Callable, Optional
 
-try:
-    from sklearn.utils import Tags
-except ImportError:
-    # Fallback for scikit-learn < 1.6.0
-    Tags = None
 
 class KerasWrapperModel:
     """Takes in a callable function to instantiate a Keras Model (using Keras functional API)
@@ -103,15 +98,6 @@ class KerasWrapperModel:
         """Set the parameters of the Keras model."""
         self.params.update(params)
         return self
-
-    def __sklearn_tags__(self):
-        """Provide sklearn tags for compatibility with scikit-learn>=1.6.0."""
-        if Tags is None:
-            # Fallback for scikit-learn < 1.6.0
-            return {}
-        # Return default Tags object - let sklearn use its defaults
-        # Since we don't inherit from BaseEstimator, we create a new Tags instance
-        return Tags()
 
     def fit(self, X, y=None, **kwargs):
         """Trains a Keras model.
@@ -223,15 +209,6 @@ class KerasWrapperSequential:
         """Set the parameters of the Keras model."""
         self.params.update(params)
         return self
-
-    def __sklearn_tags__(self):
-        """Provide sklearn tags for compatibility with scikit-learn>=1.6.0."""
-        if Tags is None:
-            # Fallback for scikit-learn < 1.6.0
-            return {}
-        # Return default Tags object - let sklearn use its defaults
-        # Since we don't inherit from BaseEstimator, we create a new Tags instance
-        return Tags()
 
     def fit(self, X, y=None, **kwargs):
         """Trains a Sequential Keras model.
