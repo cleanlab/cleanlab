@@ -603,18 +603,16 @@ def test_no_fit_sample_weight(format):
             pass
 
         def predict_proba(self, X):
-            # Return dummy probabilities with proper shape
             n_samples = len(X)
             n_classes = len(np.unique(data["true_labels_train"]))
             return np.ones((n_samples, n_classes)) / n_classes
 
         def predict(self, X):
-            # Return dummy predictions with proper shape
             return np.zeros(len(X), dtype=int)
 
     n = np.shape(data["true_labels_test"])[0]
     m = len(np.unique(data["true_labels_test"]))
-    pred_probs = np.zeros(shape=(n, m))
+    pred_probs = np.ones((n, m)) / m
     cl = CleanLearning(clf=Struct())
     cl.fit(
         data["X_train"],
