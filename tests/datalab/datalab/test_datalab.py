@@ -699,16 +699,16 @@ class TestDatalabIssueManagerInteraction:
     def test_custom_issue_manager_not_registered(self, lab):
         """Test that a custom issue manager that is not registered will not be used."""
         # Mock registry dictionary
-        mock_registry = MagicMock()
-        mock_registry.__getitem__.side_effect = KeyError("issue type not registered")
+        mock_task_dict = MagicMock()
+        mock_task_dict.__contains__.return_value = False
+        mock_registry = {Task.CLASSIFICATION: mock_task_dict}
 
         with patch("cleanlab.datalab.internal.issue_manager_factory.REGISTRY", mock_registry):
             with pytest.raises(ValueError) as excinfo:
                 lab.find_issues(issue_types={"custom_issue": {}})
 
-                assert "issue type not registered" in str(excinfo.value)
-
-            assert mock_registry.__getitem__.called_once_with("custom_issue")
+            assert "Invalid issue type: custom_issue for task classification" in str(excinfo.value)
+            mock_task_dict.__contains__.assert_called_once_with("custom_issue")
 
             assert lab.issues.empty
             assert lab.issue_summary.empty
