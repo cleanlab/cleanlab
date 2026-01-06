@@ -738,10 +738,6 @@ def test_1D_formats():
 is_python_311 = sys.version_info.major == 3 and sys.version_info.minor == 11
 
 # This warning should be ignored as in Python 3.11, the sre_constants module has been deprecated.
-# At the time of writing this, cleanlab supports Python 3.8-3.11. This warning is raised by
-# tensorflow <2.14.0, which imports sre_constants. This warning is not relevant to cleanlab.
-# Once Python 3.8 reaches EOL, we may remove this warning filter as we can set the tensorflow
-# dev-dependency to a version that does not raise this warning (2.14 or higher).
 if is_python_311:
     sre_deprecation_pytestmark = pytest.mark.filterwarnings(
         "ignore:module 'sre_constants' is deprecated"

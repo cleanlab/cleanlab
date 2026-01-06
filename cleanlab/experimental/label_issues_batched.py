@@ -674,6 +674,7 @@ def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
     """
     Helper function for `_update_num_label_issues` multiprocessing without calibration.
     """
+    global labels_shared, pred_probs_shared, adj_confident_thresholds_shared
     ind = arg[0]
     thorough = arg[1]
     label = labels_shared[ind]
@@ -704,6 +705,7 @@ def _compute_num_issues_calibrated(arg: Tuple[np.ndarray, bool]) -> Tuple[Any, i
     """
     Helper function for `_update_num_label_issues` multiprocessing with calibration.
     """
+    global labels_shared, pred_probs_shared, adj_confident_thresholds_shared
     ind = arg[0]
     thorough = arg[1]
     label = labels_shared[ind]

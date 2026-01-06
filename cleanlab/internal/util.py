@@ -423,16 +423,6 @@ def train_val_split(
         except Exception:
             pass
     if not split_completed:
-        try:  # check if X is tensorflow Dataset object using lazy import
-            import tensorflow
-
-            if isinstance(X, tensorflow.data.Dataset):  # special splitting for tensorflow Dataset
-                X_train = extract_indices_tf(X, train_idx, allow_shuffle=True)
-                X_holdout = extract_indices_tf(X, holdout_idx, allow_shuffle=False)
-                split_completed = True
-        except Exception:
-            pass
-    if not split_completed:
         try:
             X_train, X_holdout = X[train_idx], X[holdout_idx]
         except Exception:
@@ -474,113 +464,9 @@ def subset_data(X, mask) -> DatasetLike:
     except Exception:
         pass
     try:
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore")
-            import tensorflow
-
-            if isinstance(X, tensorflow.data.Dataset):  # special splitting for tensorflow Dataset
-                mask_idx = np.nonzero(mask)[0]
-                return extract_indices_tf(X, mask_idx, allow_shuffle=True)
-    except Exception:
-        pass
-    try:
         return X[mask]
     except Exception:
         raise TypeError("Data features X must be subsettable with boolean mask array: X[mask]")
-
-
-def extract_indices_tf(X, idx, allow_shuffle) -> DatasetLike:
-    """Extracts subset of tensorflow dataset corresponding to examples at particular indices.
-
-    Args:
-      X : ``tensorflow.data.Dataset``
-
-      idx : array_like of integer indices corresponding to examples to keep in the dataset.
-        Returns subset of examples in the dataset X that correspond to these indices.
-
-      allow_shuffle : bool
-        Whether or not shuffling of this data is allowed (eg. must turn off shuffling for validation data).
-
-    Note: this code only works on Datasets in which:
-    * ``shuffle()`` has been called before ``batch()``,
-    * no other order-destroying operation (eg. ``repeat()``) has been applied.
-
-    Indices are extracted from the original version of Dataset (before shuffle was called rather than in shuffled order).
-    """
-    import tensorflow
-
-    idx = np.asarray(idx)
-    idx = np.int64(idx)  # needed for Windows (reconsider if necessary in the future)
-
-    og_batch_size = None
-    if hasattr(X, "_batch_size"):
-        og_batch_size = int(X._batch_size)
-        X = X.unbatch()
-
-    unshuffled_X, buffer_size = unshuffle_tensorflow_dataset(X)
-    if unshuffled_X is not None:
-        X = unshuffled_X
-
-    # Create index,value pairs in the dataset (adds extra indices that werent there before)
-    X = X.enumerate()
-    keys_tensor = tensorflow.constant(idx)
-    vals_tensor = tensorflow.ones_like(keys_tensor)  # Ones will be casted to True
-    table = tensorflow.lookup.StaticHashTable(
-        tensorflow.lookup.KeyValueTensorInitializer(keys_tensor, vals_tensor),
-        default_value=0,
-    )  # If index not in table, return 0
-
-    def hash_table_filter(index, value):
-        table_value = table.lookup(index)  # 1 if index in arr, else 0
-        index_in_arr = tensorflow.cast(table_value, tensorflow.bool)  # 1 -> True, 0 -> False
-        return index_in_arr
-
-    # Filter the dataset, then drop the added indices
-    X_subset = X.filter(hash_table_filter).map(lambda idx, value: value)
-
-    if (unshuffled_X is not None) and allow_shuffle:
-        X_subset = X_subset.shuffle(buffer_size=buffer_size)
-
-    if og_batch_size is not None:  # reset batch size to original value
-        X_subset = X_subset.batch(og_batch_size)
-
-    return X_subset
-
-
-def unshuffle_tensorflow_dataset(X) -> tuple:
-    """Applies iterative inverse transformations to dataset to get version before ShuffleDataset was created.
-    If no ShuffleDataset is in the transformation-history of this dataset, returns None.
-
-    Parameters
-    ----------
-    X : a tensorflow Dataset that may have been created via series of transformations, one being shuffle.
-
-    Returns
-    -------
-    Tuple (pre_X, buffer_size) where:
-      pre_X : Dataset that was previously transformed to get ShuffleDataset (or None),
-      buffer_size : int `buffer_size` previously used in ShuffleDataset,
-        or ``len(pre_X)`` if buffer_size cannot be determined, or None if no ShuffleDataset found.
-    """
-    try:
-        from tensorflow.python.data.ops.dataset_ops import ShuffleDataset
-
-        X_inputs = [X]
-        while len(X_inputs) == 1:
-            pre_X = X_inputs[0]
-            if isinstance(pre_X, ShuffleDataset):
-                buffer_size = len(pre_X)
-                if hasattr(pre_X, "_buffer_size"):
-                    buffer_size = pre_X._buffer_size.numpy()
-                X_inputs = (
-                    pre_X._inputs()
-                )  # get the dataset that was transformed to create the ShuffleDataset
-                if len(X_inputs) == 1:
-                    return (X_inputs[0], buffer_size)
-            X_inputs = pre_X._inputs()  # returns list of input datasets used to create X
-    except Exception:
-        pass
-    return (None, None)
 
 
 def is_torch_dataset(X) -> bool:
@@ -591,18 +477,7 @@ def is_torch_dataset(X) -> bool:
             return True
     except Exception:
         pass
-    return False  # assumes this cannot be torch dataset if torch cannot be imported
-
-
-def is_tensorflow_dataset(X) -> bool:
-    try:
-        import tensorflow
-
-        if isinstance(X, tensorflow.data.Dataset):
-            return True
-    except Exception:
-        pass
-    return False  # assumes this cannot be tensorflow dataset if tensorflow cannot be imported
+    return False
 
 
 def csr_vstack(a, b) -> DatasetLike:
