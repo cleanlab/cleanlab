@@ -21,12 +21,16 @@ if os.name == "nt":  # check if we are on Windows
 import tensorflow as tf
 import torch
 import skorch
+import sklearn
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV
 
 from cleanlab.classification import CleanLearning
 from cleanlab.models.keras import KerasWrapperSequential, KerasWrapperModel
+
+# Version check for sklearn compatibility
+uses_sklearn_ge_1_6_0 = tuple(map(int, sklearn.__version__.split(".")[:2])) >= (1, 6)
 
 
 def dataset_w_errors():
@@ -211,8 +215,11 @@ def test_tensorflow_rarelabel(batch_size, data=DATA_RARE_LABEL, hidden_units=8):
 
 
 @pytest.mark.slow
-# TEMPORARILY DISABLED: test_keras_sklearn_compatability fails with scikit-learn >=1.6.0
-def skip_test_keras_sklearn_compatability(data=DATA, hidden_units=32):
+@pytest.mark.skipif(
+    uses_sklearn_ge_1_6_0,
+    reason="Test is skipped because sklearn>=1.6.0 is installed, which introduced __sklearn_tags__ that breaks KerasWrapperSequential compatibility with sklearn pipelines and GridSearchCV.",
+)
+def test_keras_sklearn_compatability(data=DATA, hidden_units=32):
     # test pipeline on Sequential API
     model = KerasWrapperSequential(
         [
