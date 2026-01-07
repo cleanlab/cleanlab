@@ -95,18 +95,3 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
 
-[tool.mypy]
-python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
-
-# Per-module configurations for optional dependencies
-[[tool.mypy.overrides]]
-module = [
-    "torch",
-    "torch.*", 
-    "torchvision",
-    "torchvision.*"
-]
-ignore_missing_imports = true
