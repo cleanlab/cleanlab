@@ -9,7 +9,6 @@ import warnings
 # pytest.mark.filterwarnings is unable to catch filterbuffers library DeprecationWarning
 warnings.filterwarnings(action="ignore", category=DeprecationWarning)
 
-import sys
 import os
 from copy import deepcopy
 import random
