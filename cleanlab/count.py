@@ -597,11 +597,18 @@ def compute_confident_joint(
     # true_labels_confident omits meaningless all-False rows
     true_labels_confident = true_label_guess[at_least_one_confident]
     labels_confident = labels[at_least_one_confident]
-    confident_joint = confusion_matrix(
-        y_true=true_labels_confident,
-        y_pred=labels_confident,
-        labels=range(pred_probs.shape[1]),
-    ).T
+
+    # Handle case where no examples are confident (sklearn >=1.8.0 compatibility)
+    # In sklearn <1.8.0, confusion_matrix with empty inputs returned zeros matrix
+    # In sklearn >=1.8.0, it raises ValueError - we emulate the old behavior
+    if len(true_labels_confident) == 0:
+        confident_joint = np.zeros((pred_probs.shape[1], pred_probs.shape[1]), dtype=int)
+    else:
+        confident_joint = confusion_matrix(
+            y_true=true_labels_confident,
+            y_pred=labels_confident,
+            labels=range(pred_probs.shape[1]),
+        ).T
     # Guarantee at least one correctly labeled example is represented in every class
     np.fill_diagonal(confident_joint, confident_joint.diagonal().clip(min=1))
     if calibrate:
