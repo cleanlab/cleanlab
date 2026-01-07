@@ -1,10 +1,22 @@
-__version__ = "2.7.1"
+__version__ = "2.8.0"
 
-# 2.7.2 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
+# 2.8.1 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
 
 # ------------------------------------------------
 # | PREVIOUS MAJOR VERSION RELEASE NOTES SUMMARY |
 # ------------------------------------------------
+
+# 2.8.0 - Streamlined Dependencies and Enhanced Compatibility
+#
+#   Major changes include:
+#   - Removed TensorFlow/Keras integration to improve Python 3.12+ compatibility
+#   - Removed cleanlab.models.keras module (KerasWrapperModel and KerasWrapperSequential classes)
+#   - Removed TensorFlow dataset support from internal utilities
+#
+#   Migration guidance:
+#   - For Keras model integration, use SciKeras: https://github.com/adriangb/scikeras
+#   - For TensorFlow datasets, convert to numpy arrays before using cleanlab
+#   - All core cleanlab functionality remains unchanged and fully functional
 
 # 2.7.0 - Broadening Data Quality Checks and ML Workflows
 #
