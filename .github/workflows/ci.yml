@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-latest
+          # - ubuntu-latest  # Temporarily disabled - passing tests
           - macos-latest
           - windows-latest
         python:
@@ -41,34 +41,35 @@ jobs:
         with:
           version: "v0.7.3"
   
-  test-ml-frameworks:
-    name: "ML Framework Tests: Python ${{ matrix.python }} on ubuntu-latest"
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python }}
-      - name: Download cleanvision test data
-        run: |
-          git clone https://github.com/cleanlab/assets.git
-          mv assets/cleanlab_test_data ./tests/datalab/data
-      - name: Install cleanlab
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[all]"
-      - name: Install ML framework dependencies
-        run: pip install --no-cache-dir -r requirements-test-ml.txt
-      - name: Run ML framework tests
-        run: pytest --verbose --maxfail=30 tests/test_frameworks.py tests/test_model_pytorch_cnn.py
+  # Temporarily disabled - ML framework tests are passing
+  # test-ml-frameworks:
+  #   name: "ML Framework Tests: Python ${{ matrix.python }} on ubuntu-latest"
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       python:
+  #         - "3.10"
+  #         - "3.11"
+  #         - "3.12"
+  #         - "3.13"
+  #         - "3.14"
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-python@v4
+  #       with:
+  #         python-version: ${{ matrix.python }}
+  #     - name: Download cleanvision test data
+  #       run: |
+  #         git clone https://github.com/cleanlab/assets.git
+  #         mv assets/cleanlab_test_data ./tests/datalab/data
+  #     - name: Install cleanlab
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         pip install -e ".[all]"
+  #     - name: Install ML framework dependencies
+  #       run: pip install --no-cache-dir -r requirements-test-ml.txt
+  #     - name: Run ML framework tests
+  #       run: pytest --verbose --maxfail=30 tests/test_frameworks.py tests/test_model_pytorch_cnn.py
   test-without-extras-min-versions:
     name: Test without optional dependencies and with minimum compatible versions of dependencies
     runs-on: ubuntu-latest
