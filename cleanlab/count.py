@@ -38,7 +38,6 @@ from cleanlab.internal.util import (
     clip_values,
     get_num_classes,
     get_unique_classes,
-    is_tensorflow_dataset,
     is_torch_dataset,
     round_preserving_row_totals,
     train_val_split,
@@ -1005,8 +1004,8 @@ def estimate_confident_joint_and_cv_pred_proba(
 
         # dict with keys: which classes missing, values: index of holdout data from this class that is duplicated:
         missing_class_inds = {}
-        is_tf_or_torch_dataset = is_torch_dataset(X) or is_tensorflow_dataset(X)
-        if not is_tf_or_torch_dataset:
+        is_torch_dataset_flag = is_torch_dataset(X)
+        if not is_torch_dataset_flag:
             # Ensure no missing classes in training set.
             train_cv_classes = set(s_train_cv)
             all_classes = set(range(num_classes))
