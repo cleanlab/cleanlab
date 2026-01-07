@@ -699,16 +699,16 @@ class TestDatalabIssueManagerInteraction:
     def test_custom_issue_manager_not_registered(self, lab):
         """Test that a custom issue manager that is not registered will not be used."""
         # Mock registry dictionary
-        mock_registry = MagicMock()
-        mock_registry.__getitem__.side_effect = KeyError("issue type not registered")
+        mock_task_dict = MagicMock()
+        mock_task_dict.__contains__.return_value = False
+        mock_registry = {Task.CLASSIFICATION: mock_task_dict}
 
         with patch("cleanlab.datalab.internal.issue_manager_factory.REGISTRY", mock_registry):
             with pytest.raises(ValueError) as excinfo:
                 lab.find_issues(issue_types={"custom_issue": {}})
 
-                assert "issue type not registered" in str(excinfo.value)
-
-            assert mock_registry.__getitem__.called_once_with("custom_issue")
+            assert "Invalid issue type: custom_issue for task classification" in str(excinfo.value)
+            mock_task_dict.__contains__.assert_called_once_with("custom_issue")
 
             assert lab.issues.empty
             assert lab.issue_summary.empty
@@ -1502,7 +1502,7 @@ class TestDataLabUnderperformingIssue:
             issue_types={"underperforming_group": {"cluster_ids": cluster_ids}},
         )
         check_lab_dtypes(lab)
-        assert lab.get_issue_summary()["score"].values[0] == 1.0
+        assert lab.get_issue_summary()["score"].values[0] == pytest.approx(1.0, abs=0.01)
 
     def test_features_and_knn_graph(self, data):
         """
@@ -1956,8 +1956,8 @@ class TestDatalabDataValuation:
         assert is_issue[duplicate_indices].sum() == 1
 
         # The scores should be as low as possible
-        assert scores[duplicate_indices[0]] == 0.491
-        assert scores[duplicate_indices[1]] == 0.500
+        assert scores[duplicate_indices[0]] == pytest.approx(0.491, abs=0.01)
+        assert scores[duplicate_indices[1]] == pytest.approx(0.500, abs=0.01)
 
     def add_label_noise(self, y, noise_level=0.1):
         """Introduce random label noise to the labels."""

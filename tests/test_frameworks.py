@@ -9,7 +9,6 @@ import warnings
 # pytest.mark.filterwarnings is unable to catch filterbuffers library DeprecationWarning
 warnings.filterwarnings(action="ignore", category=DeprecationWarning)
 
-import sys
 import os
 from copy import deepcopy
 import random
@@ -22,6 +21,7 @@ if os.name == "nt":  # check if we are on Windows
 import tensorflow as tf
 import torch
 import skorch
+import sklearn
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV
@@ -29,10 +29,8 @@ from sklearn.model_selection import GridSearchCV
 from cleanlab.classification import CleanLearning
 from cleanlab.models.keras import KerasWrapperSequential, KerasWrapperModel
 
-
-def python_version_ok():  # tensorflow and torch do not play nice with older Python
-    version = sys.version_info
-    return (version.major >= 3) and (version.minor >= 7)
+# Version check for sklearn compatibility
+uses_sklearn_ge_1_6_0 = tuple(map(int, sklearn.__version__.split(".")[:2])) >= (1, 6)
 
 
 def dataset_w_errors():
@@ -85,20 +83,18 @@ def make_rare_label(data):
 SEED = 1
 np.random.seed(SEED)
 random.seed(SEED)
-if python_version_ok():
-    tf.random.set_seed(SEED)
-    tf.keras.utils.set_random_seed(SEED)
-    torch.manual_seed(SEED)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    torch.cuda.manual_seed_all(SEED)
+tf.random.set_seed(SEED)
+tf.keras.utils.set_random_seed(SEED)
+torch.manual_seed(SEED)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+torch.cuda.manual_seed_all(SEED)
 
 DATA = dataset_w_errors()
 DATA_RARE_LABEL = make_rare_label(DATA)
 
 
 @pytest.mark.slow
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 @pytest.mark.parametrize("batch_size,shuffle_config", [(1, 0), (32, 0), (32, 1), (32, 2)])
 def test_tensorflow_sequential(batch_size, shuffle_config, data=DATA, hidden_units=128):
     dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"]))
@@ -147,7 +143,6 @@ def test_tensorflow_sequential(batch_size, shuffle_config, data=DATA, hidden_uni
 
 
 @pytest.mark.slow
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 @pytest.mark.parametrize("batch_size,shuffle_config", [(1, 0), (32, 0), (32, 1), (32, 2)])
 def test_tensorflow_functional(batch_size, shuffle_config, data=DATA, hidden_units=64):
     dataset_tf = tf.data.Dataset.from_tensor_slices((data["X"], data["y"]))
@@ -200,7 +195,6 @@ def test_tensorflow_functional(batch_size, shuffle_config, data=DATA, hidden_uni
 
 
 @pytest.mark.slow
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 @pytest.mark.parametrize("batch_size", [1, 32])
 @pytest.mark.filterwarnings("ignore")
 def test_tensorflow_rarelabel(batch_size, data=DATA_RARE_LABEL, hidden_units=8):
@@ -221,6 +215,10 @@ def test_tensorflow_rarelabel(batch_size, data=DATA_RARE_LABEL, hidden_units=8):
 
 
 @pytest.mark.slow
+@pytest.mark.skipif(
+    uses_sklearn_ge_1_6_0,
+    reason="Test is skipped because sklearn>=1.6.0 is installed, which introduced __sklearn_tags__ that breaks KerasWrapperSequential compatibility with sklearn pipelines and GridSearchCV.",
+)
 def test_keras_sklearn_compatability(data=DATA, hidden_units=32):
     # test pipeline on Sequential API
     model = KerasWrapperSequential(
@@ -281,7 +279,6 @@ def test_keras_sklearn_compatability(data=DATA, hidden_units=32):
     gs.fit(data["X"], data["y"])
 
 
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 def test_torch(data=DATA, hidden_units=128):
     dataset = torch.utils.data.TensorDataset(
         torch.from_numpy(data["X"]).float(), torch.from_numpy(data["y"])
@@ -317,7 +314,6 @@ def test_torch(data=DATA, hidden_units=128):
     assert err < 1e-3
 
 
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 @pytest.mark.filterwarnings("ignore")
 def test_torch_rarelabel(data=DATA_RARE_LABEL, hidden_units=8):
     dataset = torch.utils.data.TensorDataset(

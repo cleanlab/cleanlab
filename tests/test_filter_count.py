@@ -1363,3 +1363,69 @@ def test_does_not_flag_correct_examples(filter_by):
     assert (
         any(label_issues_mask[matching_mask]) == False
     )  # make sure none of these are flagged as label error
+
+
+def test_compute_confident_joint_no_confident_examples():
+    """Test compute_confident_joint with no confident examples (sklearn >=1.8.0 compatibility).
+
+    This test ensures that when no examples are confident (all predicted probabilities
+    are below thresholds), the function returns a proper zeros matrix instead of
+    raising a ValueError, which would happen in sklearn >=1.8.0 without the fix.
+    """
+    # Create scenario where no examples are confident
+    labels = np.array([0, 1, 2, 0, 1])
+    pred_probs = np.array(
+        [
+            [0.1, 0.1, 0.8],
+            [0.2, 0.2, 0.6],
+            [0.3, 0.3, 0.4],
+            [0.1, 0.1, 0.8],
+            [0.2, 0.2, 0.6],
+        ]
+    )
+    thresholds = np.array([0.9, 0.9, 0.9])
+
+    # This should work without raising ValueError (sklearn >=1.8.0 fix)
+    confident_joint = count.compute_confident_joint(
+        labels=labels,
+        pred_probs=pred_probs,
+        thresholds=thresholds,
+        calibrate=False,  # Disable calibration for this test
+    )
+
+    assert confident_joint.shape == (3, 3)
+    assert all(confident_joint.diagonal() >= 1)
+
+    # Off-diagonal should be 0 since no confident examples exist
+    off_diagonal_sum = np.sum(confident_joint) - np.sum(confident_joint.diagonal())
+    assert off_diagonal_sum == 0
+
+
+def test_compute_confident_joint_empty_arrays_edge_case():
+    """Test compute_confident_joint with edge case that produces empty confident arrays.
+
+    This is a more direct test of the sklearn >=1.8.0 compatibility fix where
+    we force the at_least_one_confident mask to be all False, resulting in
+    empty true_labels_confident and labels_confident arrays.
+    """
+    # Create minimal case: 2 classes, 3 examples
+    labels = np.array([0, 1, 0])
+    pred_probs = np.array(
+        [
+            [0.5, 0.5],
+            [0.5, 0.5],
+            [0.5, 0.5],
+        ]
+    )
+    # Set thresholds slightly above the predictions so nothing is confident
+    thresholds = np.array([0.51, 0.51])
+
+    # This would fail in sklearn >=1.8.0 without the fix
+    confident_joint = count.compute_confident_joint(
+        labels=labels, pred_probs=pred_probs, thresholds=thresholds, calibrate=False
+    )
+
+    assert confident_joint.shape == (2, 2)
+
+    expected = np.array([[1, 0], [0, 1]])
+    assert np.array_equal(confident_joint, expected)

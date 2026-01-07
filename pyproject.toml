@@ -9,7 +9,7 @@ name = "cleanlab"
 # requirements files see:
 # https://packaging.python.org/en/latest/discussions/install-requires-vs-requirements/
 dependencies = [
-  "numpy~=1.22",
+  "numpy>=1.22",
   "scikit-learn>=1.1",
   "tqdm>=4.53.0",
   "pandas>=1.4.0",
@@ -94,3 +94,4 @@ filterwarnings = [
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
+

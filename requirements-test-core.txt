@@ -1,0 +1,14 @@
+# Dependencies for running core unit tests
+coverage != 6.3, != 6.3.*
+hypothesis
+mypy
+pandas-stubs
+pytest>=7.4
+pytest-cov
+requests
+scipy
+typing-extensions>=4.8.0
+wget
+matplotlib
+pillow
+psutil

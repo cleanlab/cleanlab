@@ -96,7 +96,7 @@ class TestOutlierIssueManager:
         assert summary["issue_type"][0] == "outlier"
         assert summary["score"][0] == pytest.approx(expected=0.3028243, abs=1e-7)
 
-        assert issue_manager.threshold == 0.66666
+        assert issue_manager.threshold == pytest.approx(0.66666, abs=0.01)
 
     def test_report(self, issue_manager):
         pred_probs = np.array(

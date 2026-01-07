@@ -648,7 +648,17 @@ class LabelInspector:
             else:
                 use_thorough = np.zeros(len(inds), dtype=bool)
             args = zip(inds, use_thorough)
-            with mp.Pool(self.n_jobs) as pool:
+
+            # Use fork method explicitly for Python 3.14+ compatibility
+            # Falls back to default method if fork is not available
+            try:
+                ctx = mp.get_context("fork")
+                pool_class = ctx.Pool
+            except (RuntimeError, ValueError):
+                # fork not available (Windows) or already set, use default
+                pool_class = mp.Pool
+
+            with pool_class(self.n_jobs) as pool:
                 if not self.off_diagonal_calibrated:
                     prune_count_batch = np.sum(
                         np.asarray(list(pool.imap_unordered(_compute_num_issues, args)))
