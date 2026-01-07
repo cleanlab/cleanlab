@@ -361,7 +361,7 @@ def find_label_issues(
         # On Window/macOS, processes are started with spawn,
         # so data will need to be pickled to the subprocesses through input args
         chunksize = max(1, K // n_jobs)
-        if n_jobs == 1:
+        if n_jobs == 1 or os_name == "Linux":
             global pred_probs_by_class, prune_count_matrix_cols
             pred_probs_by_class = {k: pred_probs[labels == k] for k in range(K)}
             prune_count_matrix_cols = {k: prune_count_matrix[:, k] for k in range(K)}
