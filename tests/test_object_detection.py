@@ -71,6 +71,9 @@ import copy
 import warnings
 
 # to suppress plt.show()
+import matplotlib
+
+matplotlib.use("Agg")  # Set non-interactive backend before importing pyplot
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
