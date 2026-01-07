@@ -21,11 +21,6 @@ import skorch
 from cleanlab.classification import CleanLearning
 
 
-def python_version_ok():  # torch does not play nice with older Python
-    version = sys.version_info
-    return (version.major >= 3) and (version.minor >= 7)
-
-
 def dataset_w_errors():
     num_classes = 2
     num_features = 3
@@ -76,17 +71,15 @@ def make_rare_label(data):
 SEED = 1
 np.random.seed(SEED)
 random.seed(SEED)
-if python_version_ok():
-    torch.manual_seed(SEED)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    torch.cuda.manual_seed_all(SEED)
+torch.manual_seed(SEED)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+torch.cuda.manual_seed_all(SEED)
 
 DATA = dataset_w_errors()
 DATA_RARE_LABEL = make_rare_label(DATA)
 
 
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 def test_torch(data=DATA, hidden_units=128):
     dataset = torch.utils.data.TensorDataset(
         torch.from_numpy(data["X"]).float(), torch.from_numpy(data["y"])
@@ -122,7 +115,6 @@ def test_torch(data=DATA, hidden_units=128):
     assert err < 1e-3
 
 
-@pytest.mark.skipif("not python_version_ok()", reason="need at least python 3.7")
 @pytest.mark.filterwarnings("ignore")
 def test_torch_rarelabel(data=DATA_RARE_LABEL, hidden_units=8):
     dataset = torch.utils.data.TensorDataset(
