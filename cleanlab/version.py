@@ -6,7 +6,10 @@ __version__ = "2.8.0"
 # | PREVIOUS MAJOR VERSION RELEASE NOTES SUMMARY |
 # ------------------------------------------------
 
-# 2.8.0 - Bug fixes and infrastructure improvements
+# 2.8.0 - Python 3.12-3.14 support and compatibility improvements
+#   - Add support for Python 3.12, 3.13 and 3.14
+#   - Fix scikit-learn >= 1.8 compatibility issues
+#   - Remove numpy version restriction (works with numpy>=1.22)
 #   - Fix DataLab compatibility with datasets 4.0.0+
 #   - Fix null pointer bugs in DataLab issue managers
 #   - Update Python requirements to 3.10+
