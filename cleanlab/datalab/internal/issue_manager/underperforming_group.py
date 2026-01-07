@@ -276,7 +276,11 @@ class UnderperformingGroupIssueManager(IssueManager):
         old_graph_exists = old_knn_graph is not None
         prefer_new_graph = (
             not old_graph_exists
-            or (isinstance(knn_graph, csr_matrix) and knn_graph.nnz > old_knn_graph.nnz)
+            or (
+                isinstance(knn_graph, csr_matrix)
+                and old_knn_graph is not None
+                and knn_graph.nnz > old_knn_graph.nnz
+            )
             or self.metric != self.datalab.get_info("statistics").get("knn_metric", None)
         )
         if prefer_new_graph:

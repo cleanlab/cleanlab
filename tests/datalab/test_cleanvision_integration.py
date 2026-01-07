@@ -1,3 +1,7 @@
+import matplotlib
+
+# Set non-interactive backend before importing pyplot to avoid GUI dependencies in CI
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
