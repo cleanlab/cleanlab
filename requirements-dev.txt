@@ -1,11 +1,14 @@
-# Python dependencies for development (all dependencies)
-# This file now includes both core and ML framework dependencies
-# For lighter installs, see:
-# - requirements-test-core.txt (lightweight core testing)  
-# - requirements-test-ml.txt (includes ML frameworks)
+# Dependencies for running all unit tests (including those that require heavy ML frameworks)
 
-# Include all ML framework dependencies
--r requirements-test-ml.txt
+# Include core test dependencies
+-r requirements-test-core.txt
+
+# Heavy ML frameworks
+tensorflow<2.16
+torch
+torchvision
+skorch
+datasets
 
 # Additional dev-only tools
 pre-commit

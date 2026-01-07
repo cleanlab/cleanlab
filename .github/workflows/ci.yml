@@ -60,7 +60,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[all]"
       - name: Install ML framework dependencies
-        run: pip install --no-cache-dir -r requirements-test-ml.txt
+        run: pip install --no-cache-dir -r requirements-dev.txt
       - name: Run ML framework tests
         run: pytest --verbose --maxfail=30 tests/test_frameworks.py tests/test_model_pytorch_cnn.py
   test-without-extras-min-versions:

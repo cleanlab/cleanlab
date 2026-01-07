@@ -1,4 +1,4 @@
-# Core testing dependencies
+# Dependencies for running core unit tests
 coverage != 6.3, != 6.3.*
 hypothesis
 mypy
