@@ -17,9 +17,6 @@ import numpy as np
 
 import torch
 import skorch
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import GridSearchCV
 
 from cleanlab.classification import CleanLearning
 
