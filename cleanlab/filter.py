@@ -356,12 +356,14 @@ def find_label_issues(
             prune_count_matrix = round_preserving_row_totals(tmp)
 
         # Prepare multiprocessing shared data
-        # On Linux, multiprocessing is started with fork,
-        # so data can be shared with global vairables + COW
+        # On Linux with Python <3.14, multiprocessing is started with fork,
+        # so data can be shared with global variables + COW
         # On Window/macOS, processes are started with spawn,
         # so data will need to be pickled to the subprocesses through input args
+        # In Python 3.14+, global variable sharing is no longer reliable even on Linux
         chunksize = max(1, K // n_jobs)
-        if n_jobs == 1 or os_name == "Linux":
+        use_global_vars = n_jobs == 1 or (os_name == "Linux" and sys.version_info < (3, 14))
+        if use_global_vars:
             global pred_probs_by_class, prune_count_matrix_cols
             pred_probs_by_class = {k: pred_probs[labels == k] for k in range(K)}
             prune_count_matrix_cols = {k: prune_count_matrix[:, k] for k in range(K)}
