@@ -102,14 +102,11 @@ warn_unused_configs = true
 disallow_untyped_defs = false
 
 # Per-module configurations for optional dependencies
-[tool.mypy-torch]
-ignore_missing_imports = true
-
-["tool.mypy-torch.*"]
-ignore_missing_imports = true
-
-[tool.mypy-torchvision]
-ignore_missing_imports = true
-
-["tool.mypy-torchvision.*"]
+[[tool.mypy.overrides]]
+module = [
+    "torch",
+    "torch.*", 
+    "torchvision",
+    "torchvision.*"
+]
 ignore_missing_imports = true
