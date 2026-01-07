@@ -8,6 +8,9 @@ import random
 np.random.seed(0)
 import pytest
 from unittest import mock
+import matplotlib
+
+matplotlib.use("Agg")  # Set non-interactive backend before importing pyplot
 import matplotlib.pyplot as plt
 from pathlib import Path
 

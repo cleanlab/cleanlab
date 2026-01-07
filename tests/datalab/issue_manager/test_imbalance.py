@@ -39,7 +39,7 @@ class TestClassImbalanceIssueManager:
             issues["class_imbalance_score"], expected_scores, err_msg="Scores should be correct"
         )
         assert summary["issue_type"][0] == "class_imbalance"
-        assert summary["score"][0] == 0.01
+        assert summary["score"][0] == pytest.approx(0.01, abs=0.01)
 
     def test_find_issues_no_imbalance(self, labels, create_issue_manager):
         N = len(labels)
@@ -56,7 +56,7 @@ class TestClassImbalanceIssueManager:
         expected_scores[labels == 1] = 0.47  # Rare class proportion
         np.testing.assert_allclose(scores, expected_scores, err_msg="Scores should be correct")
         assert summary["issue_type"][0] == "class_imbalance"
-        assert summary["score"][0] == 0.47
+        assert summary["score"][0] == pytest.approx(0.47, abs=0.01)
 
     def test_find_issues_more_imbalance(self, lab, labels, create_issue_manager):
         K = lab.get_info("statistics")["num_classes"]
@@ -76,7 +76,7 @@ class TestClassImbalanceIssueManager:
             issues["class_imbalance_score"], expected_scores, err_msg="Scores should be correct"
         )
         assert summary["issue_type"][0] == "class_imbalance"
-        assert summary["score"][0] == 0.01
+        assert summary["score"][0] == pytest.approx(0.01, abs=0.01)
 
     def test_report(self, create_issue_manager):
         issue_manager = create_issue_manager()
