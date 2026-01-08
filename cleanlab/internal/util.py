@@ -2,7 +2,6 @@
 Ancillary helper methods used internally throughout this package; mostly related to Confident Learning algorithms.
 """
 
-import warnings
 from typing import Optional, Tuple, Union
 
 import numpy as np
