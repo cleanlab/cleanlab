@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -73,8 +73,7 @@ Documentation = "https://docs.cleanlab.ai"
 [tool.setuptools]
 include-package-data = true
 
-[tool.setuptools.dynamic]
-version = {attr = "cleanlab.version.__version__"}
+[tool.setuptools_scm]
 
 [tool.setuptools.packages.find]
 include = ["cleanlab*", "cleanlab.*"]
