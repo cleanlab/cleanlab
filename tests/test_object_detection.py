@@ -99,7 +99,7 @@ def generate_single_image_file(tmpdir_factory, img_name="img.png", arr=None):
 
 @pytest.fixture(scope="session")
 def generate_n_image_files(tmpdir_factory, n=5):
-    """Generates n temporary images for testing and returns dir of images"""
+    """Generates n number of temporary images for testing and returns dir of images"""
     filename_list = []
     tmp_image_dir = tmpdir_factory.mktemp("data")
     for i in range(n):
