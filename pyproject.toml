@@ -73,6 +73,9 @@ Documentation = "https://docs.cleanlab.ai"
 [tool.setuptools]
 include-package-data = true
 
+[tool.setuptools.dynamic]
+version = {attr = "cleanlab.version.__version__"}
+
 [tool.setuptools.packages.find]
 include = ["cleanlab*", "cleanlab.*"]
 exclude = ["tests*", "tests.*", "*.tests", "*.tests.*", "*.tests*"]
