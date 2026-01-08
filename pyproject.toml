@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools>=65.0,<70.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -57,8 +57,7 @@ keywords = [
   "datacentric_ai",
   "datacentric",
 ]
-license = "Apache-2.0"
-license-files = ["LICENSE"]
+license = {file = "LICENSE"}
 dynamic = [
   "version",
   "optional-dependencies",
@@ -72,8 +71,6 @@ Documentation = "https://docs.cleanlab.ai"
 
 [tool.setuptools]
 include-package-data = true
-
-[tool.setuptools_scm]
 
 [tool.setuptools.packages.find]
 include = ["cleanlab*", "cleanlab.*"]
