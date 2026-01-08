@@ -81,7 +81,7 @@ jobs:
           python-version: 3.11
 
       - name: Install dependencies
-        run: pip install --upgrade setuptools wheel twine==5.0.0
+        run: pip install --upgrade "setuptools>=65.0,<70.0" wheel twine==5.0.0 pkginfo
 
       - name: Perform some tests on the metadata of the package
         run: |
