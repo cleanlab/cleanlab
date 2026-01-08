@@ -122,14 +122,7 @@ Beyond handling label errors, cleanlab supports other data-centric AI capabiliti
 - Active learning with multiple annotators to identify which data is most informative to label or re-label next  `(tutorial) <https://github.com/cleanlab/examples/blob/master/active_learning_multiannotator/active_learning.ipynb>`_
 
 
-If you have questions, check out our `FAQ <tutorials/faq.ipynb>`_ and feel free to ask in `Slack <https://cleanlab.ai/slack>`_!
-
-Contributing
-------------
-
-As cleanlab is an open-source project, we welcome contributions from the community.
-
-Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md>`_ for more information.
+If you have questions, check out our `FAQ <tutorials/faq.ipynb>`_ and feel free to open a Github Issue!
 
 
 .. toctree::
@@ -185,16 +178,12 @@ Please see our `contributing guidelines <https://github.com/cleanlab/cleanlab/bl
    :hidden:
 
    Datalab issue types <cleanlab/datalab/guide/index>
-   How to contribute <https://github.com/cleanlab/cleanlab/blob/master/CONTRIBUTING.md>
 
 .. toctree::
    :caption: Links
    :hidden:
 
-   Website <https://cleanlab.ai>
    GitHub <https://github.com/cleanlab/cleanlab>
    PyPI <https://pypi.org/project/cleanlab/>
    Conda <https://anaconda.org/conda-forge/cleanlab>
    Blog <https://cleanlab.ai/blog/>
-   Videos <https://www.youtube.com/@CleanlabAI/playlists>
-   
