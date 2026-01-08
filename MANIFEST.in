@@ -1,1 +1,6 @@
 include LICENSE README.md CONTRIBUTING.md DEVELOPMENT.md CODE_OF_CONDUCT.md
+
+# Exclude development and documentation files from distribution
+exclude requirements-dev.txt
+exclude requirements-test-core.txt
+recursive-exclude docs *
