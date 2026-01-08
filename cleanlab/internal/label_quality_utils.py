@@ -74,7 +74,7 @@ def get_normalized_entropy(
 
     Read more about normalized entropy `on Wikipedia <https://en.wikipedia.org/wiki/Entropy_(information_theory)>`_.
 
-    Normalized entropy is used in active learning for uncertainty sampling: https://towardsdatascience.com/uncertainty-sampling-cheatsheet-ec57bc067c0b
+    Normalized entropy is used in active learning for uncertainty sampling: https://medium.com/data-science/uncertainty-sampling-cheatsheet-ec57bc067c0b
 
     Unlike label-quality scores, entropy only depends on the model's predictions, not the given label.
 
