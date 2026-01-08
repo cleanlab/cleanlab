@@ -14,6 +14,3 @@ Some of these files include various models that can be used with cleanlab to fin
    :members:
    :undoc-members:
    :show-inheritance:
-
-.. toctree::
-    keras

@@ -68,7 +68,7 @@ For Macs with Apple silicon: replace tensorflow in `docs/requirements.txt` with:
 
    **Skipping specific notebooks**: If you want to skip rendering a few specific notebooks during your local build, the best way to do this is to temporarily move the files outside the `cleanlab` folder (so `nbsphinx` would not find it), then build the docs, before finally moving the files back (to ensure they will not be deleted when pushed to GitHub)
 
-   Example workflow for skipping notebooks, given our current working directory is the `cleanlab` root folder and we want to ignore the `audio.ipynb` notebook:
+   Example workflow for skipping notebooks, given our current working directory is the `cleanlab` root folder and we want to ignore a specific notebook:
 
    1. create an empty folder outside of cleanlab folder
    ```
@@ -77,7 +77,7 @@ For Macs with Apple silicon: replace tensorflow in `docs/requirements.txt` with:
 
    2. move the notebook to ignore from local build to the newly created folder
    ```
-   mv docs/source/tutorials/audio.ipynb ../ignore_notebooks
+   mv docs/source/tutorials/path/to/notebook.ipynb ../ignore_notebooks
    ```
 
    3. build the docs locally, using `sphinx-build` as it does not require you to commit your changes
@@ -87,7 +87,7 @@ For Macs with Apple silicon: replace tensorflow in `docs/requirements.txt` with:
 
    4. move the notebook back to its original location
    ```
-   mv ../ignore_notebooks/audio.ipynb docs/source/tutorials
+   mv ../ignore_notebooks/notebook.ipynb docs/source/tutorials/path/to/
    ```
 
 
