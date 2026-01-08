@@ -254,7 +254,7 @@ class NonIIDIssueManager(IssueManager):
         old_graph_exists = old_knn_graph is not None
         prefer_new_graph = (
             (knn_graph is not None and not old_graph_exists)
-            or knn_graph.nnz > old_knn_graph.nnz
+            or (old_knn_graph is not None and knn_graph.nnz > old_knn_graph.nnz)
             or self.metric != self.datalab.get_info("statistics").get("knn_metric", None)
         )
         if prefer_new_graph:

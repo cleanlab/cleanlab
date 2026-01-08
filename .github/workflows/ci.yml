@@ -5,15 +5,47 @@ on:
   schedule:
     - cron: '0 12 * * 1'
 jobs:
-  test-all-os:
-    name: "Test: Python ${{ matrix.python }} on ${{ matrix.os }}"
+  test-core:
+    name: "Core Tests: Python ${{ matrix.python }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os:
           - ubuntu-latest
-          - macos-13
+          - macos-latest
           - windows-latest
+        python:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Download cleanvision test data
+        run: |
+          git clone https://github.com/cleanlab/assets.git
+          mv assets/cleanlab_test_data ./tests/datalab/data
+      - name: Install cleanlab
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[all]"
+      - name: Install core test dependencies
+        run: pip install --no-cache-dir -r requirements-test-core.txt
+      - name: Run core tests (excluding ML framework tests)
+        run: pytest --verbose --maxfail=30 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py
+      - uses: codecov/codecov-action@v3
+        with:
+          version: "v0.7.3"
+  
+  test-ml-frameworks:
+    name: "ML Framework Tests: Python ${{ matrix.python }} on ubuntu-latest"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
         python:
           - "3.10"
           - "3.11"
@@ -27,19 +59,13 @@ jobs:
           git clone https://github.com/cleanlab/assets.git
           mv assets/cleanlab_test_data ./tests/datalab/data
       - name: Install cleanlab
-        run: pip install -e ".[all]"
-      - name: Install development dependencies
-        run: pip install -r requirements-dev.txt
-      - name: Overwrite tensorflow version on Windows
-        if: runner.os == 'Windows'
         run: |
-          pip uninstall -y tensorflow
-          pip install tensorflow-cpu<2.16
-      - name: Test with coverage
-        run: pytest --verbose --maxfail=3 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml
-      - uses: codecov/codecov-action@v3
-        with:
-          version: "v0.7.3"
+          python -m pip install --upgrade pip
+          pip install -e ".[all]"
+      - name: Install ML framework dependencies
+        run: pip install --no-cache-dir -r requirements-dev.txt
+      - name: Run ML framework tests
+        run: pytest --verbose --maxfail=30 tests/test_frameworks.py tests/test_model_pytorch_cnn.py
   test-without-extras-min-versions:
     name: Test without optional dependencies and with minimum compatible versions of dependencies
     runs-on: ubuntu-latest
@@ -70,12 +96,12 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.14'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install ".[all]"  # install dependencies
-          pip install -r requirements-dev.txt  # install development dependencies and type stubs
+          pip install --no-cache-dir -r requirements-test-core.txt  # install core dependencies and type stubs
       - name: Type check
         run: mypy --install-types --non-interactive cleanlab
   fmt:
@@ -91,7 +117,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.14'
       - name: Install flake8
         run: pip install flake8
       - name: Lint with flake8

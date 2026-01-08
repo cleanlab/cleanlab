@@ -154,7 +154,7 @@ cleanlab is based on peer-reviewed research. Here are relevant papers to cite if
 
 </details>
 
-<details><summary><a href="https://people.csail.mit.edu/jonasmueller/info/LabelQuality_icml.pdf"> Label Quality Scoring (ICML '22)</a> (<b>click to show bibtex</b>) </summary>
+<details><summary><a href="https://jonasmueller.org/info/LabelQuality_icml.pdf"> Label Quality Scoring (ICML '22)</a> (<b>click to show bibtex</b>) </summary>
 
     @inproceedings{kuan2022labelquality,
         title={Model-agnostic label quality scoring to detect real-world label errors},

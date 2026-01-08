@@ -1,10 +1,18 @@
-__version__ = "2.7.1"
+__version__ = "2.8.0"
 
-# 2.7.2 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
+# 2.8.1 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
 
 # ------------------------------------------------
 # | PREVIOUS MAJOR VERSION RELEASE NOTES SUMMARY |
 # ------------------------------------------------
+
+# 2.8.0 - Python 3.12-3.14 support and compatibility improvements
+#   - Add support for Python 3.12, 3.13 and 3.14
+#   - Fix scikit-learn >= 1.8 compatibility issues
+#   - Remove numpy version restriction (works with numpy>=1.22)
+#   - Fix DataLab compatibility with datasets 4.0.0+
+#   - Fix null pointer bugs in DataLab issue managers
+#   - Update Python requirements to 3.10+
 
 # 2.7.0 - Broadening Data Quality Checks and ML Workflows
 #

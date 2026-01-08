@@ -241,7 +241,7 @@ def color_sentence(sentence: str, word: str) -> str:
     >>> color_sentence(document, word)
     'This is a \x1b[31msentence\x1b[0m. This is another \x1b[31msentence\x1b[0m.'
     """
-    colored_word = colored(word, "red")
+    colored_word = colored(word, "red", force_color=True)
     return _replace_sentence(sentence=sentence, word=word, new_word=colored_word)
 
 
