@@ -1,9 +1,6 @@
 import contextlib
 import io
-import os
-import pickle
 import timeit
-from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
@@ -111,12 +108,6 @@ class TestDatalab:
             "class_imbalance",
             "underperforming_group",
         ]
-
-    def tmp_path(self):
-        # A path for temporarily saving the instance during tests.
-        # This is a workaround for the fact that the Datalab class
-        # does not have a save method.
-        return Path(__file__).parent / "tmp.pkl"
 
     def test_attributes(self, lab):
         # Has the right attributes
@@ -387,24 +378,12 @@ class TestDatalab:
         assert knn_graph.nnz == dataset_size * k
 
     # Mock the lab.issues dataframe to have some pre-existing issues
-    def test_update_issues(self, lab, pred_probs, monkeypatch):
+    def test_update_issues(self, lab, pred_probs, mock_issues, mock_issue_summary, monkeypatch):
         """If there are pre-existing issues in the lab,
         find_issues should add columns to the issues dataframe for each example.
         """
-        mock_issues = pd.DataFrame(
-            {
-                "is_foo_issue": [False, True, False, False, False],
-                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
-            }
-        )
+
         monkeypatch.setattr(lab, "issues", mock_issues)
-        mock_issue_summary = pd.DataFrame(
-            {
-                "issue_type": ["foo"],
-                "score": [0.72],
-                "num_issues": [1],
-            }
-        )
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
 
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
@@ -431,31 +410,16 @@ class TestDatalab:
             lab.issue_summary, expected_issue_summary_df, check_exact=False
         )
 
-    def test_save(self, lab, tmp_path, monkeypatch):
+    def test_save(self, lab, tmp_path, mock_issues, mock_issue_summary, monkeypatch):
         """Test that the save and load methods work."""
         lab.save(tmp_path, force=True)
         assert tmp_path.exists(), "Save directory was not created"
         assert (tmp_path / "data").is_dir(), "Data directory was not saved"
-        assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
-        assert (tmp_path / "summary.csv").exists(), "Issue summary file was not saved"
-        assert (tmp_path / "datalab.pkl").exists(), "Datalab file was not saved"
+        assert (tmp_path / "datalab.json").exists(), "Datalab file was not saved"
+        assert not (tmp_path / "issues.csv").exists(), "Empty issues dataframe was saved"
+        assert not (tmp_path / "summary.csv").exists(), "Empty issue_summary dataframe was saved"
 
-        # Mock the issues dataframe
-        mock_issues = pd.DataFrame(
-            {
-                "is_foo_issue": [False, True, False, False, False],
-                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
-            }
-        )
         monkeypatch.setattr(lab, "issues", mock_issues)
-
-        # Mock the issue summary dataframe
-        mock_issue_summary = pd.DataFrame(
-            {
-                "issue_type": ["foo"],
-                "score": [0.72],
-            }
-        )
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
         lab.save(tmp_path, force=True)
         assert (tmp_path / "issues.csv").exists(), "Issues file was not saved"
@@ -467,44 +431,48 @@ class TestDatalab:
         lab.save(new_dir)
         assert new_dir.exists(), "Directory was not created"
 
-    def test_pickle(self, lab, tmp_path):
-        """Test that the class can be pickled."""
-        pickle_file = os.path.join(tmp_path, "lab.pkl")
-        with open(pickle_file, "wb") as f:
-            pickle.dump(lab, f)
-        with open(pickle_file, "rb") as f:
-            lab2 = pickle.load(f)
-
-        assert lab2.label_name == "star"
-
-    def test_load(self, lab, tmp_path, dataset, monkeypatch):
+    def test_load(self, lab, tmp_path, dataset, mock_issues, mock_issue_summary, monkeypatch):
         """Test that the save and load methods work."""
 
-        # Mock the issues dataframe
-        mock_issues = pd.DataFrame(
-            {
-                "is_foo_issue": [False, True, False, False, False],
-                "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
-            }
-        )
-        monkeypatch.setattr(lab, "issues", mock_issues)
+        # Load without saved datalab raises warning
+        lab.save(tmp_path, force=True, save_dataset=False)
+        with pytest.warns(
+            UserWarning,
+            match="The Datalab object was loaded without a dataset and will have limited functionality.",
+        ):
+            loaded_lab = Datalab.load(tmp_path)
 
-        # Mock the issue summary dataframe
-        mock_issue_summary = pd.DataFrame(
-            {
-                "issue_type": ["foo"],
-                "score": [0.72],
-            }
-        )
+        monkeypatch.setattr(lab, "issues", mock_issues)
         monkeypatch.setattr(lab, "issue_summary", mock_issue_summary)
 
         lab.save(tmp_path, force=True)
 
         loaded_lab = Datalab.load(tmp_path)
-        data = lab._data
-        loaded_data = loaded_lab._data
-        assert loaded_data == data
-        assert loaded_lab.info == lab.info
+        assert (
+            loaded_lab.task == lab.task
+        ), f"Mismatch in 'task' attribute: {loaded_lab.task} != {lab.task}"
+        assert (
+            loaded_lab.label_name == lab.label_name
+        ), f"Mismatch in 'label_name' attribute: {loaded_lab.label_name} != {lab.label_name}"
+        assert (
+            loaded_lab.cleanlab_version == lab.cleanlab_version
+        ), f"Mismatch in 'cleanlab_version' attribute: {loaded_lab.cleanlab_version} != {lab.cleanlab_version}"
+        assert (
+            loaded_lab.verbosity == lab.verbosity
+        ), f"Mismatch in 'verbosity' attribute: {loaded_lab.verbosity} != {lab.verbosity}"
+        assert (
+            loaded_lab.info == lab.info
+        ), f"Mismatch in 'info' property: {loaded_lab.info} != {lab.info}"
+        assert np.array_equal(
+            loaded_lab.labels, lab.labels
+        ), f"Mismatch in 'labels' property: {loaded_lab.labels} != {lab.labels}"
+        assert (
+            loaded_lab.has_labels == lab.has_labels
+        ), f"Mismatch in 'has_labels' property: {loaded_lab.has_labels} != {lab.has_labels}"
+        assert (
+            loaded_lab.class_names == lab.class_names
+        ), f"Mismatch in 'class_names' property: {loaded_lab.class_names} != {lab.class_names}"
+        print("debug", loaded_lab.issues)
         pd.testing.assert_frame_equal(loaded_lab.issues, mock_issues)
         pd.testing.assert_frame_equal(loaded_lab.issue_summary, mock_issue_summary)
 
@@ -514,16 +482,33 @@ class TestDatalab:
 
         # Misaligned dataset raises a ValueError
         with pytest.raises(ValueError) as excinfo:
-            Datalab.load(tmp_path, data=dataset.shard(2, 0))
-            expected_error_msg = "Length of data (2) does not match length of labels (5)"
+            Datalab.load(tmp_path, data=dataset.shuffle())
+        expected_error_msg = (
+            "Data has been modified since Lab was saved. Cannot load Lab with modified data."
+        )
+        assert expected_error_msg == str(excinfo.value)
+
+        # Bypass hash check
+        with patch("builtins.hash", return_value=hash(dataset)):
+            with pytest.raises(ValueError) as excinfo:
+                Datalab.load(tmp_path, data=dataset.shard(2, 0))
+
+            expected_error_msg = "Length of data (3) does not match length of labels (5)"
             assert expected_error_msg == str(excinfo.value)
 
-        with pytest.raises(ValueError) as excinfo:
-            Datalab.load(tmp_path, data=dataset.shuffle())
-            expected_error_msg = (
-                "Data has been modified since Lab was saved. Cannot load Lab with modified data."
-            )
-            assert expected_error_msg == str(excinfo.value)
+        # Missing issues and issue_summary files raises warnings
+        issues_path = tmp_path / "issues.csv"
+        issue_summary_path = tmp_path / "summary.csv"
+
+        # Remove `issues.csv` and check for warning
+        issues_path.unlink()
+        with pytest.warns(UserWarning, match="File not found: .*issues.csv.*"):
+            loaded_lab = Datalab.load(tmp_path)
+
+        # Remove `issue_summary.csv` and check for warning
+        issue_summary_path.unlink()
+        with pytest.warns(UserWarning, match="File not found: .*summary.csv.*"):
+            loaded_lab = Datalab.load(tmp_path)
 
     @pytest.mark.parametrize("list_possible_issue_types", [["erroneous_issue_type"]], indirect=True)
     def test_failed_issue_managers(self, lab, monkeypatch, list_possible_issue_types):
@@ -685,6 +670,12 @@ class TestDatalabUsingKNNGraph:
         assert (
             lab.issues.empty
         ), "The issues dataframe should be empty as the issue manager expects an existing knn_graph"
+
+    def test_knn_serialization(self, data_tuple, tmp_path):
+        lab, knn_graph, features = data_tuple
+        lab.find_issues(knn_graph=knn_graph, issue_types={"data_valuation": {"k": 3}})
+        lab.save(tmp_path, force=True)
+        lab.load(tmp_path)
 
 
 class TestDatalabIssueManagerInteraction:
@@ -1122,6 +1113,13 @@ class TestDatalabFindOutlierIssues:
         assert outlier_issues["is_outlier_issue"].sum() == 0
         np.testing.assert_allclose(outlier_issues["outlier_score"].to_numpy(), 1)
 
+    def test_outlier_serialization(self, tmp_path, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(features=random_embeddings, issue_types={"outlier": {}})
+        lab.save(tmp_path, force=True)
+        lab.load(tmp_path)
+
 
 class TestDatalabFindNearDuplicateIssues:
     @pytest.fixture
@@ -1248,6 +1246,13 @@ class TestDatalabFindNearDuplicateIssues:
         near_duplicate_issues = lab.get_issues("near_duplicate")
         assert near_duplicate_issues["is_near_duplicate_issue"].sum() == N
         np.testing.assert_allclose(near_duplicate_issues["near_duplicate_score"].to_numpy(), 0)
+
+    def test_near_duplicate_serialization(self, tmp_path, pred_probs, random_embeddings):
+        data = {"labels": np.random.randint(0, 2, 100)}
+        lab = Datalab(data=data, label_name="labels")
+        lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
+        lab.save(tmp_path, force=True)
+        lab.load(tmp_path)
 
 
 class TestDatalabWithoutLabels:
