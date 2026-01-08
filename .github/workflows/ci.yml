@@ -5,106 +5,105 @@ on:
   schedule:
     - cron: '0 12 * * 1'
 jobs:
-  # TEMPORARILY COMMENTED OUT FOR DOCS BUILDING
-  # test-core:
-  #   name: "Core Tests: Python ${{ matrix.python }} on ${{ matrix.os }}"
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os:
-  #         - ubuntu-latest
-  #         - macos-latest
-  #         - windows-latest
-  #       python:
-  #         - "3.10"
-  #         - "3.11"
-  #         - "3.12"
-  #         - "3.13"
-  #         - "3.14"
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: actions/setup-python@v4
-  #       with:
-  #         python-version: ${{ matrix.python }}
-  #     - name: Download cleanvision test data
-  #       run: |
-  #         git clone https://github.com/cleanlab/assets.git
-  #         mv assets/cleanlab_test_data ./tests/datalab/data
-  #     - name: Install cleanlab
-  #       run: |
-  #         python -m pip install --upgrade pip
-  #         pip install -e ".[all]"
-  #     - name: Install core test dependencies
-  #       run: pip install --no-cache-dir -r requirements-test-core.txt
-  #     - name: Run core tests (excluding ML framework tests)
-  #       run: pytest --verbose --maxfail=30 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py
-  #     - uses: codecov/codecov-action@v3
-  #       with:
-  #         version: "v0.7.3"
+  test-core:
+    name: "Core Tests: Python ${{ matrix.python }} on ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        python:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Download cleanvision test data
+        run: |
+          git clone https://github.com/cleanlab/assets.git
+          mv assets/cleanlab_test_data ./tests/datalab/data
+      - name: Install cleanlab
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[all]"
+      - name: Install core test dependencies
+        run: pip install --no-cache-dir -r requirements-test-core.txt
+      - name: Run core tests (excluding ML framework tests)
+        run: pytest --verbose --maxfail=30 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py
+      - uses: codecov/codecov-action@v3
+        with:
+          version: "v0.7.3"
   
-  # test-ml-frameworks:
-  #   name: "ML Framework Tests: Python ${{ matrix.python }} on ubuntu-latest"
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       python:
-  #         - "3.10"
-  #         - "3.11"
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: actions/setup-python@v4
-  #       with:
-  #         python-version: ${{ matrix.python }}
-  #     - name: Download cleanvision test data
-  #       run: |
-  #         git clone https://github.com/cleanlab/assets.git
-  #         mv assets/cleanlab_test_data ./tests/datalab/data
-  #     - name: Install cleanlab
-  #       run: |
-  #         python -m pip install --upgrade pip
-  #         pip install -e ".[all]"
-  #     - name: Install ML framework dependencies
-  #       run: pip install --no-cache-dir -r requirements-dev.txt
-  #     - name: Run ML framework tests
-  #       run: pytest --verbose --maxfail=30 tests/test_frameworks.py tests/test_model_pytorch_cnn.py
-  # test-without-extras-min-versions:
-  #   name: Test without optional dependencies and with minimum compatible versions of dependencies
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: actions/setup-python@v4
-  #       with:
-  #         python-version: '3.10'
-  #     - name: Install cleanlab
-  #       run: |
-  #         python -m  pip install --upgrade pip
-  #         pip install .
-  #     - name: Install test dependencies
-  #       run: |
-  #         pip install pytest pipdeptree hypothesis
-  #         pipdeptree -j > deps.json
-  #     - name: Install minimum versions
-  #       run: |
-  #         python ./.github/get_min_dependencies.py
-  #         pip install -r requirements-min.txt
-  #     - name: Run tests
-  #       run: |
-  #         pytest tests/test_multilabel_classification.py tests/test_multiannotator.py tests/test_filter_count.py
-  # typecheck:
-  #   name: Type check
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: actions/setup-python@v4
-  #       with:
-  #         python-version: '3.14'
-  #     - name: Install dependencies
-  #       run: |
-  #         python -m pip install --upgrade pip
-  #         pip install ".[all]"  # install dependencies
-  #         pip install --no-cache-dir -r requirements-test-core.txt  # install core dependencies and type stubs
-  #     - name: Type check
-  #       run: mypy --install-types --non-interactive cleanlab
+  test-ml-frameworks:
+    name: "ML Framework Tests: Python ${{ matrix.python }} on ubuntu-latest"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python:
+          - "3.10"
+          - "3.11"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Download cleanvision test data
+        run: |
+          git clone https://github.com/cleanlab/assets.git
+          mv assets/cleanlab_test_data ./tests/datalab/data
+      - name: Install cleanlab
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[all]"
+      - name: Install ML framework dependencies
+        run: pip install --no-cache-dir -r requirements-dev.txt
+      - name: Run ML framework tests
+        run: pytest --verbose --maxfail=30 tests/test_frameworks.py tests/test_model_pytorch_cnn.py
+  test-without-extras-min-versions:
+    name: Test without optional dependencies and with minimum compatible versions of dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install cleanlab
+        run: |
+          python -m  pip install --upgrade pip
+          pip install .
+      - name: Install test dependencies
+        run: |
+          pip install pytest pipdeptree hypothesis
+          pipdeptree -j > deps.json
+      - name: Install minimum versions
+        run: |
+          python ./.github/get_min_dependencies.py
+          pip install -r requirements-min.txt
+      - name: Run tests
+        run: |
+          pytest tests/test_multilabel_classification.py tests/test_multiannotator.py tests/test_filter_count.py
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.14'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[all]"  # install dependencies
+          pip install --no-cache-dir -r requirements-test-core.txt  # install core dependencies and type stubs
+      - name: Type check
+        run: mypy --install-types --non-interactive cleanlab
   fmt:
     name: Format
     runs-on: ubuntu-latest
@@ -131,11 +130,3 @@ jobs:
       - uses: cleanlab/nblint-action@v1
         with:
           directory: 'docs'
-
-  # Minimal job to ensure CI doesn't completely fail
-  skip-tests:
-    name: Tests temporarily disabled for docs building
-    runs-on: ubuntu-latest
-    steps:
-      - name: Skip tests
-        run: echo "All expensive tests are temporarily commented out to focus on docs building"

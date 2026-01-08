@@ -45,9 +45,16 @@ jobs:
       - name: Upgrade pip
         run: python3 -m pip install --upgrade pip
 
-      # Caching removed to resolve disk space issues
-      # Heavy ML packages (TensorFlow, PyTorch, HuggingFace) will be downloaded fresh each run
-      # but this avoids the 3.7GB cache that causes "No space left on device" errors
+      - name: Get pip cache dir
+        id: pip-cache
+        run: echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
 
       - name: Install cleanlab
         run: pip install -e ".[all]"
@@ -89,32 +96,13 @@ jobs:
         if: ${{ github.ref_type == 'branch' }}
         env:
           TF_CPP_MIN_LOG_LEVEL: 3
-          HF_HOME: /tmp/hf_cache
-          HF_HUB_DISABLE_SYMLINKS_WARNING: 1
-          TRANSFORMERS_CACHE: /tmp/transformers
-          TORCH_HOME: /tmp/torch
         run: sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=${{ github.ref_name }} -D smv_tag_whitelist=None
 
       - name: Run Sphinx with sphinx-multiversion wrapper - tag trigger
         if: ${{ github.ref_type == 'tag' }}
         env:
           TF_CPP_MIN_LOG_LEVEL: 3
-          HF_HOME: /tmp/hf_cache
-          HF_HUB_DISABLE_SYMLINKS_WARNING: 1
-          TRANSFORMERS_CACHE: /tmp/transformers
-          TORCH_HOME: /tmp/torch
         run: sphinx-multiversion docs/source cleanlab-docs -D smv_branch_whitelist=None -D smv_tag_whitelist=${{ github.ref_name }}
-
-      - name: Debug temporary cache usage (not saved)
-        run: |
-          echo "=== Temporary Cache Usage ==="
-          echo "These caches are created in /tmp and cleaned up after build:"
-          echo "  /tmp/hf_cache: $(du -sh /tmp/hf_cache 2>/dev/null | cut -f1 || echo 'not found')"
-          echo "  /tmp/transformers: $(du -sh /tmp/transformers 2>/dev/null | cut -f1 || echo 'not found')"
-          echo "  /tmp/torch: $(du -sh /tmp/torch 2>/dev/null | cut -f1 || echo 'not found')"
-          echo "Pip cache directory: $(pip cache dir)"
-          echo "Pip cache size: $(du -sh $(pip cache dir) 2>/dev/null | cut -f1 || echo 'not found')"
-          echo "========================"
 
       - name: Get latest stable release
         id: stable_release
