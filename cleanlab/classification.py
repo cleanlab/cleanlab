@@ -291,17 +291,12 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           Data features (i.e. training inputs for ML), typically an array of shape ``(N, ...)``,
           where N is the number of examples.
           Supported `DatasetLike` types beyond ``np.ndarray`` include:
-          ``pd.DataFrame``, ``scipy.sparse.csr_matrix``, ``torch.utils.data.Dataset``, ``tensorflow.data.Dataset``,
+          ``pd.DataFrame``, ``scipy.sparse.csr_matrix``, ``torch.utils.data.Dataset``,
           or any dataset object ``X`` that supports list-based indexing:
           ``X[index_list]`` to select a subset of training examples.
           Your classifier that this instance was initialized with,
           ``clf``, must be able to ``fit()`` and ``predict()`` data of this format.
 
-          Note
-          ----
-          If providing `X` as a ``tensorflow.data.Dataset``,
-          make sure ``shuffle()`` has been called before ``batch()`` (if shuffling)
-          and no other order-destroying operation (eg. ``repeat()``) has been applied.
 
         labels : array_like
           An array of shape ``(N,)`` of noisy classification labels, where some labels may be erroneous.
