@@ -127,4 +127,3 @@ class IdentifierColumnIssueManager(IssueManager):
             "identifier_columns": identifier_column_indices[0].tolist(),
             "num_identifier_columns": identifier_column_indices[0].size,
         }
-        print(is_identifier_column.size)
