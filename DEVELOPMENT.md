@@ -344,7 +344,7 @@ This section will focus on the PyPI release process.
 
 ### Developing the PyPI release process
 
-It's important to test the release process on a separate PyPI project before releasing to the main [cleanlab project](https://pypi.org/project/cleanlab/). For the remainder of this section, we'll refer to the test project as `test-cleanlab-<username>`, where `<username>` is your GitHub username. This name should be unique to avoid conflicts with other users' test projects.
+It's important to test the release process on a separate PyPI project before releasing to the main [cleanlab project](https://pypi.org/project/cleanlab/). For the remainder of this section, we will refer to the test project as `test-cleanlab-<username>`, where `<username>` is your GitHub username. This name should be unique to avoid conflicts with other users' test projects.
 
 #### Prerequisites
 
