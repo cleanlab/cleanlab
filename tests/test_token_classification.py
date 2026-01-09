@@ -1,28 +1,32 @@
-from cleanlab.internal.token_classification_utils import (
-    get_sentence,
-    filter_sentence,
-    process_token,
-    mapping,
-    merge_probs,
-    color_sentence,
-    _replace_sentence,
-)
-from cleanlab.token_classification.filter import find_label_issues
-from cleanlab.token_classification.rank import (
-    get_label_quality_scores,
-    issues_from_scores,
-    _softmin_sentence_score,
-)
-from cleanlab.token_classification.summary import (
-    display_issues,
-    common_label_issues,
-    filter_by_token,
-)
+import warnings
+
 import numpy as np
 import pandas as pd
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
+from hypothesis.extra.numpy import arrays
 
-import warnings
+from cleanlab.internal.token_classification_utils import (
+    _replace_sentence,
+    color_sentence,
+    filter_sentence,
+    get_sentence,
+    mapping,
+    merge_probs,
+    process_token,
+)
+from cleanlab.token_classification.filter import find_label_issues
+from cleanlab.token_classification.rank import (
+    _softmin_sentence_score,
+    get_label_quality_scores,
+    issues_from_scores,
+)
+from cleanlab.token_classification.summary import (
+    common_label_issues,
+    display_issues,
+    filter_by_token,
+)
 
 warnings.filterwarnings("ignore")
 words = [["Hello", "World"], ["#I", "love", "Cleanlab"], ["A"]]
@@ -271,6 +275,33 @@ def test_get_label_quality_scores(label_quality_scores):
             labels, pred_probs, sentence_score_method="unsupported_method", tokens=words
         )
     assert "Select from the following methods:" in str(excinfo.value)
+
+
+@given(
+    labels=st.lists(
+        arrays(int, (3,), elements=st.integers(min_value=0, max_value=2)),
+        min_size=5,
+        max_size=5,
+    ),
+    pred_probs=st.lists(
+        arrays(float, (3, 3), elements=st.floats(min_value=1e-5, max_value=1, allow_nan=False)),
+        min_size=5,
+        max_size=5,
+    ),
+)
+@settings(deadline=None)
+def test_get_label_quality_scores_batched(labels, pred_probs):
+    # Normalize probabilities
+    pred_probs = [p / p.sum(axis=1, keepdims=True) for p in pred_probs]
+    for method in ("self_confidence", "normalized_margin", "confidence_weighted_entropy"):
+        sentence_scores, token_scores = get_label_quality_scores(
+            labels, pred_probs, token_score_method=method, batch_size=1
+        )
+        sentence_batched, token_batched = get_label_quality_scores(
+            labels, pred_probs, token_score_method=method
+        )
+        assert all((full == batch).all() for full, batch in zip(sentence_scores, sentence_batched))
+        assert all((full == batch).all() for full, batch in zip(token_scores, token_batched))
 
 
 def test_issues_from_scores(label_quality_scores):
