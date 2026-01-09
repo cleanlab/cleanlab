@@ -35,4 +35,4 @@ CUSTOM_SCORE_WEIGHT_SWAP = (
     1 / 3
 )  # Param for get_label_quality_score, weight to determine how much to value swap scores over other subtypes when deciding issues
 
-MAX_CLASS_TO_SHOW = 10  # Number of classes to show in legend during the visualize method. Classes over max_class_to_show are cut off
+MAX_CLASS_TO_SHOW = 10  # Number of classes to show in legend during the visualize method. Classes over max_class_to_show are cut off.
