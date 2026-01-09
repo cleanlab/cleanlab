@@ -35,6 +35,10 @@ jobs:
           pip install -e ".[all]"
       - name: Install core test dependencies
         run: pip install --no-cache-dir -r requirements-test-core.txt
+      - name: Audit dependencies for vulnerabilities
+        uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          inputs: requirements-test-core.txt
       - name: Run core tests (excluding ML framework tests)
         run: pytest --verbose --maxfail=30 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py
       - uses: codecov/codecov-action@v5
@@ -64,6 +68,10 @@ jobs:
           pip install -e ".[all]"
       - name: Install ML framework dependencies
         run: pip install --no-cache-dir -r requirements-dev.txt
+      - name: Audit dependencies for vulnerabilities
+        uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          inputs: requirements-dev.txt
       - name: Run ML framework tests
         run: pytest --verbose --maxfail=30 tests/test_frameworks.py tests/test_model_pytorch_cnn.py
   test-without-extras-min-versions:
