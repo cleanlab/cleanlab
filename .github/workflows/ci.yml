@@ -3,7 +3,7 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: '0 12 * * 1'
+    - cron: '0 12 * * 1'  # Monday at 12:00 UTC
 jobs:
   test-core:
     name: "Core Tests: Python ${{ matrix.python }} on ${{ matrix.os }}"
@@ -21,8 +21,8 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
       - name: Download cleanvision test data
@@ -35,9 +35,13 @@ jobs:
           pip install -e ".[all]"
       - name: Install core test dependencies
         run: pip install --no-cache-dir -r requirements-test-core.txt
+      - name: Audit dependencies for vulnerabilities
+        uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          inputs: requirements-test-core.txt
       - name: Run core tests (excluding ML framework tests)
         run: pytest --verbose --maxfail=30 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           version: "v0.7.3"
   
@@ -53,8 +57,8 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
       - name: Download cleanvision test data
@@ -67,14 +71,18 @@ jobs:
           pip install -e ".[all]"
       - name: Install ML framework dependencies
         run: pip install --no-cache-dir -r requirements-dev.txt
+      - name: Audit dependencies for vulnerabilities
+        uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          inputs: requirements-dev.txt
       - name: Run ML framework tests
         run: pytest --verbose --maxfail=30 tests/test_frameworks.py tests/test_model_pytorch_cnn.py
   test-without-extras-min-versions:
     name: Test without optional dependencies and with minimum compatible versions of dependencies
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.10'
       - name: Install cleanlab
@@ -92,12 +100,34 @@ jobs:
       - name: Run tests
         run: |
           pytest tests/test_multilabel_classification.py tests/test_multiannotator.py tests/test_filter_count.py
+  test-max-versions:
+    name: "Maximum Dependency Versions: Python 3.14"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Download cleanvision test data
+        run: |
+          git clone https://github.com/cleanlab/assets.git
+          mv assets/cleanlab_test_data ./tests/datalab/data
+      - name: Install latest stable versions
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade numpy scikit-learn pandas tqdm termcolor
+          pip install --upgrade torch torchvision
+          pip install -e ".[all]"
+      - name: Install test dependencies
+        run: pip install --no-cache-dir -r requirements-test-core.txt
+      - name: Test with latest stable versions
+        run: pytest --verbose --maxfail=10 -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py  
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
       - name: Install dependencies
@@ -111,14 +141,14 @@ jobs:
     name: Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - uses: psf/black@stable
   flake8:
     name: Check for unused/wildcard imports
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
       - name: Install flake8
@@ -129,7 +159,7 @@ jobs:
     name: Lint Notebooks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - uses: cleanlab/nblint-action@v1
         with:
           directory: 'docs'

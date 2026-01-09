@@ -16,7 +16,7 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -28,12 +28,12 @@ jobs:
           sudo tar xzvf pandoc-2.19.2-linux-amd64.tar.gz --strip-components 1 -C /usr/local
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
   
@@ -178,7 +178,7 @@ jobs:
       
       - name: Deploy
         if: ${{ (github.ref == 'refs/heads/master') || (github.ref_type == 'tag') }}
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@v5
         with:
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
           external_repository: ${{ github.repository_owner }}/cleanlab-docs
@@ -187,7 +187,7 @@ jobs:
           keep_files: true
           exclude_assets: ""
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: docs-html
           path: cleanlab-docs
@@ -197,7 +197,7 @@ jobs:
     needs: deploy
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: docs-html
           path: cleanlab-docs
