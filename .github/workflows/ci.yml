@@ -4,7 +4,7 @@ on:
   pull_request:
   schedule:
     - cron: '0 12 * * 1'  # Monday at 12:00 UTC
-    - cron: '0 6 * * 2'   # Tuesday at 6:00 UTC for bleeding-edge
+    - cron: '0 6 1 * *'   # First day of each month at 6:00 UTC for bleeding-edge
 jobs:
   test-core:
     name: "Core Tests: Python ${{ matrix.python }} on ${{ matrix.os }}"
@@ -101,6 +101,28 @@ jobs:
       - name: Run tests
         run: |
           pytest tests/test_multilabel_classification.py tests/test_multiannotator.py tests/test_filter_count.py
+  test-max-versions:
+    name: "Maximum Dependency Versions: Python 3.14"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Download cleanvision test data
+        run: |
+          git clone https://github.com/cleanlab/assets.git
+          mv assets/cleanlab_test_data ./tests/datalab/data
+      - name: Install latest stable versions
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade numpy scikit-learn pandas tqdm termcolor
+          pip install --upgrade torch torchvision
+          pip install -e ".[all]"
+      - name: Install test dependencies
+        run: pip install --no-cache-dir -r requirements-test-core.txt
+      - name: Test with latest stable versions
+        run: pytest --verbose --maxfail=10 -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py  
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
@@ -144,14 +166,14 @@ jobs:
           directory: 'docs'
   
   test-bleeding-edge:
-    name: "Bleeding Edge Dependencies: Python 3.14"
+    name: "Bleeding Edge Dependencies: Python Latest"
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: 'latest'
       - name: Download cleanvision test data
         run: |
           git clone https://github.com/cleanlab/assets.git
@@ -165,27 +187,4 @@ jobs:
       - name: Install test dependencies
         run: pip install --no-cache-dir -r requirements-test-core.txt
       - name: Test with bleeding-edge deps
-        run: pytest --verbose --maxfail=10 -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py
-
-  test-max-versions:
-    name: "Maximum Dependency Versions: Python 3.14"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.14'
-      - name: Download cleanvision test data
-        run: |
-          git clone https://github.com/cleanlab/assets.git
-          mv assets/cleanlab_test_data ./tests/datalab/data
-      - name: Install latest stable versions
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade numpy scikit-learn pandas tqdm termcolor
-          pip install --upgrade torch torchvision
-          pip install -e ".[all]"
-      - name: Install test dependencies
-        run: pip install --no-cache-dir -r requirements-test-core.txt
-      - name: Test with latest stable versions
         run: pytest --verbose --maxfail=10 -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py
