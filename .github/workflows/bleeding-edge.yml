@@ -17,7 +17,7 @@ jobs:
         id: python-versions
         with:
           min-version: '3.14'
-          include-prereleases: true
+          include-prereleases: false
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ fromJson(steps.python-versions.outputs.latest-python-versions)[0] }}
