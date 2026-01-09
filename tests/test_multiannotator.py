@@ -164,7 +164,8 @@ def make_ensemble_data(
 
 
 def make_data_long(data):
-    data_long = data.stack().reset_index()
+    # pandas 3.0 changed stack() NaN handling, so use dropna=False to preserve original behavior
+    data_long = data.stack(dropna=False).reset_index()
     data_long.columns = ["task", "annotator", "label"]
 
     return data_long
@@ -189,7 +190,7 @@ def test_convert_long_to_wide():
     # ensures labels_long contains all the non-NaN values of labels_wide
     assert labels_wide.count(axis=1).sum() == len(labels_long)
 
-    # checks one index to make sure data is consistent acrros both dataframes
+    # checks one index to make sure data is consistent across both dataframes
     example_long = labels_long[labels_long["task"] == 0].sort_values("annotator")
     example_wide = labels_wide.iloc[0].dropna()
     assert all(example_long["annotator"] == example_wide.index)
