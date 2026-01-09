@@ -16,6 +16,7 @@ jobs:
       - uses: snok/latest-python-versions@v1
         id: python-versions
         with:
+          min-version: '3.14'
           include-prereleases: true
       - uses: actions/setup-python@v6
         with:
