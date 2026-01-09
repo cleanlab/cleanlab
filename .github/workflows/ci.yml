@@ -21,8 +21,8 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
       - name: Download cleanvision test data
@@ -37,7 +37,7 @@ jobs:
         run: pip install --no-cache-dir -r requirements-test-core.txt
       - name: Run core tests (excluding ML framework tests)
         run: pytest --verbose --maxfail=30 --order-tests --cov=cleanlab/ --cov-config .coveragerc --cov-report=xml -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           version: "v0.7.3"
   
@@ -50,8 +50,8 @@ jobs:
           - "3.10"
           - "3.11"
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
       - name: Download cleanvision test data
@@ -70,8 +70,8 @@ jobs:
     name: Test without optional dependencies and with minimum compatible versions of dependencies
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.10'
       - name: Install cleanlab
@@ -93,8 +93,8 @@ jobs:
     name: Type check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
       - name: Install dependencies
@@ -108,14 +108,14 @@ jobs:
     name: Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - uses: psf/black@stable
   flake8:
     name: Check for unused/wildcard imports
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
       - name: Install flake8
@@ -126,7 +126,7 @@ jobs:
     name: Lint Notebooks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - uses: cleanlab/nblint-action@v1
         with:
           directory: 'docs'
