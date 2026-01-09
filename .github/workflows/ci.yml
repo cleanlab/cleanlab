@@ -3,7 +3,8 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: '0 12 * * 1'
+    - cron: '0 12 * * 1'  # Monday at 12:00 UTC
+    - cron: '0 6 * * 2'   # Tuesday at 6:00 UTC for bleeding-edge
 jobs:
   test-core:
     name: "Core Tests: Python ${{ matrix.python }} on ${{ matrix.os }}"
@@ -138,3 +139,50 @@ jobs:
       - uses: cleanlab/nblint-action@v1
         with:
           directory: 'docs'
+  
+  test-bleeding-edge:
+    name: "Bleeding Edge Dependencies: Python 3.14"
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Download cleanvision test data
+        run: |
+          git clone https://github.com/cleanlab/assets.git
+          mv assets/cleanlab_test_data ./tests/datalab/data
+      - name: Install bleeding-edge dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --pre --upgrade numpy scikit-learn pandas tqdm termcolor
+          pip install --pre torch torchvision || pip install torch torchvision
+          pip install -e ".[all]"
+      - name: Install test dependencies
+        run: pip install --no-cache-dir -r requirements-test-core.txt
+      - name: Test with bleeding-edge deps
+        run: pytest --verbose --maxfail=10 -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py
+
+  test-max-versions:
+    name: "Maximum Dependency Versions: Python 3.14"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Download cleanvision test data
+        run: |
+          git clone https://github.com/cleanlab/assets.git
+          mv assets/cleanlab_test_data ./tests/datalab/data
+      - name: Install latest stable versions
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade numpy scikit-learn pandas tqdm termcolor
+          pip install --upgrade torch torchvision
+          pip install -e ".[all]"
+      - name: Install test dependencies
+        run: pip install --no-cache-dir -r requirements-test-core.txt
+      - name: Test with latest stable versions
+        run: pytest --verbose --maxfail=10 -m "not slow" --ignore=tests/test_frameworks.py --ignore=tests/test_model_pytorch_cnn.py
