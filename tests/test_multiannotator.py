@@ -187,13 +187,19 @@ def test_convert_long_to_wide():
     assert isinstance(labels_wide, pd.DataFrame)
 
     # ensures labels_long contains all the non-NaN values of labels_wide
-    assert labels_wide.count(axis=1).sum() == len(labels_long)
+    # Account for different pandas stack() behaviors: 2.x drops NaN, 3.x preserves NaN
+    expected_count = labels_long["label"].notna().sum()
+    assert labels_wide.count(axis=1).sum() == expected_count
 
-    # checks one index to make sure data is consistent acrros both dataframes
-    example_long = labels_long[labels_long["task"] == 0].sort_values("annotator")
+    # checks one index to make sure data is consistent across both dataframes
+    example_long = labels_long[labels_long["task"] == 0]
+    # Only compare non-null entries to handle both pandas behaviors
+    example_long_non_null = example_long[example_long["label"].notna()].sort_values("annotator")
     example_wide = labels_wide.iloc[0].dropna()
-    assert all(example_long["annotator"] == example_wide.index)
-    assert all(example_long["label"].reset_index(drop=True) == example_wide.reset_index(drop=True))
+    assert all(example_long_non_null["annotator"] == example_wide.index)
+    assert all(
+        example_long_non_null["label"].reset_index(drop=True) == example_wide.reset_index(drop=True)
+    )
 
 
 def test_label_quality_scores_multiannotator():

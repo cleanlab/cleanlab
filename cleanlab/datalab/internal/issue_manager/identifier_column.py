@@ -61,15 +61,25 @@ class IdentifierColumnIssueManager(IssueManager):
         # to keep the datatype of the string columns for dicts and pandas dataframes consistent
         # we convert the string columns to dtype=str, otherwise we ran into error in our tests
         elif isinstance(features, pd.DataFrame):
-            return [
-                np.array(features[col].values, dtype=str if features[col].dtype == object else None)
-                for col in features.columns
-            ]
+            result = []
+            for col in features.columns:
+                if pd.api.types.is_string_dtype(
+                    features[col]
+                ):  # detect string columns in both pandas 2.x and 3.x.
+                    arr = np.array(features[col].values).astype(str)
+                else:
+                    arr = np.array(features[col].values)
+                result.append(arr)
+            return result
         elif isinstance(features, dict):
-            return [
-                np.array(value, dtype=str if isinstance(value[0], str) else None)
-                for value in features.values()
-            ]
+            result = []
+            for value in features.values():
+                if isinstance(value[0], str):
+                    arr = np.array(value).astype(str)
+                else:
+                    arr = np.array(value)
+                result.append(arr)
+            return result
         elif isinstance(features, list):
             for col_list in features:
                 if not isinstance(col_list, list) and not isinstance(col_list, np.ndarray):
@@ -119,4 +129,3 @@ class IdentifierColumnIssueManager(IssueManager):
             "identifier_columns": identifier_column_indices[0].tolist(),
             "num_identifier_columns": identifier_column_indices[0].size,
         }
-        print(is_identifier_column.size)

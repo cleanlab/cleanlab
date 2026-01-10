@@ -2,7 +2,7 @@ name: Bleeding Edge Dependencies Test
 on:
   schedule:
     - cron: '0 6 1 * *'   # First day of each month at 6:00 UTC
-  workflow_dispatch: # Allow manual triggering for testing
+  workflow_dispatch: # Allow manual triggering
 
 jobs:
   test-bleeding-edge:
@@ -14,7 +14,8 @@ jobs:
       - uses: snok/latest-python-versions@v1
         id: python-versions
         with:
-          include-prereleases: true
+          min-version: '3.14'
+          include-prereleases: false
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ fromJson(steps.python-versions.outputs.latest-python-versions)[0] }}
