@@ -1,10 +1,8 @@
 name: Bleeding Edge Dependencies Test
 on:
-  push:
-  pull_request:
   schedule:
     - cron: '0 6 1 * *'   # First day of each month at 6:00 UTC
-  workflow_dispatch: # Allow manual triggering for testing
+  workflow_dispatch: # Allow manual triggering
 
 jobs:
   test-bleeding-edge:
