@@ -63,7 +63,9 @@ class IdentifierColumnIssueManager(IssueManager):
         elif isinstance(features, pd.DataFrame):
             result = []
             for col in features.columns:
-                if features[col].dtype == object:
+                if pd.api.types.is_string_dtype(
+                    features[col]
+                ):  # detect string columns in both pandas 2.x and 3.x.
                     arr = np.array(features[col].values).astype(str)
                 else:
                     arr = np.array(features[col].values)
