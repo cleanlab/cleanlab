@@ -33,6 +33,12 @@ Quickstart
       .. code-block:: bash
 
          pip install cleanlab
+      
+      To install the package with all optional dependencies:
+
+      .. code-block:: bash
+
+         pip install "cleanlab[all]"
 
 
    .. tab:: conda

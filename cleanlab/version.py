@@ -1,10 +1,14 @@
-__version__ = "2.8.0"
+__version__ = "3.0.0"
 
-# 2.8.1 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
+# 3.0.1 - Not yet released, you are using bleeding-edge developer version. See its documentation at: https://docs.cleanlab.ai/master/
 
 # ------------------------------------------------
 # | PREVIOUS MAJOR VERSION RELEASE NOTES SUMMARY |
 # ------------------------------------------------
+
+# 3.0.0 - Streamlined dependencies and improved maintainability
+#   - Removed TensorFlow/Keras dependencies and cleanlab.models.keras module
+#   - Updated documentation with modern installation methods
 
 # 2.8.0 - Python 3.12-3.14 support and compatibility improvements
 #   - Add support for Python 3.12, 3.13 and 3.14
