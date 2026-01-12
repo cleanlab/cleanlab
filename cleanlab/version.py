@@ -10,7 +10,7 @@ __version__ = "3.0.0"
 #   - Removed TensorFlow/Keras dependencies and cleanlab.models.keras module
 #   - Updated documentation with modern installation methods
 
-# 2.8.0 - Python 3.12-3.14 support and compatibility improvementsgi
+# 2.8.0 - Python 3.12-3.14 support and compatibility improvements
 #   - Add support for Python 3.12, 3.13 and 3.14
 #   - Fix scikit-learn >= 1.8 compatibility issues
 #   - Remove numpy version restriction (works with numpy>=1.22)
