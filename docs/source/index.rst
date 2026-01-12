@@ -16,17 +16,24 @@ Quickstart
 
 .. tabs::
 
+   .. tab:: uv
+
+      .. code-block:: bash
+
+         uv pip install cleanlab
+
+      To install the package with all optional dependencies:
+
+      .. code-block:: bash
+
+         uv pip install "cleanlab[all]"
+
    .. tab:: pip
 
       .. code-block:: bash
 
          pip install cleanlab
 
-      To install the package with all optional dependencies:
-
-      .. code-block:: bash
-
-         pip install "cleanlab[all]"
 
    .. tab:: conda
 
@@ -38,13 +45,19 @@ Quickstart
 
       .. code-block:: bash
 
+         uv pip install git+https://github.com/cleanlab/cleanlab.git
+
+      Or with pip:
+
+      .. code-block:: bash
+
          pip install git+https://github.com/cleanlab/cleanlab.git
 
       To install the package with all optional dependencies:
 
       .. code-block:: bash
 
-         pip install "git+https://github.com/cleanlab/cleanlab.git#egg=cleanlab[all]"
+         uv pip install "git+https://github.com/cleanlab/cleanlab.git#egg=cleanlab[all]"
 
 
 2. Check your data for all sorts of issues
