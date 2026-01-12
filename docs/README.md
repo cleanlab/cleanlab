@@ -27,8 +27,15 @@ If you'd like to build our docs locally or remotely yourself, or want to know mo
 2. Install the required packages to build the docs:
 
 ```
+uv pip install -r docs/requirements.txt
+```
+
+Or with pip:
+
+```
 pip install -r docs/requirements.txt
 ```
+
 For Macs with Apple silicon: replace tensorflow in `docs/requirements.txt` with: `tensorflow-macos==2.9.2` and `tensorflow-metal==0.5.1`
 
 

@@ -47,7 +47,7 @@ Cleanlab’s open-source library helps you **clean** data and **lab**els by auto
 
 This cleanlab package runs on Python 3.10+ and supports Linux, macOS, as well as Windows.
 
-- Get started [here](https://docs.cleanlab.ai/)! Install via `pip` or `conda`.
+- Get started [here](https://docs.cleanlab.ai/)! Install via `uv`, `pip`, or `conda`.
 - Developers who install the bleeding-edge from source should refer to [this master branch documentation](https://docs.cleanlab.ai/master/index.html).
 
 **Practicing data-centric AI can look like this:**
