@@ -87,6 +87,10 @@ jobs:
         run: |
           python setup.py check --metadata --strict
 
+      - name: Clean build artifacts
+        run: |
+          rm -rf build/ dist/ *.egg-info cleanlab.egg-info/
+
       - name: Build package
         run: |
           python setup.py sdist bdist_wheel
