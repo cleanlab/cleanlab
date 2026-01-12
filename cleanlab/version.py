@@ -6,11 +6,11 @@ __version__ = "3.0.0"
 # | PREVIOUS MAJOR VERSION RELEASE NOTES SUMMARY |
 # ------------------------------------------------
 
-# 3.0.0 - "Dependency Modernization" - Streamlined dependencies and improved maintainability
+# 3.0.0 - Streamlined dependencies and improved maintainability
 #   - Removed TensorFlow/Keras dependencies and cleanlab.models.keras module
 #   - Updated documentation with modern installation methods
 
-# 2.8.0 - Python 3.12-3.14 support and compatibility improvements
+# 2.8.0 - Python 3.12-3.14 support and compatibility improvementsgi
 #   - Add support for Python 3.12, 3.13 and 3.14
 #   - Fix scikit-learn >= 1.8 compatibility issues
 #   - Remove numpy version restriction (works with numpy>=1.22)
