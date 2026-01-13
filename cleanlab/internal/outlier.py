@@ -18,7 +18,7 @@ def transform_distances_to_scores(
     .. math::
         o = \\exp\\left(-dt\\right)
 
-    where :math:`t` scales the distance to a score in the range [0,1].
+    where :math:`t` scales the distance to a score in the range [0,1]
 
     Parameters
     ----------
