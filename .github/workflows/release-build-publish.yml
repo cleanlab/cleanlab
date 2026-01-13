@@ -83,13 +83,13 @@ jobs:
       - name: Install dependencies
         run: pip install --upgrade "setuptools>=65.0,<70.0" wheel twine==5.0.0 pkginfo
 
-      - name: Perform some tests on the metadata of the package
-        run: |
-          python setup.py check --metadata --strict
-
       - name: Clean build artifacts
         run: |
           rm -rf build/ dist/ *.egg-info cleanlab.egg-info/
+
+      - name: Perform some tests on the metadata of the package
+        run: |
+          python setup.py check --metadata --strict
 
       - name: Build package
         run: |
