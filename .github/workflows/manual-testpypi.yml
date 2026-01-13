@@ -1,0 +1,154 @@
+name: Manual TestPyPI Release
+
+on:
+  workflow_dispatch:  # Manual trigger only
+    inputs:
+      reason:
+        description: 'Reason for this test release'
+        required: false
+        default: 'Testing changes before official release'
+
+jobs:
+  extract_project_name:
+    runs-on: ubuntu-latest
+    outputs:
+      cleanlab_package_name: ${{ steps.extract_name.outputs.value }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: TOML Reader
+        uses: SebRollen/toml-action@v1.2.0
+        id: extract_name
+        with:
+          file: "pyproject.toml"
+          field: "project.name"
+
+  build:
+    needs: extract_project_name
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Remove tests directory
+        run: |
+          TEST_DIR=$(find . -type d -name "tests")
+          if [ -n "$TEST_DIR" ]; then
+            rm -rf $TEST_DIR
+          else
+            echo "No tests directory found! This is unexpected."
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.11
+
+      - name: Modify version for TestPyPI
+        run: |
+          # Add .dev suffix with run number for TestPyPI
+          sed -i "s/__version__ = \"\(.*\)\"/__version__ = \"\1.dev${{ github.run_number }}\"/" cleanlab/version.py
+          echo "Modified version for TestPyPI:"
+          grep "__version__" cleanlab/version.py
+
+      - name: Install dependencies
+        run: pip install --upgrade "setuptools>=65.0,<70.0" wheel twine==5.0.0 pkginfo
+
+      - name: Perform some tests on the metadata of the package
+        run: |
+          python setup.py check --metadata --strict
+
+      - name: Clean build artifacts
+        run: |
+          rm -rf build/ dist/ *.egg-info cleanlab.egg-info/
+
+      - name: Build package
+        run: |
+          python setup.py sdist bdist_wheel
+
+      - name: Test package
+        run: |
+          twine check dist/*
+
+      - name: Display package info
+        run: |
+          echo "📦 Built packages:"
+          ls -lh dist/
+          echo ""
+          echo "📝 Reason: ${{ github.event.inputs.reason }}"
+
+      - name: Store build artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: package
+          path: dist/*
+
+  publish-testpypi:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+
+    steps:
+      - name: Fetch build artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: package
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          verify-metadata: true
+
+  test-basic-import:
+    needs: [publish-testpypi, extract_project_name]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.11
+
+      - name: Install package from TestPyPI
+        env:
+          CLEANLAB_PACKAGE_NAME: ${{ needs.extract_project_name.outputs.cleanlab_package_name }}
+        run: pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ $CLEANLAB_PACKAGE_NAME
+
+      - name: Test importing package
+        run: |
+          python -c "import cleanlab
+          from cleanlab.outlier import OutOfDistribution
+          ood = OutOfDistribution()
+          print(ood)
+          print('✅ Basic import test passed!')
+          print('Version:', cleanlab.__version__)"
+
+  test-extras-import:
+    needs: [publish-testpypi, extract_project_name]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.11
+
+      - name: Install package with extras
+        env:
+          CLEANLAB_PACKAGE_NAME: ${{ needs.extract_project_name.outputs.cleanlab_package_name }}
+        run: pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ $CLEANLAB_PACKAGE_NAME[all]
+
+      - name: Test importing package with extras
+        run: |
+          python -c "import cleanlab
+          from cleanlab import Datalab
+          lab = Datalab({'a': [1, 2, 3, 4, 5], 'b': ['a', 'b', 'c', 'b', 'a']})
+          print(lab)
+          print('✅ Extras import test passed!')
+          print('Version:', cleanlab.__version__)"
