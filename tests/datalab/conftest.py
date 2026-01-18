@@ -4,6 +4,8 @@ import pytest
 from datasets import load_dataset
 from datasets.arrow_dataset import Dataset
 from PIL import Image
+from io import BytesIO
+
 from sklearn.neighbors import NearestNeighbors
 
 from cleanlab.datalab.datalab import Datalab
@@ -111,10 +113,55 @@ def custom_issue_manager():
     return CustomIssueManager
 
 
-def generate_image():
-    arr = np.random.randint(low=0, high=256, size=(300, 300, 3), dtype=np.uint8)
-    img = Image.fromarray(arr, mode="RGB")
-    return img
+@pytest.fixture
+def mock_issues():
+    return pd.DataFrame(
+        {
+            "is_foo_issue": [False, True, False, False, False],
+            "foo_score": [0.6, 0.8, 0.7, 0.7, 0.8],
+        }
+    )
+
+
+@pytest.fixture
+def mock_issue_summary():
+    return pd.DataFrame(
+        {
+            "issue_type": ["foo"],
+            "score": [0.72],
+            "num_issues": [1],
+        }
+    )
+
+
+def generate_png_image():
+    arr = np.random.randint(low=0, high=256, size=(28, 28), dtype=np.uint8)
+    img = Image.fromarray(arr, mode="L")
+
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    return Image.open(buffer)
+
+
+@pytest.fixture
+def synthetic_image_dataset():
+    num_images = 10
+    images = []
+    labels = []
+
+    for _ in range(num_images):
+        images.append(generate_png_image())
+        labels.append(np.random.randint(0, 10))
+
+    data_dict = {
+        "image": images,
+        "label": labels,
+    }
+
+    dataset = Dataset.from_dict(data_dict)
+    return dataset
 
 
 @pytest.fixture
