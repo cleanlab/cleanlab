@@ -248,6 +248,9 @@ class Datalab:
             which is responsible for detecting the particular issue type.
 
             .. seealso::
+                See the `Issue Types Guide <https://docs.cleanlab.ai/stable/cleanlab/datalab/guide/issue_type_description.html>`_
+                for a list of possible issue types and their descriptions.
+
                 :py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`
 
         Examples
