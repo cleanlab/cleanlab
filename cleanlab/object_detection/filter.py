@@ -325,7 +325,6 @@ def _filter_by_class(
     return pred_bboxes, lab_bboxes
 
 
-
 def _calculate_true_positives_false_positives(
     pred_bboxes: np.ndarray,
     lab_bboxes: np.ndarray,
