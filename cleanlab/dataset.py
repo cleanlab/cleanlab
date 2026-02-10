@@ -205,7 +205,7 @@ def find_overlapping_classes(
         An array of shape ``(K, K)``, where K is the number of classes,
         representing the estimated joint distribution of the noisy labels and
         true labels. The sum of all entries in this matrix must be 1 (valid
-        probability distribution). Each entry in the matrix captures the co-occurence joint
+        probability distribution). Each entry in the matrix captures the co-occurrence joint
         probability of a true label and a noisy label, i.e. ``p(noisy_label=i, true_label=j)``.
         **Important**. If you input the joint, you must also input `num_examples`.
 
