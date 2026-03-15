@@ -20,3 +20,4 @@ In multi-label classification, each example in the dataset can belong to 1 or mo
     filter
     rank
     dataset
+    multiannotator
