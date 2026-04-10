@@ -263,6 +263,7 @@ class Label(ABC):
         self.labels = labels_to_array([])
         self.label_map: Mapping[Union[str, int], Any] = {}
         if label_name is not None:
+            self._check_for_null_labels(data, label_name)
             self.labels, self.label_map = self._extract_labels(data, label_name, map_to_int)
             self._validate_labels()
 
@@ -299,6 +300,44 @@ class Label(ABC):
         empty_labels = self.labels is None or len(self.labels) == 0
         empty_label_map = self.label_map is None or len(self.label_map) == 0
         return not (empty_labels or empty_label_map)
+
+    @staticmethod
+    def _check_for_null_labels(data: Dataset, label_name: str) -> None:
+        """Raise a descriptive ``ValueError`` if the label column contains null values.
+
+        Detects NaN, None, ``pd.NA``, and ``NaT`` in the raw label column before
+        :meth:`_extract_labels` runs. Without this check, null values silently become
+        their own class in the label map (via ``np.unique``), corrupting downstream
+        data quality checks in Datalab.
+
+        Notes
+        -----
+        For multi-label tasks, this detects whole-row nulls (e.g., a row where the
+        label is ``None`` instead of a list of labels). Nested null values inside
+        multi-label sublists are not checked.
+        """
+        if label_name not in data.column_names:
+            # The existing `_validate_labels` method raises a clearer error for this case.
+            return
+
+        raw_labels = data[label_name]
+        null_mask = pd.isna(pd.Series(raw_labels))
+        if not null_mask.any():
+            return
+
+        null_indices = np.flatnonzero(null_mask.values)
+        null_count = int(null_indices.size)
+        preview_limit = 10
+        preview = null_indices[:preview_limit].tolist()
+        indices_str = ", ".join(str(i) for i in preview)
+        if null_count > preview_limit:
+            indices_str += f", ... ({null_count - preview_limit} more)"
+
+        raise ValueError(
+            f"Label column '{label_name}' contains {null_count} null value(s) "
+            f"(NaN/None) at index/indices: {indices_str}. "
+            f"Please remove or impute these rows before initializing Datalab."
+        )
 
     def _validate_labels(self) -> None:
         if self.label_name not in self._data.column_names:

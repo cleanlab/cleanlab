@@ -1,5 +1,6 @@
 import tempfile
 from unittest.mock import patch
+import pandas as pd
 import pytest
 from cleanlab.datalab.internal.data import Data, DataFormatError, DatasetLoadError
 from datasets import Dataset, ClassLabel
@@ -244,3 +245,73 @@ class TestData:
         data = Data(data=dataset, task=Task.MULTILABEL, label_name="label")
         label_map = data.labels.label_map
         assert list(label_map.values()) == sorted(label_map.values())
+
+
+class TestNullLabelValidation:
+    """Tests for early null-value detection in the label column.
+
+    Regression guard for https://github.com/cleanlab/cleanlab/issues/987.
+    Without this validation, NaN/None values flow into ``np.unique`` during
+    label map construction and silently become their own class, corrupting
+    downstream data quality checks.
+    """
+
+    def test_nan_in_dict_label_raises(self):
+        data = {"feature": [1, 2, 3], "label": [0, np.nan, 1]}
+        with pytest.raises(ValueError, match="contains 1 null value"):
+            Data(data=data, task=Task.CLASSIFICATION, label_name="label")
+
+    def test_none_in_dict_label_raises(self):
+        data = {"feature": [1, 2, 3], "label": [0, None, 1]}
+        with pytest.raises(ValueError, match="contains 1 null value"):
+            Data(data=data, task=Task.CLASSIFICATION, label_name="label")
+
+    def test_nan_in_dataframe_label_raises(self):
+        df = pd.DataFrame({"feature": [1, 2, 3, 4], "label": [0, np.nan, 1, 0]})
+        with pytest.raises(ValueError, match="Label column 'label' contains 1 null value"):
+            Data(data=df, task=Task.CLASSIFICATION, label_name="label")
+
+    def test_nan_in_dataset_label_raises(self):
+        dataset = Dataset.from_dict({"feature": [1, 2, 3], "label": [0.0, np.nan, 1.0]})
+        with pytest.raises(ValueError, match="contains 1 null value"):
+            Data(data=dataset, task=Task.CLASSIFICATION, label_name="label")
+
+    def test_error_message_lists_null_indices(self):
+        data = {"feature": [10, 20, 30, 40, 50], "label": [np.nan, 1, np.nan, 0, np.nan]}
+        with pytest.raises(ValueError) as exc_info:
+            Data(data=data, task=Task.CLASSIFICATION, label_name="label")
+        message = str(exc_info.value)
+        assert "contains 3 null value(s)" in message
+        assert "0, 2, 4" in message
+        assert "label" in message
+
+    def test_error_message_truncates_large_null_lists(self):
+        # 15 null values across 15 rows: preview should show first 10 and "5 more"
+        labels = [np.nan] * 15
+        data = {"feature": list(range(15)), "label": labels}
+        with pytest.raises(ValueError) as exc_info:
+            Data(data=data, task=Task.CLASSIFICATION, label_name="label")
+        message = str(exc_info.value)
+        assert "contains 15 null value(s)" in message
+        assert "0, 1, 2, 3, 4, 5, 6, 7, 8, 9" in message
+        assert "... (5 more)" in message
+
+    def test_clean_integer_labels_pass(self):
+        # Regression: fix must not break the happy path for integer labels.
+        data = {"feature": [1, 2, 3, 4], "label": [0, 1, 0, 1]}
+        result = Data(data=data, task=Task.CLASSIFICATION, label_name="label")
+        assert result.has_labels
+        assert len(result.labels) == 4
+
+    def test_clean_string_labels_pass(self):
+        # Negative test: the fix must not over-reach and reject valid string labels.
+        data = {"feature": [1, 2, 3], "label": ["cat", "dog", "cat"]}
+        result = Data(data=data, task=Task.CLASSIFICATION, label_name="label")
+        assert result.has_labels
+        assert len(result.labels) == 3
+
+    def test_multilabel_whole_row_null_raises(self):
+        # Multi-label case: entire row is None instead of a list.
+        data = {"feature": [1, 2, 3], "label": [["a", "b"], None, ["a"]]}
+        with pytest.raises(ValueError, match="contains 1 null value"):
+            Data(data=data, task=Task.MULTILABEL, label_name="label")
