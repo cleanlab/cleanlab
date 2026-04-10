@@ -321,11 +321,11 @@ class Label(ABC):
             return
 
         raw_labels = data[label_name]
-        null_mask = pd.isna(pd.Series(raw_labels))
+        null_mask = pd.isna(pd.Series(raw_labels)).to_numpy()
         if not null_mask.any():
             return
 
-        null_indices = np.flatnonzero(null_mask.values)
+        null_indices = np.flatnonzero(null_mask)
         null_count = int(null_indices.size)
         preview_limit = 10
         preview = null_indices[:preview_limit].tolist()
