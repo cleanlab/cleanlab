@@ -26,7 +26,6 @@ from cleanlab.internal.object_detection_utils import (
     assert_valid_inputs,
 )
 
-
 if TYPE_CHECKING:  # pragma: no cover
     from typing import TypedDict
 
@@ -144,11 +143,9 @@ def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0
     """
 
     if threshold > 1.0:
-        raise ValueError(
-            f"""
+        raise ValueError("""
             Threshold is a cutoff of label_quality_scores and therefore should be <= 1.
-            """
-        )
+            """)
 
     issue_indices = np.argwhere(label_quality_scores <= threshold).flatten()
     issue_vals = label_quality_scores[issue_indices]
@@ -443,14 +440,14 @@ def _get_valid_inputs_for_compute_scores_per_image(
     if lab_labels is None or lab_bboxes is None:
         if label is None:
             raise ValueError(
-                f"Pass in either one of label or label labels into auxiliary inputs. Both can not be None."
+                "Pass in either one of label or label labels into auxiliary inputs. Both can not be None."
             )
         lab_bboxes, lab_labels = _separate_label(label)
 
     if pred_labels is None or pred_label_probs is None or pred_bboxes is None:
         if prediction is None:
             raise ValueError(
-                f"Pass in either one of prediction or prediction labels and prediction probabilities into auxiliary inputs. Both can not be None."
+                "Pass in either one of prediction or prediction labels and prediction probabilities into auxiliary inputs. Both can not be None."
             )
         pred_bboxes, pred_labels, pred_label_probs = _separate_prediction(prediction)
 
@@ -491,7 +488,7 @@ def _get_valid_inputs_for_compute_scores(
     """Takes in alpha, labels and predictions and returns auxiliary input dictionary containing divided parts of labels and prediction per image."""
     if predictions is None or labels is None:
         raise ValueError(
-            f"Predictions and labels can not be None. Both are needed to get valid inputs."
+            "Predictions and labels can not be None. Both are needed to get valid inputs."
         )
     min_possible_similarity = _get_min_possible_similarity(alpha, predictions, labels)
 

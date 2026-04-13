@@ -102,7 +102,7 @@ class MultiLabelPredProbs(ModelOutput):
         pred_probs = self.data
         if pred_probs.ndim != 2:
             raise ValueError(
-                f"Expected pred_probs to be a 2D array for multi-label classification,"
+                "Expected pred_probs to be a 2D array for multi-label classification,"
                 " but got {pred_probs.ndim}D array instead."
             )
         if not np.all((pred_probs >= 0) & (pred_probs <= 1)):

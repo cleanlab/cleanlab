@@ -60,9 +60,7 @@ class DataValuationIssueManager(IssueManager):
         >>> lab.find_issues(knn_graph=knn_graph, issue_types=issue_types)
     """
 
-    description: ClassVar[
-        str
-    ] = """
+    description: ClassVar[str] = """
     Examples that contribute minimally to a model's training
     receive lower valuation scores.
     Since the original knn-shapley value is in [-1, 1], we transform it to [0, 1] by:
@@ -112,6 +110,8 @@ class DataValuationIssueManager(IssueManager):
             A sparse matrix representing the knn graph.
         """
         labels = self.datalab.labels
+        if features is None:
+            features = kwargs.get("features", None)
         if not isinstance(labels, np.ndarray):
             error_msg = (
                 f"Expected labels to be a numpy array of shape (n_samples,) to use with DataValuationIssueManager, "
@@ -126,6 +126,8 @@ class DataValuationIssueManager(IssueManager):
             k=self.k,
             statistics=self.datalab.get_info("statistics"),
         )
+        if knn_graph is None:
+            raise ValueError("Data valuation requires either `features` or `knn_graph`.")
 
         # TODO: Check self.k against user-provided knn-graphs across all issue managers
         num_neighbors = num_neighbors_in_knn_graph(knn_graph)
@@ -134,9 +136,9 @@ class DataValuationIssueManager(IssueManager):
                 f"The provided knn graph has {num_neighbors} neighbors, which is less than the required {self.k} neighbors. "
                 "Please ensure that the knn graph you provide has at least as many neighbors as the required value of k."
             )
-
         scores = data_shapley_knn(labels, knn_graph=knn_graph, k=self.k)
-
+        if scores is None or len(scores) == 0:
+            raise ValueError("Data valuation produced empty scores.")
         self.issues = pd.DataFrame(
             {
                 f"is_{self.issue_name}_issue": scores < self.threshold,

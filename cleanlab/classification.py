@@ -786,7 +786,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 print("Using predicted probabilities to identify label issues ...")
 
             if self.find_label_issues_kwargs:
-                warnings.warn(f"`find_label_issues_kwargs` is not used when `low_memory=True`.")
+                warnings.warn("`find_label_issues_kwargs` is not used when `low_memory=True`.")
             arg_values = {
                 "thresholds": thresholds,
                 "noise_matrix": noise_matrix,
@@ -1040,7 +1040,7 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
                 raise ValueError("labels must match label_issues['given_label']")
             return label_issues
         elif isinstance(label_issues, np.ndarray):
-            if not label_issues.dtype in [np.dtype("bool"), np.dtype("int")]:
+            if label_issues.dtype not in [np.dtype("bool"), np.dtype("int")]:
                 raise ValueError("If label_issues is numpy.array, dtype must be 'bool' or 'int'.")
             if label_issues.dtype is np.dtype("bool") and label_issues.shape != labels.shape:
                 raise ValueError(

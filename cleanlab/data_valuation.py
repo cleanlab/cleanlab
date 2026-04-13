@@ -118,10 +118,59 @@ def data_shapley_knn(
         raise ValueError("Either knn_graph or features must be provided.")
 
     # Use provided knn_graph or compute it from features
+    labels = np.asarray(labels)
+    num_examples = labels.shape[0]
+
     if knn_graph is None:
+        features = np.asarray(features)
+
+        if features.ndim != 2 or features.shape[0] != num_examples:
+            raise ValueError("Invalid features provided for KNN graph.")
+
         knn_graph, _ = create_knn_graph_and_index(features, n_neighbors=k, metric=metric)
 
     num_examples = labels.shape[0]
-    distances = knn_graph.indices.reshape(num_examples, -1)
+    distances = np.asarray(knn_graph.indices).reshape(num_examples, -1)
+
     scores = _knn_shapley_score(neighbor_indices=distances, y=labels, k=k)
     return 0.5 * (scores + 1)
+
+
+def complexity_gap_score(
+    labels: np.ndarray,
+    *,
+    features: Optional[np.ndarray] = None,
+    knn_graph: Optional[csr_matrix] = None,
+    k: int = 10,
+) -> np.ndarray:
+    """
+    KNN-based approximation of complexity-gap style valuation.
+    """
+
+    labels = np.asarray(labels)
+    num_examples = labels.shape[0]
+
+    if knn_graph is None:
+        if features is None:
+            raise ValueError("Either features or knn_graph must be provided.")
+
+        features = np.asarray(features)
+
+        if features.ndim != 2 or features.shape[0] != num_examples:
+            raise ValueError("Invalid features provided for KNN graph.")
+
+        knn_graph, _ = create_knn_graph_and_index(
+            features,
+            n_neighbors=k,
+            metric=None,
+        )
+
+    neighbors = np.asarray(knn_graph.indices).reshape(num_examples, -1)[:, :k]
+
+    same_label = labels[neighbors] == labels[:, None]
+    support = same_label.astype(np.float32).mean(axis=1)
+
+    scores = 1.0 - support
+
+    min_s, max_s = scores.min(), scores.max()
+    return (scores - min_s) / (max_s - min_s + 1e-12)

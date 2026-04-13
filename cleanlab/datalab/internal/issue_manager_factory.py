@@ -27,8 +27,6 @@ from __future__ import annotations
 from typing import Dict, List, Type
 
 from cleanlab.datalab.internal.issue_manager import (
-    ClassImbalanceIssueManager,
-    DataValuationIssueManager,
     IssueManager,
     LabelIssueManager,
     NearDuplicateIssueManager,
@@ -42,7 +40,6 @@ from cleanlab.datalab.internal.issue_manager import (
 from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIssueManager
 from cleanlab.datalab.internal.issue_manager.multilabel.label import MultilabelIssueManager
 from cleanlab.datalab.internal.task import Task
-
 
 REGISTRY: Dict[Task, Dict[str, Type[IssueManager]]] = {
     Task.CLASSIFICATION: {

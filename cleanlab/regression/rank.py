@@ -75,12 +75,10 @@ def get_label_quality_scores(
 
     scoring_func = scoring_funcs.get(method, None)
     if not scoring_func:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             {method} is not a valid scoring method.
             Please choose a valid scoring technique: {scoring_funcs.keys()}.
-            """
-        )
+            """)
 
     # Calculate scores
     label_quality_scores = scoring_func(labels, predictions)

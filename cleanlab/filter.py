@@ -34,7 +34,7 @@ try:
     import tqdm.auto as tqdm
 
     tqdm_exists = True
-except ImportError as e:  # pragma: no cover
+except ImportError:  # pragma: no cover
     tqdm_exists = False
 
     w = """To see estimated completion times for methods in cleanlab.filter, "pip install tqdm"."""
@@ -46,7 +46,7 @@ try:
     import psutil
 
     psutil_exists = True
-except ImportError as e:  # pragma: no cover
+except ImportError:  # pragma: no cover
     psutil_exists = False
 
 # global variable for find_label_issues multiprocessing
