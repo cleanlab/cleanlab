@@ -6,7 +6,7 @@ from hypothesis.extra.numpy import arrays
 
 from sklearn.neighbors import NearestNeighbors
 
-from cleanlab.data_valuation import _knn_shapley_score, data_shapley_knn
+from cleanlab.data_valuation import _knn_shapley_score, data_shapley_knn, complexity_gap_score
 from cleanlab.internal.neighbor.knn_graph import create_knn_graph_and_index
 
 
@@ -40,6 +40,28 @@ class TestDataValuation:
         assert shapley.shape == (100,)
         assert np.all(shapley >= 0)
         assert np.all(shapley <= 1)
+    
+    def test_complexity_gap_score_runs(self, labels, features):
+        scores = complexity_gap_score(labels=labels, features=features, k=self.K)
+        assert scores.shape == (self.N,)
+        assert np.all(scores >= 0)
+        assert np.all(scores <= 1)
+
+
+    def test_complexity_gap_differs_from_shapley(self, labels, features):
+        knn = NearestNeighbors(n_neighbors=self.K).fit(features)
+        knn_graph = knn.kneighbors_graph(mode="distance")
+
+        shapley = data_shapley_knn(labels, knn_graph=knn_graph, k=self.K)
+        gap = complexity_gap_score(labels=labels, features=features, k=self.K)
+
+        assert not np.allclose(shapley, gap)
+
+    def test_complexity_gap_stability(self, labels, features):
+        s1 = complexity_gap_score(labels=labels, features=features, k=self.K)
+        s2 = complexity_gap_score(labels=labels, features=features, k=self.K)
+
+        np.testing.assert_allclose(s1, s2)
 
 
 @composite
