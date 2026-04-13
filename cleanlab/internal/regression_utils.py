@@ -19,12 +19,12 @@ def assert_valid_prediction_inputs(
     try:
         labels = np.asarray(labels)
     except:
-        raise ValueError(f"labels must be array_like.")
+        raise ValueError("labels must be array_like.")
 
     try:
         predictions = np.asarray(predictions)
     except:
-        raise ValueError(f"predictions must be array_like.")
+        raise ValueError("predictions must be array_like.")
 
     # Check if labels and predictions are 1-D and numeric
     valid_labels = check_dimension_and_datatype(check_input=labels, text="labels")
@@ -58,7 +58,7 @@ def assert_valid_regression_inputs(
     try:
         X = np.asarray(X)
     except:
-        raise ValueError(f"X must be array_like.")
+        raise ValueError("X must be array_like.")
 
     y = check_dimension_and_datatype(y, "y")
     check_missing_values(y, text="y")

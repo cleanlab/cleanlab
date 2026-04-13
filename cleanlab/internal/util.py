@@ -495,7 +495,7 @@ def append_extra_datapoint(to_data, from_data, index) -> DatasetLike:
     This datapoint is taken from the data object ``from_data`` at the corresponding index.
     One place this could be useful is ensuring no missing classes after train/validation split.
     """
-    if not (type(from_data) is type(to_data)):
+    if type(from_data) is not type(to_data):
         raise ValueError("Cannot append datapoint from different type of data object.")
 
     if isinstance(to_data, np.ndarray):

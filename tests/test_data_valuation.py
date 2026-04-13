@@ -40,13 +40,12 @@ class TestDataValuation:
         assert shapley.shape == (100,)
         assert np.all(shapley >= 0)
         assert np.all(shapley <= 1)
-    
+
     def test_complexity_gap_score_runs(self, labels, features):
         scores = complexity_gap_score(labels=labels, features=features, k=self.K)
         assert scores.shape == (self.N,)
         assert np.all(scores >= 0)
         assert np.all(scores <= 1)
-
 
     def test_complexity_gap_differs_from_shapley(self, labels, features):
         knn = NearestNeighbors(n_neighbors=self.K).fit(features)

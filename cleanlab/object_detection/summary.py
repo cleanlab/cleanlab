@@ -267,7 +267,7 @@ def plot_class_size_distributions(
     """
     try:
         import matplotlib.pyplot as plt
-    except ImportError as e:
+    except ImportError:
         raise ImportError(
             "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
         )
@@ -317,14 +317,14 @@ def plot_class_distribution(labels, predictions, class_names=None, **kwargs):
     """
     try:
         import matplotlib.pyplot as plt
-    except ImportError as e:
+    except ImportError:
         raise ImportError(
             "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
         )
 
     lab_dist, pred_dist = class_label_distribution(labels, predictions, class_names=class_names)
     fig, axs = plt.subplots(1, 2, figsize=(10, 5))
-    fig.suptitle(f"Distribution of classes in the dataset")
+    fig.suptitle("Distribution of classes in the dataset")
     for i, d in enumerate([lab_dist, pred_dist]):
         axs[i].pie(d.values(), labels=d.keys(), autopct="%1.1f%%")
         axs[i].set_title("Annotated" if i == 0 else "Predicted")
@@ -390,7 +390,7 @@ def visualize(
     try:
         import matplotlib.pyplot as plt
         from matplotlib.axes import Axes
-    except ImportError as e:
+    except ImportError:
         raise ImportError(
             "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
         )
@@ -694,7 +694,7 @@ def _plot_legend(class_names, label, prediction):
 
     try:
         import matplotlib.pyplot as plt
-    except ImportError as e:
+    except ImportError:
         raise ImportError(
             "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
         )
@@ -734,7 +734,7 @@ def _draw_boxes(fig, ax, bboxes, labels, edgecolor="g", linestyle="-", linewidth
 
     try:
         from matplotlib.patches import Rectangle
-    except Exception as e:
+    except Exception:
         raise ImportError(
             "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
         )

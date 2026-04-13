@@ -251,7 +251,7 @@ class TestSetKNNGraph:
             features, find_issues_kwargs, metric="euclidean", k=k, statistics=statistics
         )
         assert _get_num_neighbors(result_graph) == 8
-        assert result_metric is "euclidean"
+        assert result_metric == "euclidean"
 
         # The large graph has more than enough neighbors, so it should be used
         statistics = {"weighted_knn_graph": large_knn_graph}
@@ -259,7 +259,7 @@ class TestSetKNNGraph:
             features, find_issues_kwargs, metric="euclidean", k=k, statistics=statistics
         )
         assert _get_num_neighbors(result_graph) == 9
-        assert result_metric is "euclidean"
+        assert result_metric == "euclidean"
 
     def test_knn_returned(self, small_knn_graph):
         features = np.random.random((10, 5))

@@ -22,9 +22,7 @@ if TYPE_CHECKING:  # pragma: no cover
 class OutlierIssueManager(IssueManager):
     """Manages issues related to out-of-distribution examples."""
 
-    description: ClassVar[
-        str
-    ] = """Examples that are very different from the rest of the dataset
+    description: ClassVar[str] = """Examples that are very different from the rest of the dataset
     (i.e. potentially out-of-distribution or rare/anomalous instances).
     """
     issue_name: ClassVar[str] = "outlier"
@@ -168,7 +166,7 @@ class OutlierIssueManager(IssueManager):
                 raise ValueError(
                     "knn_graph is provided, but not sufficiently large to compute the scores based on the provided hyperparameters."
                 )
-            raise ValueError(f"Either features pred_probs must be provided.")
+            raise ValueError("Either features pred_probs must be provided.")
 
         # Store results
         self.issues = pd.DataFrame(

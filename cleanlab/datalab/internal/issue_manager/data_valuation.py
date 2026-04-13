@@ -60,9 +60,7 @@ class DataValuationIssueManager(IssueManager):
         >>> lab.find_issues(knn_graph=knn_graph, issue_types=issue_types)
     """
 
-    description: ClassVar[
-        str
-    ] = """
+    description: ClassVar[str] = """
     Examples that contribute minimally to a model's training
     receive lower valuation scores.
     Since the original knn-shapley value is in [-1, 1], we transform it to [0, 1] by:
@@ -129,9 +127,7 @@ class DataValuationIssueManager(IssueManager):
             statistics=self.datalab.get_info("statistics"),
         )
         if knn_graph is None:
-                raise ValueError(
-                    "Data valuation requires either `features` or `knn_graph`."
-        )
+            raise ValueError("Data valuation requires either `features` or `knn_graph`.")
 
         # TODO: Check self.k against user-provided knn-graphs across all issue managers
         num_neighbors = num_neighbors_in_knn_graph(knn_graph)

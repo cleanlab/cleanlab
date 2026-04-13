@@ -261,7 +261,7 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
                 f"Use verbosity={top_level} to print all info."
             )
         if issues.empty:
-            print(f"No issues found")
+            print("No issues found")
 
         topk_ids = issues.sort_values(by=cls.issue_score_key, ascending=True).index[:num_examples]
 
@@ -313,7 +313,7 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         if info_to_print:
             info_to_print_dict = {key: info[key] for key in info_to_print}
             # Print the info dict, truncating arrays to 4 elements,
-            report_str += f"\n\nAdditional Information: "
+            report_str += "\n\nAdditional Information: "
             for key, value in info_to_print_dict.items():
                 if key == "statistics":
                     continue
