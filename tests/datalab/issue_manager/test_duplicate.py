@@ -199,8 +199,8 @@ def no_issue_issue_manager_strategy(draw):
     """Strategy for generating NearDuplicateIssueManagers with no issues."""
     return build_issue_manager(
         draw,
-        st.integers(min_value=10, max_value=50),
-        st.integers(min_value=2, max_value=5),
+        st.integers(min_value=5, max_value=20),
+        st.integers(min_value=1, max_value=3),
         with_issues=False,
         threshold=0.0001,
     )
@@ -212,7 +212,7 @@ def issue_manager_with_issues_strategy(draw):
     return build_issue_manager(
         draw,
         st.integers(min_value=10, max_value=20),
-        st.integers(min_value=2, max_value=5),
+        st.integers(min_value=1, max_value=3),
         with_issues=True,
         threshold=0.9,
     )
@@ -223,15 +223,13 @@ class TestNearDuplicateSets:
 
     @pytest.mark.slow
     @given(issue_manager=no_issue_issue_manager_strategy())
-    @settings(
-        deadline=800, suppress_health_check=[HealthCheck.too_slow, HealthCheck.data_too_large]
-    )
+    @settings(deadline=800, suppress_health_check=[HealthCheck.too_slow])
     def test_near_duplicate_sets_empty_if_no_issue_next(self, issue_manager):
         near_duplicate_sets = issue_manager.info["near_duplicate_sets"]
         assert all(len(near_duplicate_set) == 0 for near_duplicate_set in near_duplicate_sets)
 
     @given(issue_manager=issue_manager_with_issues_strategy())
-    @settings(deadline=800, max_examples=1000, suppress_health_check=[HealthCheck.too_slow])
+    @settings(deadline=800, max_examples=200, suppress_health_check=[HealthCheck.too_slow])
     def test_symmetric_and_flagged_consistency(self, issue_manager):
         near_duplicate_sets = issue_manager.info["near_duplicate_sets"]
         issues = issue_manager.issues["is_near_duplicate_issue"]

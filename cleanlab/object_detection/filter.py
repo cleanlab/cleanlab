@@ -173,7 +173,7 @@ def _find_label_issues(
         scores = get_label_quality_scores(labels, predictions)
         sorted_scores_idx = issues_from_scores(scores, threshold=1.0)
         is_issue_idx = np.where(is_issue == True)[0]
-        sorted_issue_mask = np.in1d(sorted_scores_idx, is_issue_idx, assume_unique=True)
+        sorted_issue_mask = np.isin(sorted_scores_idx, is_issue_idx, assume_unique=True)
         issue_idx = sorted_scores_idx[sorted_issue_mask]
         return issue_idx
     else:
