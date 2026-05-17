@@ -50,6 +50,7 @@ _CLASSIFICATION_ARGS_DICT = {
     "data_valuation": ["features", "knn_graph"],
     "class_imbalance": [],
     "null": ["features"],
+    "placeholder": ["features"],
 }
 _REGRESSION_ARGS_DICT = {
     "label": ["features", "predictions"],
@@ -58,6 +59,7 @@ _REGRESSION_ARGS_DICT = {
     "non_iid": ["features", "knn_graph"],
     "data_valuation": ["features", "knn_graph"],
     "null": ["features"],
+    "placeholder": ["features"],
 }
 
 _MULTILABEL_ARGS_DICT = {
@@ -67,6 +69,7 @@ _MULTILABEL_ARGS_DICT = {
     "non_iid": ["features", "knn_graph"],
     "data_valuation": ["features", "knn_graph"],
     "null": ["features"],
+    "placeholder": ["features"],
 }
 
 

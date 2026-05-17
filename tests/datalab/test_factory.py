@@ -24,6 +24,7 @@ def test_list_possible_issue_types(registry):
         "underperforming_group",
         "data_valuation",
         "null",
+        "placeholder",
     ]
     assert set(issue_types) == set(possible_issues)
 

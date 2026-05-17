@@ -38,6 +38,7 @@ from cleanlab.datalab.internal.issue_manager import (
     DataValuationIssueManager,
     OutlierIssueManager,
     NullIssueManager,
+    PlaceholderIssueManager,
 )
 from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIssueManager
 from cleanlab.datalab.internal.issue_manager.multilabel.label import MultilabelIssueManager
@@ -54,6 +55,7 @@ REGISTRY: Dict[Task, Dict[str, Type[IssueManager]]] = {
         "underperforming_group": UnderperformingGroupIssueManager,
         "data_valuation": DataValuationIssueManager,
         "null": NullIssueManager,
+        "placeholder": PlaceholderIssueManager,
     },
     Task.REGRESSION: {
         "label": RegressionLabelIssueManager,
@@ -62,6 +64,7 @@ REGISTRY: Dict[Task, Dict[str, Type[IssueManager]]] = {
         "non_iid": NonIIDIssueManager,
         "data_valuation": DataValuationIssueManager,
         "null": NullIssueManager,
+        "placeholder": PlaceholderIssueManager,
     },
     Task.MULTILABEL: {
         "label": MultilabelIssueManager,
@@ -70,6 +73,7 @@ REGISTRY: Dict[Task, Dict[str, Type[IssueManager]]] = {
         "non_iid": NonIIDIssueManager,
         "data_valuation": DataValuationIssueManager,
         "null": NullIssueManager,
+        "placeholder": PlaceholderIssueManager,
     },
 }
 """Registry of issue managers that can be constructed from a task and issue type

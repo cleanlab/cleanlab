@@ -7,4 +7,5 @@ from .imbalance import ClassImbalanceIssueManager
 from .underperforming_group import UnderperformingGroupIssueManager
 from .data_valuation import DataValuationIssueManager
 from .null import NullIssueManager
+from .placeholder import PlaceholderIssueManager
 from .identifier_column import IdentifierColumnIssueManager

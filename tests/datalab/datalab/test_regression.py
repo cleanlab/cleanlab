@@ -137,7 +137,15 @@ class TestDatalabForRegression:
             ["label", "outlier", "near_duplicate", "non_iid", "null"]
         )
         assert set(lab.list_possible_issue_types()) == set(
-            ["label", "outlier", "near_duplicate", "non_iid", "null", "data_valuation"]
+            [
+                "label",
+                "outlier",
+                "near_duplicate",
+                "non_iid",
+                "null",
+                "placeholder",
+                "data_valuation",
+            ]
         )
 
     def test_regression_with_features_finds_label_issues(self, lab, regression_data):
