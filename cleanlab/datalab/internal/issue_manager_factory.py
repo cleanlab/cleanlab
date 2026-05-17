@@ -44,7 +44,6 @@ from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIs
 from cleanlab.datalab.internal.issue_manager.multilabel.label import MultilabelIssueManager
 from cleanlab.datalab.internal.task import Task
 
-
 REGISTRY: Dict[Task, Dict[str, Type[IssueManager]]] = {
     Task.CLASSIFICATION: {
         "outlier": OutlierIssueManager,
