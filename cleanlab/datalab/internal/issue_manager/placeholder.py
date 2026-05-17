@@ -57,9 +57,7 @@ class PlaceholderIssueManager(IssueManager):
         ]
 
     @staticmethod
-    def _column_label(
-        column_index: int, column_names: Optional[List[str]]
-    ) -> Union[str, int]:
+    def _column_label(column_index: int, column_names: Optional[List[str]]) -> Union[str, int]:
         if column_names is not None and column_index < len(column_names):
             return column_names[column_index]
         return column_index
@@ -89,9 +87,7 @@ class PlaceholderIssueManager(IssueManager):
         return abs(candidate - median) > _MAD_MULTIPLIER * mad
 
     @classmethod
-    def _find_confirmed_placeholders(
-        cls, column_values: npt.NDArray[np.floating]
-    ) -> List[float]:
+    def _find_confirmed_placeholders(cls, column_values: npt.NDArray[np.floating]) -> List[float]:
         """Return placeholder values confirmed for a single numeric column."""
         non_null = column_values[~np.isnan(column_values)]
         if non_null.size < _MIN_ROWS_FOR_ANALYSIS:
@@ -145,9 +141,14 @@ class PlaceholderIssueManager(IssueManager):
         if n_numeric_cols == 0:
             scores = np.ones(n_rows, dtype=float)
             is_placeholder_issue = np.zeros(n_rows, dtype=bool)
-            return is_placeholder_issue, scores, placeholder_tracker, {
-                "placeholder_by_column": placeholder_by_column,
-            }
+            return (
+                is_placeholder_issue,
+                scores,
+                placeholder_tracker,
+                {
+                    "placeholder_by_column": placeholder_by_column,
+                },
+            )
 
         for tracker_col, feature_col in enumerate(numeric_column_indices):
             column_values = features[:, feature_col].astype(float, copy=False)

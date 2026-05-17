@@ -33,8 +33,7 @@ def test_lab_find_issues_placeholder_numpy(lab_with_features):
 
     info = lab.get_info("placeholder")
     assert any(
-        any(np.isclose(v, -99) for v in vals)
-        for vals in info["placeholder_by_column"].values()
+        any(np.isclose(v, -99) for v in vals) for vals in info["placeholder_by_column"].values()
     )
 
 
