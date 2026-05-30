@@ -14,7 +14,6 @@ from cleanlab.internal.util import get_num_classes
 from cleanlab.internal.multilabel_utils import int2onehot
 from cleanlab.internal.multilabel_scorer import MultilabelScorer, ClassLabelScorer, Aggregator
 
-
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
 

@@ -9,7 +9,6 @@ from hypothesis import given, assume, settings, HealthCheck
 
 from cleanlab.datalab.internal.task import Task
 
-
 NUM_COLS = 2
 
 

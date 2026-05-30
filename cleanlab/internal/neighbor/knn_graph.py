@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 from cleanlab.internal.neighbor.metric import decide_default_metric
 from cleanlab.internal.neighbor.search import construct_knn
 
-
 DEFAULT_K = 10
 """Default number of neighbors to consider in the k-nearest neighbors search,
 unless the size of the feature array is too small or the user specifies a different value.

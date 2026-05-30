@@ -458,7 +458,7 @@ def subset_data(X, mask) -> DatasetLike:
         import torch
 
         if isinstance(X, torch.utils.data.Dataset):
-            mask_idx_list = list(np.nonzero(mask)[0])
+            mask_idx_list = np.nonzero(mask)[0].tolist()
             return torch.utils.data.Subset(X, mask_idx_list)
     except Exception:
         pass
