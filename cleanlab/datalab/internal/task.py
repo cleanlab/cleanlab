@@ -32,7 +32,7 @@ class Task(Enum):
     MULTILABEL = "multilabel"
     """Multilabel task."""
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Returns the string representation of the task.
 
@@ -76,7 +76,7 @@ class Task(Enum):
             raise ValueError(f"Invalid task: {task_str}. Datalab only supports {valid_tasks}.")
 
     @property
-    def is_classification(self):
+    def is_classification(self) -> bool:
         """
         Checks if the task is classification.
 
@@ -94,7 +94,7 @@ class Task(Enum):
         return self == Task.CLASSIFICATION
 
     @property
-    def is_regression(self):
+    def is_regression(self) -> bool:
         """
         Checks if the task is regression.
 
@@ -112,7 +112,7 @@ class Task(Enum):
         return self == Task.REGRESSION
 
     @property
-    def is_multilabel(self):
+    def is_multilabel(self) -> bool:
         """
         Checks if the task is multilabel.
 
