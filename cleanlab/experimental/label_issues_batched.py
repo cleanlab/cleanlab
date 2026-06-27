@@ -145,6 +145,50 @@ def find_label_issues_batched(
     >>> # This method can be directly run on Zarr arrays, memmap arrays, or regular numpy arrays:
     >>> issues = find_label_issues_batched(labels=labels, pred_probs=pred_probs, batch_size=batch_size)
     """
+    labels, pred_probs = _load_batched_inputs(
+        labels=labels,
+        pred_probs=pred_probs,
+        labels_file=labels_file,
+        pred_probs_file=pred_probs_file,
+        verbose=verbose,
+    )
+    lab = LabelInspector(
+        num_class=pred_probs.shape[1],
+        verbose=verbose,
+        n_jobs=n_jobs,
+        quality_score_kwargs=quality_score_kwargs,
+        num_issue_kwargs=num_issue_kwargs,
+    )
+    _run_batched_pass(
+        labels,
+        pred_probs,
+        batch_size=batch_size,
+        verbose=verbose,
+        desc="number of examples processed for estimating thresholds",
+        step_fn=lab.update_confident_thresholds,
+    )
+
+    # Next evaluate the quality of the labels (run this on full dataset you want to evaluate):
+    _run_batched_pass(
+        labels,
+        pred_probs,
+        batch_size=batch_size,
+        verbose=verbose,
+        desc="number of examples processed for checking labels",
+        step_fn=lab.score_label_quality,
+    )
+
+    return _finalize_label_issues(lab, labels, pred_probs, return_mask=return_mask)
+
+
+def _load_batched_inputs(
+    *,
+    labels: Optional[LabelLike],
+    pred_probs: Optional[np.ndarray],
+    labels_file: Optional[str],
+    pred_probs_file: Optional[str],
+    verbose: bool,
+) -> Tuple[LabelLike, np.ndarray]:
     if labels_file is not None:
         if labels is not None:
             raise ValueError("only specify one of: `labels` or `labels_file`")
@@ -168,6 +212,7 @@ def find_label_issues_batched(
             print(
                 f"mmap-loaded numpy arrays have: {len(pred_probs)} examples, {pred_probs.shape[1]} classes"
             )
+
     if labels is None:
         raise ValueError("must provide one of: `labels` or `labels_file`")
     if pred_probs is None:
@@ -178,45 +223,47 @@ def find_label_issues_batched(
         raise ValueError(
             f"len(labels)={len(labels)} does not match len(pred_probs)={len(pred_probs)}. Perhaps an issue loading mmap numpy arrays from file."
         )
-    lab = LabelInspector(
-        num_class=pred_probs.shape[1],
-        verbose=verbose,
-        n_jobs=n_jobs,
-        quality_score_kwargs=quality_score_kwargs,
-        num_issue_kwargs=num_issue_kwargs,
-    )
+    return labels, pred_probs
+
+
+def _run_batched_pass(
+    labels: LabelLike,
+    pred_probs: np.ndarray,
+    *,
+    batch_size: int,
+    verbose: bool,
+    desc: str,
+    step_fn,
+) -> None:
     n = len(labels)
     if verbose:
         from tqdm.auto import tqdm
 
-        pbar = tqdm(desc="number of examples processed for estimating thresholds", total=n)
+        pbar = tqdm(desc=desc, total=n)
+    else:
+        pbar = None
+
     i = 0
     while i < n:
         end_index = i + batch_size
         labels_batch = labels[i:end_index]
         pred_probs_batch = pred_probs[i:end_index, :]
         i = end_index
-        lab.update_confident_thresholds(labels_batch, pred_probs_batch)
-        if verbose:
+        step_fn(labels_batch, pred_probs_batch)
+        if pbar is not None:
             pbar.update(batch_size)
 
-    # Next evaluate the quality of the labels (run this on full dataset you want to evaluate):
-    if verbose:
-        pbar.close()
-        pbar = tqdm(desc="number of examples processed for checking labels", total=n)
-    i = 0
-    while i < n:
-        end_index = i + batch_size
-        labels_batch = labels[i:end_index]
-        pred_probs_batch = pred_probs[i:end_index, :]
-        i = end_index
-        _ = lab.score_label_quality(labels_batch, pred_probs_batch)
-        if verbose:
-            pbar.update(batch_size)
-
-    if verbose:
+    if pbar is not None:
         pbar.close()
 
+
+def _finalize_label_issues(
+    lab: "LabelInspector",
+    labels: LabelLike,
+    pred_probs: np.ndarray,
+    *,
+    return_mask: bool,
+) -> np.ndarray:
     label_issues_indices = lab.get_label_issues()
     label_issues_mask = np.zeros(len(labels), dtype=bool)
     label_issues_mask[label_issues_indices] = True
@@ -584,93 +631,109 @@ class LabelInspector:
             )
 
         if self.n_jobs == 1:
-            adj_confident_thresholds = self.confident_thresholds - FLOATING_POINT_COMPARISON
-            pred_class = np.argmax(pred_probs, axis=1)
-            batch_size = len(labels)
-            if thorough:
-                # add margin for floating point comparison operations:
-                pred_gt_thresholds = pred_probs >= adj_confident_thresholds
-                max_ind = np.argmax(pred_probs * pred_gt_thresholds, axis=1)
-                if not self.off_diagonal_calibrated:
-                    mask = (max_ind != labels) & (pred_class != labels)
-                else:
-                    # calibrated
-                    # should we change to above?
-                    mask = pred_class != labels
-            else:
-                max_ind = pred_class
-                mask = pred_class != labels
+            self._update_num_label_issues_single_process(labels, pred_probs, thorough)
+        else:  # multiprocessing implementation
+            self._update_num_label_issues_multiprocessing(labels, pred_probs, thorough)
 
+    def _update_num_label_issues_single_process(
+        self,
+        labels: LabelLike,
+        pred_probs: np.ndarray,
+        thorough: bool,
+    ):
+        adj_confident_thresholds = self.confident_thresholds - FLOATING_POINT_COMPARISON
+        pred_class = np.argmax(pred_probs, axis=1)
+        batch_size = len(labels)
+        if thorough:
+            # add margin for floating point comparison operations:
+            pred_gt_thresholds = pred_probs >= adj_confident_thresholds
+            max_ind = np.argmax(pred_probs * pred_gt_thresholds, axis=1)
+            if not self.off_diagonal_calibrated:
+                mask = (max_ind != labels) & (pred_class != labels)
+            else:
+                # calibrated
+                # should we change to above?
+                mask = pred_class != labels
+        else:
+            max_ind = pred_class
+            mask = pred_class != labels
+
+        if not self.off_diagonal_calibrated:
+            prune_count_batch = np.sum(
+                (
+                    pred_probs[np.arange(batch_size), max_ind]
+                    >= adj_confident_thresholds[max_ind]
+                )
+                & mask
+            )
+            self.prune_count += prune_count_batch
+        else:  # calibrated
+            self.class_counts += value_counts_fill_missing_classes(
+                labels, num_classes=self.num_class
+            )
+            to_increment = (
+                pred_probs[np.arange(batch_size), max_ind] >= adj_confident_thresholds[max_ind]
+            )
+            for class_label in range(self.num_class):
+                labels_equal_to_class = labels == class_label
+                self.normalization[class_label] += np.sum(labels_equal_to_class & to_increment)
+                self.prune_counts[class_label] += np.sum(
+                    labels_equal_to_class
+                    & to_increment
+                    & (max_ind != labels)
+                    # & (pred_class != labels)
+                    # This is not applied in num_label_issues(..., estimation_method="off_diagonal_custom"). Do we want to add it?
+                )
+
+    def _update_num_label_issues_multiprocessing(
+        self,
+        labels: LabelLike,
+        pred_probs: np.ndarray,
+        thorough: bool,
+    ):
+        global adj_confident_thresholds_shared
+        adj_confident_thresholds_shared = self.confident_thresholds - FLOATING_POINT_COMPARISON
+
+        global labels_shared, pred_probs_shared
+        labels_shared = labels
+        pred_probs_shared = pred_probs
+
+        # good values for this are ~1000-10000 in benchmarks where pred_probs has 1B entries:
+        processes = 5000
+        if len(labels) <= processes:
+            chunksize = 1
+        else:
+            chunksize = len(labels) // processes
+        inds = split_arr(np.arange(len(labels)), chunksize)
+
+        if thorough:
+            use_thorough = np.ones(len(inds), dtype=bool)
+        else:
+            use_thorough = np.zeros(len(inds), dtype=bool)
+        args = zip(inds, use_thorough)
+
+        # Use fork method explicitly for Python 3.14+ compatibility
+        # Falls back to default method if fork is not available
+        try:
+            ctx = mp.get_context("fork")
+            pool_class = ctx.Pool
+        except (RuntimeError, ValueError):
+            # fork not available (Windows) or already set, use default
+            pool_class = mp.Pool
+
+        with pool_class(self.n_jobs) as pool:
             if not self.off_diagonal_calibrated:
                 prune_count_batch = np.sum(
-                    (
-                        pred_probs[np.arange(batch_size), max_ind]
-                        >= adj_confident_thresholds[max_ind]
-                    )
-                    & mask
+                    np.asarray(list(pool.imap_unordered(_compute_num_issues, args)))
                 )
                 self.prune_count += prune_count_batch
-            else:  # calibrated
-                self.class_counts += value_counts_fill_missing_classes(
-                    labels, num_classes=self.num_class
-                )
-                to_increment = (
-                    pred_probs[np.arange(batch_size), max_ind] >= adj_confident_thresholds[max_ind]
-                )
-                for class_label in range(self.num_class):
-                    labels_equal_to_class = labels == class_label
-                    self.normalization[class_label] += np.sum(labels_equal_to_class & to_increment)
-                    self.prune_counts[class_label] += np.sum(
-                        labels_equal_to_class
-                        & to_increment
-                        & (max_ind != labels)
-                        # & (pred_class != labels)
-                        # This is not applied in num_label_issues(..., estimation_method="off_diagonal_custom"). Do we want to add it?
-                    )
-        else:  # multiprocessing implementation
-            global adj_confident_thresholds_shared
-            adj_confident_thresholds_shared = self.confident_thresholds - FLOATING_POINT_COMPARISON
-
-            global labels_shared, pred_probs_shared
-            labels_shared = labels
-            pred_probs_shared = pred_probs
-
-            # good values for this are ~1000-10000 in benchmarks where pred_probs has 1B entries:
-            processes = 5000
-            if len(labels) <= processes:
-                chunksize = 1
             else:
-                chunksize = len(labels) // processes
-            inds = split_arr(np.arange(len(labels)), chunksize)
-
-            if thorough:
-                use_thorough = np.ones(len(inds), dtype=bool)
-            else:
-                use_thorough = np.zeros(len(inds), dtype=bool)
-            args = zip(inds, use_thorough)
-
-            # Use fork method explicitly for Python 3.14+ compatibility
-            # Falls back to default method if fork is not available
-            try:
-                ctx = mp.get_context("fork")
-                pool_class = ctx.Pool
-            except (RuntimeError, ValueError):
-                # fork not available (Windows) or already set, use default
-                pool_class = mp.Pool
-
-            with pool_class(self.n_jobs) as pool:
-                if not self.off_diagonal_calibrated:
-                    prune_count_batch = np.sum(
-                        np.asarray(list(pool.imap_unordered(_compute_num_issues, args)))
-                    )
-                    self.prune_count += prune_count_batch
-                else:
-                    results = list(pool.imap_unordered(_compute_num_issues_calibrated, args))
-                    for result in results:
-                        class_label = result[0]
-                        self.class_counts[class_label] += 1
-                        self.normalization[class_label] += result[1]
-                        self.prune_counts[class_label] += result[2]
+                results = list(pool.imap_unordered(_compute_num_issues_calibrated, args))
+                for result in results:
+                    class_label = result[0]
+                    self.class_counts[class_label] += 1
+                    self.normalization[class_label] += result[1]
+                    self.prune_counts[class_label] += result[2]
 
 
 def split_arr(arr: np.ndarray, chunksize: int) -> List[np.ndarray]:

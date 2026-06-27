@@ -109,51 +109,83 @@ def display_issues(
 
     # Show a legend
     if class_names is not None and cmap is not None:
-        patches = [
-            mpatches.Patch(color=cmap[i], label=class_names[i]) for i in range(len(class_names))
-        ]
-        legend = plt.figure()  # adjust figsize for larger legend
-        legend.legend(
-            handles=patches, loc="center", ncol=len(class_names), facecolor="white", fontsize=20
-        )  # adjust fontsize for larger text
-        plt.axis("off")
-        plt.show(**kwargs)
+        _show_class_legend(plt, mpatches, class_names, cmap, **kwargs)
 
     for i in correct_ordering:
-        # Show images
-        _, axes = plt.subplots(1, output_plots, figsize=(5 * output_plots, 5))
-        plot_index = 0
-
-        # Handle the different possible types of axes
-        if output_plots == 1:
-            axes_list = [cast(Axes, axes)]
-        else:
-            axes_list = cast(List[Axes], axes) if isinstance(axes, np.ndarray) else [axes]
-
-        # First image - Given truth labels
-        if labels is not None and plot_index < len(axes_list):
-            axes_list[plot_index].imshow(cmap[labels[i]])
-            axes_list[plot_index].set_title("Given Labels")
-            plot_index += 1
-
-        # Second image - Argmaxed pred_probs
-        if pred_probs is not None and plot_index < len(axes_list):
-            axes_list[plot_index].imshow(cmap[np.argmax(pred_probs[i], axis=0)])
-            axes_list[plot_index].set_title("Argmaxed Prediction Probabilities")
-            plot_index += 1
-
-        # Third image - Errors
-        if plot_index < len(axes_list):
-            ax = axes_list[plot_index]
-            mask = np.full((h, w), True)
-            if labels is not None and len(exclude) != 0:
-                mask = ~np.isin(labels[i], exclude)
-            ax.imshow(issues[i] & mask, cmap=error_cmap, vmin=0, vmax=1)
-            ax.set_title(f"Image {i}: Suggested Errors (in Red)")
-
-        plt.show(**kwargs)
+        _display_issue(
+            plt,
+            issues=issues,
+            labels=labels,
+            pred_probs=pred_probs,
+            exclude=exclude,
+            cmap=cmap,
+            error_cmap=error_cmap,
+            h=h,
+            w=w,
+            index=i,
+            output_plots=output_plots,
+            kwargs=kwargs,
+        )
 
     return None
+
+
+def _show_class_legend(plt, mpatches, class_names, cmap, **kwargs) -> None:
+    patches = [mpatches.Patch(color=cmap[i], label=class_names[i]) for i in range(len(class_names))]
+    legend = plt.figure()  # adjust figsize for larger legend
+    legend.legend(
+        handles=patches, loc="center", ncol=len(class_names), facecolor="white", fontsize=20
+    )  # adjust fontsize for larger text
+    plt.axis("off")
+    plt.show(**kwargs)
+
+
+def _display_issue(
+    plt,
+    *,
+    issues,
+    labels,
+    pred_probs,
+    exclude,
+    cmap,
+    error_cmap,
+    h,
+    w,
+    index,
+    output_plots,
+    kwargs,
+) -> None:
+    _, axes = plt.subplots(1, output_plots, figsize=(5 * output_plots, 5))
+    plot_index = 0
+
+    # Handle the different possible types of axes
+    if output_plots == 1:
+        axes_list = [cast(Any, axes)]
+    else:
+        axes_list = cast(List[Any], axes) if isinstance(axes, np.ndarray) else [axes]
+
+    # First image - Given truth labels
+    if labels is not None and plot_index < len(axes_list):
+        axes_list[plot_index].imshow(cmap[labels[index]])
+        axes_list[plot_index].set_title("Given Labels")
+        plot_index += 1
+
+    # Second image - Argmaxed pred_probs
+    if pred_probs is not None and plot_index < len(axes_list):
+        axes_list[plot_index].imshow(cmap[np.argmax(pred_probs[index], axis=0)])
+        axes_list[plot_index].set_title("Argmaxed Prediction Probabilities")
+        plot_index += 1
+
+    # Third image - Errors
+    if plot_index < len(axes_list):
+        ax = axes_list[plot_index]
+        mask = np.full((h, w), True)
+        if labels is not None and len(exclude) != 0:
+            mask = ~np.isin(labels[index], exclude)
+        ax.imshow(issues[index] & mask, cmap=error_cmap, vmin=0, vmax=1)
+        ax.set_title(f"Image {index}: Suggested Errors (in Red)")
+
+    plt.show(**kwargs)
 
 
 def common_label_issues(

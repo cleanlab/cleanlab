@@ -262,6 +262,152 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         self.clf_final_kwargs = None
         self.low_memory = low_memory
 
+    def _validate_fit_args(self, X, labels, y, sample_weight, clf_kwargs, clf_final_kwargs):
+        """Validate and normalize core inputs for ``fit()``."""
+
+        if labels is not None and y is not None:
+            raise ValueError("You must specify either `labels` or `y`, but not both.")
+        if y is not None:
+            labels = y
+        if labels is None:
+            raise ValueError("You must specify `labels`.")
+        if self._default_clf:
+            X = force_two_dimensions(X)
+
+        self.clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
+
+        if "sample_weight" in clf_kwargs:
+            raise ValueError(
+                "sample_weight should be provided directly in fit() or in clf_final_kwargs rather than in clf_kwargs"
+            )
+
+        if sample_weight is not None and "sample_weight" not in inspect.signature(
+            self.clf.fit
+        ).parameters:
+            raise ValueError(
+                "sample_weight must be a supported fit() argument for your model in order to be specified here"
+            )
+
+        return X, labels
+
+    def _get_label_issues_for_fit(
+        self,
+        X,
+        labels,
+        *,
+        pred_probs,
+        thresholds,
+        noise_matrix,
+        inverse_noise_matrix,
+        label_issues,
+        clf_kwargs,
+        validation_func,
+    ):
+        """Return label issues for ``fit()``, computing them when needed."""
+
+        if label_issues is None:
+            if self.label_issues_df is not None and self.verbose:
+                print(
+                    "If you already ran self.find_label_issues() and don't want to recompute, you "
+                    "should pass the label_issues in as a parameter to this function next time."
+                )
+            return self.find_label_issues(
+                X,
+                labels,
+                pred_probs=pred_probs,
+                thresholds=thresholds,
+                noise_matrix=noise_matrix,
+                inverse_noise_matrix=inverse_noise_matrix,
+                clf_kwargs=clf_kwargs,
+                validation_func=validation_func,
+            )
+
+        assert_valid_inputs(X, labels, pred_probs)
+        if self.num_classes is None:
+            if noise_matrix is not None:
+                label_matrix = noise_matrix
+            else:
+                label_matrix = inverse_noise_matrix
+            self.num_classes = get_num_classes(labels, pred_probs, label_matrix)
+        if self.verbose:
+            print("Using provided label_issues instead of finding label issues.")
+            if self.label_issues_df is not None:
+                print(
+                    "These will overwrite self.label_issues_df and will be returned by "
+                    "`self.get_label_issues()`. "
+                )
+        return label_issues
+
+    def _fit_final_model(self, X, labels, label_issues, sample_weight, pred_probs):
+        """Prune label issues, prepare weights, and fit the wrapped classifier."""
+
+        self.label_issues_df = self._process_label_issues_arg(label_issues, labels)
+
+        if "label_quality" not in self.label_issues_df.columns and pred_probs is not None:
+            if self.verbose:
+                print("Computing label quality scores based on given pred_probs ...")
+            self.label_issues_df["label_quality"] = get_label_quality_scores(
+                labels, pred_probs, **self.label_quality_scores_kwargs
+            )
+
+        self.label_issues_mask = self.label_issues_df["is_label_issue"].to_numpy()
+        x_mask = np.invert(self.label_issues_mask)
+        x_cleaned, labels_cleaned = subset_X_y(X, labels, x_mask)
+        if self.verbose:
+            print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
+            print(f"Remaining clean data has {len(labels_cleaned)} examples.")
+
+        if sample_weight is None:
+            if (
+                "sample_weight" in inspect.signature(self.clf.fit).parameters
+                and "sample_weight" not in self.clf_final_kwargs
+                and self.noise_matrix is not None
+            ):
+                if self.verbose:
+                    print(
+                        "Assigning sample weights for final training based on estimated label quality."
+                    )
+                sample_weight_auto = np.ones(np.shape(labels_cleaned))
+                for k in range(self.num_classes):
+                    sample_weight_k = 1.0 / max(self.noise_matrix[k][k], 1e-3)
+                    sample_weight_auto[labels_cleaned == k] = sample_weight_k
+
+                sample_weight_expanded = np.zeros(len(labels))
+                sample_weight_expanded[x_mask] = sample_weight_auto
+                self.label_issues_df["sample_weight"] = sample_weight_expanded
+                self.sample_weight = self.label_issues_df["sample_weight"]
+                self.clf_final_kwargs["sample_weight"] = sample_weight_auto
+                if self.verbose:
+                    print("Fitting final model on the clean data ...")
+            else:
+                if self.verbose:
+                    if "sample_weight" in self.clf_final_kwargs:
+                        print("Fitting final model on the clean data with custom sample_weight ...")
+                    else:
+                        if (
+                            "sample_weight" in inspect.signature(self.clf.fit).parameters
+                            and self.noise_matrix is None
+                        ):
+                            print(
+                                "Cannot utilize sample weights for final training! "
+                                "Why this matters: during final training, sample weights help account for the amount of removed data in each class. "
+                                "This helps ensure the correct class prior for the learned model. "
+                                "To use sample weights, you need to either provide the noise_matrix or have previously called self.find_label_issues() instead of filter.find_label_issues() which computes them for you."
+                            )
+                        print("Fitting final model on the clean data ...")
+        elif sample_weight is not None and "sample_weight" not in self.clf_final_kwargs:
+            self.clf_final_kwargs["sample_weight"] = sample_weight[x_mask]
+            if self.verbose:
+                print("Fitting final model on the clean data with custom sample_weight ...")
+        else:  # pragma: no cover
+            if self.verbose:
+                if "sample_weight" in self.clf_final_kwargs:
+                    print("Fitting final model on the clean data with custom sample_weight ...")
+                else:
+                    print("Fitting final model on the clean data ...")
+
+        self.clf.fit(x_cleaned, labels_cleaned, **self.clf_final_kwargs)
+
     def fit(
         self,
         X,
@@ -437,142 +583,23 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         * Call :py:func:`filter.find_label_issues <cleanlab.filter.find_label_issues>` with `pred_probs`.
         * Filter the examples with detected issues and train your model on the remaining data.
         """
-
-        if labels is not None and y is not None:
-            raise ValueError("You must specify either `labels` or `y`, but not both.")
-        if y is not None:
-            labels = y
-        if labels is None:
-            raise ValueError("You must specify `labels`.")
-        if self._default_clf:
-            X = force_two_dimensions(X)
-
-        self.clf_final_kwargs = {**clf_kwargs, **clf_final_kwargs}
-
-        if "sample_weight" in clf_kwargs:
-            raise ValueError(
-                "sample_weight should be provided directly in fit() or in clf_final_kwargs rather than in clf_kwargs"
-            )
-
-        if sample_weight is not None:
-            if "sample_weight" not in inspect.signature(self.clf.fit).parameters:
-                raise ValueError(
-                    "sample_weight must be a supported fit() argument for your model in order to be specified here"
-                )
-
-        if label_issues is None:
-            if self.label_issues_df is not None and self.verbose:
-                print(
-                    "If you already ran self.find_label_issues() and don't want to recompute, you "
-                    "should pass the label_issues in as a parameter to this function next time."
-                )
-            label_issues = self.find_label_issues(
-                X,
-                labels,
-                pred_probs=pred_probs,
-                thresholds=thresholds,
-                noise_matrix=noise_matrix,
-                inverse_noise_matrix=inverse_noise_matrix,
-                clf_kwargs=clf_kwargs,
-                validation_func=validation_func,
-            )
-
-        else:  # set args that may not have been set if `self.find_label_issues()` wasn't called yet
-            assert_valid_inputs(X, labels, pred_probs)
-            if self.num_classes is None:
-                if noise_matrix is not None:
-                    label_matrix = noise_matrix
-                else:
-                    label_matrix = inverse_noise_matrix
-                self.num_classes = get_num_classes(labels, pred_probs, label_matrix)
-            if self.verbose:
-                print("Using provided label_issues instead of finding label issues.")
-                if self.label_issues_df is not None:
-                    print(
-                        "These will overwrite self.label_issues_df and will be returned by "
-                        "`self.get_label_issues()`. "
-                    )
+        X, labels = self._validate_fit_args(
+            X, labels, y, sample_weight, clf_kwargs, clf_final_kwargs
+        )
+        label_issues = self._get_label_issues_for_fit(
+            X,
+            labels,
+            pred_probs=pred_probs,
+            thresholds=thresholds,
+            noise_matrix=noise_matrix,
+            inverse_noise_matrix=inverse_noise_matrix,
+            label_issues=label_issues,
+            clf_kwargs=clf_kwargs,
+            validation_func=validation_func,
+        )
 
         # label_issues always overwrites self.label_issues_df. Ensure it is properly formatted:
-        self.label_issues_df = self._process_label_issues_arg(label_issues, labels)
-
-        if "label_quality" not in self.label_issues_df.columns and pred_probs is not None:
-            if self.verbose:
-                print("Computing label quality scores based on given pred_probs ...")
-            self.label_issues_df["label_quality"] = get_label_quality_scores(
-                labels, pred_probs, **self.label_quality_scores_kwargs
-            )
-
-        self.label_issues_mask = self.label_issues_df["is_label_issue"].to_numpy()
-        x_mask = np.invert(self.label_issues_mask)
-        x_cleaned, labels_cleaned = subset_X_y(X, labels, x_mask)
-        if self.verbose:
-            print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
-            print(f"Remaining clean data has {len(labels_cleaned)} examples.")
-
-        if sample_weight is None:
-            # Check if sample_weight in args of clf.fit()
-            if (
-                "sample_weight" in inspect.signature(self.clf.fit).parameters
-                and "sample_weight" not in self.clf_final_kwargs
-                and self.noise_matrix is not None
-            ):
-                # Re-weight examples in the loss function for the final fitting
-                # such that the "apparent" original number of examples in each class
-                # is preserved, even though the pruned sets may differ.
-                if self.verbose:
-                    print(
-                        "Assigning sample weights for final training based on estimated label quality."
-                    )
-                sample_weight_auto = np.ones(np.shape(labels_cleaned))
-                for k in range(self.num_classes):
-                    sample_weight_k = 1.0 / max(
-                        self.noise_matrix[k][k], 1e-3
-                    )  # clip sample weights
-                    sample_weight_auto[labels_cleaned == k] = sample_weight_k
-
-                sample_weight_expanded = np.zeros(
-                    len(labels)
-                )  # pad pruned examples with zeros, length of original dataset
-                sample_weight_expanded[x_mask] = sample_weight_auto
-                # Store the sample weight for every example in the original, unfiltered dataset
-                self.label_issues_df["sample_weight"] = sample_weight_expanded
-                self.sample_weight = self.label_issues_df[
-                    "sample_weight"
-                ]  # pointer to here to avoid duplication
-                self.clf_final_kwargs["sample_weight"] = sample_weight_auto
-                if self.verbose:
-                    print("Fitting final model on the clean data ...")
-            else:
-                if self.verbose:
-                    if "sample_weight" in self.clf_final_kwargs:
-                        print("Fitting final model on the clean data with custom sample_weight ...")
-                    else:
-                        if (
-                            "sample_weight" in inspect.signature(self.clf.fit).parameters
-                            and self.noise_matrix is None
-                        ):
-                            print(
-                                "Cannot utilize sample weights for final training! "
-                                "Why this matters: during final training, sample weights help account for the amount of removed data in each class. "
-                                "This helps ensure the correct class prior for the learned model. "
-                                "To use sample weights, you need to either provide the noise_matrix or have previously called self.find_label_issues() instead of filter.find_label_issues() which computes them for you."
-                            )
-                        print("Fitting final model on the clean data ...")
-
-        elif sample_weight is not None and "sample_weight" not in self.clf_final_kwargs:
-            self.clf_final_kwargs["sample_weight"] = sample_weight[x_mask]
-            if self.verbose:
-                print("Fitting final model on the clean data with custom sample_weight ...")
-
-        else:  # pragma: no cover
-            if self.verbose:
-                if "sample_weight" in self.clf_final_kwargs:
-                    print("Fitting final model on the clean data with custom sample_weight ...")
-                else:
-                    print("Fitting final model on the clean data ...")
-
-        self.clf.fit(x_cleaned, labels_cleaned, **self.clf_final_kwargs)
+        self._fit_final_model(X, labels, label_issues, sample_weight, pred_probs)
 
         if self.verbose:
             print(
@@ -736,215 +763,33 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
           * *predicted_label*: Integer indices corresponding to the class predicted by trained `clf` model. Only present if ``pred_probs`` were provided as input or computed during label-issue-finding.
           * *sample_weight*: Numeric values used to weight examples during the final training of `clf` in `~cleanlab.classification.CleanLearning.fit`. This column may not be present after `self.find_label_issues()` but may be added after call to `~cleanlab.classification.CleanLearning.fit`. For more precise definition of sample weights, see documentation of `~cleanlab.classification.CleanLearning.fit`
         """
-
-        # Check inputs
-        assert_valid_inputs(X, labels, pred_probs)
-        labels = labels_to_array(labels)
-        if noise_matrix is not None and np.trace(noise_matrix) <= 1:
-            t = np.round(np.trace(noise_matrix), 2)
-            raise ValueError("Trace(noise_matrix) is {}, but must exceed 1.".format(t))
-        if inverse_noise_matrix is not None and (np.trace(inverse_noise_matrix) <= 1):
-            t = np.round(np.trace(inverse_noise_matrix), 2)
-            raise ValueError("Trace(inverse_noise_matrix) is {}. Must exceed 1.".format(t))
-
-        if self._default_clf:
-            X = force_two_dimensions(X)
-        if noise_matrix is not None:
-            label_matrix = noise_matrix
-        else:
-            label_matrix = inverse_noise_matrix
-        self.num_classes = get_num_classes(labels, pred_probs, label_matrix)
-        if (pred_probs is None) and (len(labels) / self.num_classes < self.cv_n_folds):
-            raise ValueError(
-                "Need more data from each class for cross-validation. "
-                "Try decreasing cv_n_folds (eg. to 2 or 3) in CleanLearning()"
-            )
-        # 'ps' is p(labels=k)
-        self.ps = value_counts(labels) / float(len(labels))
-
+        X, labels = self._prepare_find_label_issues_inputs(
+            X, labels, pred_probs, noise_matrix, inverse_noise_matrix
+        )
         self.clf_kwargs = clf_kwargs
+
         if self.low_memory:
-            # If needed, compute P(label=k|x), denoted pred_probs (the predicted probabilities)
-            if pred_probs is None:
-                if self.verbose:
-                    print(
-                        "Computing out of sample predicted probabilities via "
-                        f"{self.cv_n_folds}-fold cross validation. May take a while ..."
-                    )
-
-                pred_probs = estimate_cv_predicted_probabilities(
-                    X=X,
-                    labels=labels,
-                    clf=self.clf,
-                    cv_n_folds=self.cv_n_folds,
-                    seed=self.seed,
-                    clf_kwargs=self.clf_kwargs,
-                    validation_func=validation_func,
-                )
-
-            if self.verbose:
-                print("Using predicted probabilities to identify label issues ...")
-
-            if self.find_label_issues_kwargs:
-                warnings.warn(f"`find_label_issues_kwargs` is not used when `low_memory=True`.")
-            arg_values = {
-                "thresholds": thresholds,
-                "noise_matrix": noise_matrix,
-                "inverse_noise_matrix": inverse_noise_matrix,
-            }
-            for arg_name, arg_val in arg_values.items():
-                if arg_val is not None:
-                    warnings.warn(f"`{arg_name}` is not used when `low_memory=True`.")
-            label_issues_mask = find_label_issues_batched(labels, pred_probs, return_mask=True)
-        else:
-            self._process_label_issues_kwargs(self.find_label_issues_kwargs)
-            # self._process_label_issues_kwargs might set self.confident_joint. If so, we should use it.
-            if self.confident_joint is not None:
-                self.py, noise_matrix, inv_noise_matrix = estimate_latent(
-                    confident_joint=self.confident_joint,
-                    labels=labels,
-                )
-
-            # If needed, compute noise rates (probability of class-conditional mislabeling).
-            if noise_matrix is not None:
-                self.noise_matrix = noise_matrix
-                if inverse_noise_matrix is None:
-                    if self.verbose:
-                        print("Computing label noise estimates from provided noise matrix ...")
-                    self.py, self.inverse_noise_matrix = compute_py_inv_noise_matrix(
-                        ps=self.ps,
-                        noise_matrix=self.noise_matrix,
-                    )
-            if inverse_noise_matrix is not None:
-                self.inverse_noise_matrix = inverse_noise_matrix
-                if noise_matrix is None:
-                    if self.verbose:
-                        print(
-                            "Computing label noise estimates from provided inverse noise matrix ..."
-                        )
-                    self.noise_matrix = compute_noise_matrix_from_inverse(
-                        ps=self.ps,
-                        inverse_noise_matrix=self.inverse_noise_matrix,
-                    )
-
-            if noise_matrix is None and inverse_noise_matrix is None:
-                if pred_probs is None:
-                    if self.verbose:
-                        print(
-                            "Computing out of sample predicted probabilities via "
-                            f"{self.cv_n_folds}-fold cross validation. May take a while ..."
-                        )
-                    (
-                        self.py,
-                        self.noise_matrix,
-                        self.inverse_noise_matrix,
-                        self.confident_joint,
-                        pred_probs,
-                    ) = estimate_py_noise_matrices_and_cv_pred_proba(
-                        X=X,
-                        labels=labels,
-                        clf=self.clf,
-                        cv_n_folds=self.cv_n_folds,
-                        thresholds=thresholds,
-                        converge_latent_estimates=self.converge_latent_estimates,
-                        seed=self.seed,
-                        clf_kwargs=self.clf_kwargs,
-                        validation_func=validation_func,
-                    )
-                else:  # pred_probs is provided by user (assumed holdout probabilities)
-                    if self.verbose:
-                        print("Computing label noise estimates from provided pred_probs ...")
-                    (
-                        self.py,
-                        self.noise_matrix,
-                        self.inverse_noise_matrix,
-                        self.confident_joint,
-                    ) = estimate_py_and_noise_matrices_from_probabilities(
-                        labels=labels,
-                        pred_probs=pred_probs,
-                        thresholds=thresholds,
-                        converge_latent_estimates=self.converge_latent_estimates,
-                    )
-            # If needed, compute P(label=k|x), denoted pred_probs (the predicted probabilities)
-            if pred_probs is None:
-                if self.verbose:
-                    print(
-                        "Computing out of sample predicted probabilities via "
-                        f"{self.cv_n_folds}-fold cross validation. May take a while ..."
-                    )
-
-                pred_probs = estimate_cv_predicted_probabilities(
-                    X=X,
-                    labels=labels,
-                    clf=self.clf,
-                    cv_n_folds=self.cv_n_folds,
-                    seed=self.seed,
-                    clf_kwargs=self.clf_kwargs,
-                    validation_func=validation_func,
-                )
-            # If needed, compute the confident_joint (e.g. occurs if noise_matrix was given)
-            if self.confident_joint is None:
-                self.confident_joint = compute_confident_joint(
-                    labels=labels,
-                    pred_probs=pred_probs,
-                    thresholds=thresholds,
-                )
-
-            # if pulearning == the integer specifying the class without noise.
-            if self.num_classes == 2 and self.pulearning is not None:  # pragma: no cover
-                # pulearning = 1 (no error in 1 class) implies p(label=1|true_label=0) = 0
-                self.noise_matrix[self.pulearning][1 - self.pulearning] = 0
-                self.noise_matrix[1 - self.pulearning][1 - self.pulearning] = 1
-                # pulearning = 1 (no error in 1 class) implies p(true_label=0|label=1) = 0
-                self.inverse_noise_matrix[1 - self.pulearning][self.pulearning] = 0
-                self.inverse_noise_matrix[self.pulearning][self.pulearning] = 1
-                # pulearning = 1 (no error in 1 class) implies p(label=1,true_label=0) = 0
-                self.confident_joint[self.pulearning][1 - self.pulearning] = 0
-                self.confident_joint[1 - self.pulearning][1 - self.pulearning] = 1
-
-            # Add confident joint to find label issue args if it is not previously specified
-            if "confident_joint" not in self.find_label_issues_kwargs.keys():
-                # however does not add if users specify filter_by="confident_learning", as it will throw a warning
-                if not self.find_label_issues_kwargs.get("filter_by") == "confident_learning":
-                    self.find_label_issues_kwargs["confident_joint"] = self.confident_joint
-
-            labels = labels_to_array(labels)
-            if self.verbose:
-                print("Using predicted probabilities to identify label issues ...")
-            label_issues_mask = filter.find_label_issues(
+            label_issues_mask, pred_probs = self._find_label_issues_low_memory(
+                X,
                 labels,
                 pred_probs,
-                **self.find_label_issues_kwargs,
+                thresholds,
+                noise_matrix,
+                inverse_noise_matrix,
+                validation_func,
             )
-        label_quality_scores = get_label_quality_scores(
-            labels, pred_probs, **self.label_quality_scores_kwargs
-        )
-        label_issues_df = pd.DataFrame(
-            {"is_label_issue": label_issues_mask, "label_quality": label_quality_scores}
-        )
-        if self.verbose:
-            print(f"Identified {np.sum(label_issues_mask)} examples with label issues.")
-
-        predicted_labels = pred_probs.argmax(axis=1)
-        label_issues_df["given_label"] = compress_int_array(labels, self.num_classes)
-        label_issues_df["predicted_label"] = compress_int_array(predicted_labels, self.num_classes)
-
-        if not save_space:
-            if self.label_issues_df is not None and self.verbose:
-                print(
-                    "Overwriting previously identified label issues stored at self.label_issues_df. "
-                    "self.get_label_issues() will now return the newly identified label issues. "
-                )
-            self.label_issues_df = label_issues_df
-            self.label_issues_mask = label_issues_df[
-                "is_label_issue"
-            ]  # pointer to here to avoid duplication
-        elif self.verbose:
-            print(  # pragma: no cover
-                "Not storing label_issues as attributes since save_space was specified."
+        else:
+            label_issues_mask, pred_probs = self._find_label_issues_standard(
+                X,
+                labels,
+                pred_probs,
+                thresholds,
+                noise_matrix,
+                inverse_noise_matrix,
+                validation_func,
             )
 
-        return label_issues_df
+        return self._finalize_label_issues_df(labels, pred_probs, label_issues_mask, save_space)
 
     def get_label_issues(self) -> Optional[pd.DataFrame]:
         """
@@ -1019,6 +864,227 @@ class CleanLearning(BaseEstimator):  # Inherits sklearn classifier
         if "confident_joint" in find_label_issues_kwargs:
             self.confident_joint = find_label_issues_kwargs["confident_joint"]
         self.find_label_issues_kwargs = find_label_issues_kwargs
+
+    def _prepare_find_label_issues_inputs(
+        self, X, labels, pred_probs, noise_matrix, inverse_noise_matrix
+    ):
+        """Validate inputs and initialize shared state for label-issue finding."""
+
+        assert_valid_inputs(X, labels, pred_probs)
+        labels = labels_to_array(labels)
+        if noise_matrix is not None and np.trace(noise_matrix) <= 1:
+            t = np.round(np.trace(noise_matrix), 2)
+            raise ValueError("Trace(noise_matrix) is {}, but must exceed 1.".format(t))
+        if inverse_noise_matrix is not None and (np.trace(inverse_noise_matrix) <= 1):
+            t = np.round(np.trace(inverse_noise_matrix), 2)
+            raise ValueError("Trace(inverse_noise_matrix) is {}. Must exceed 1.".format(t))
+
+        if self._default_clf:
+            X = force_two_dimensions(X)
+        label_matrix = noise_matrix if noise_matrix is not None else inverse_noise_matrix
+        self.num_classes = get_num_classes(labels, pred_probs, label_matrix)
+        if (pred_probs is None) and (len(labels) / self.num_classes < self.cv_n_folds):
+            raise ValueError(
+                "Need more data from each class for cross-validation. "
+                "Try decreasing cv_n_folds (eg. to 2 or 3) in CleanLearning()"
+            )
+        self.ps = value_counts(labels) / float(len(labels))
+        return X, labels
+
+    def _find_label_issues_low_memory(
+        self,
+        X,
+        labels,
+        pred_probs,
+        thresholds,
+        noise_matrix,
+        inverse_noise_matrix,
+        validation_func,
+    ):
+        """Compute label issues using the low-memory path."""
+
+        if pred_probs is None:
+            if self.verbose:
+                print(
+                    "Computing out of sample predicted probabilities via "
+                    f"{self.cv_n_folds}-fold cross validation. May take a while ..."
+                )
+
+            pred_probs = estimate_cv_predicted_probabilities(
+                X=X,
+                labels=labels,
+                clf=self.clf,
+                cv_n_folds=self.cv_n_folds,
+                seed=self.seed,
+                clf_kwargs=self.clf_kwargs,
+                validation_func=validation_func,
+            )
+
+        if self.verbose:
+            print("Using predicted probabilities to identify label issues ...")
+
+        if self.find_label_issues_kwargs:
+            warnings.warn(f"`find_label_issues_kwargs` is not used when `low_memory=True`.")
+        arg_values = {
+            "thresholds": thresholds,
+            "noise_matrix": noise_matrix,
+            "inverse_noise_matrix": inverse_noise_matrix,
+        }
+        for arg_name, arg_val in arg_values.items():
+            if arg_val is not None:
+                warnings.warn(f"`{arg_name}` is not used when `low_memory=True`.")
+        return find_label_issues_batched(labels, pred_probs, return_mask=True), pred_probs
+
+    def _find_label_issues_standard(
+        self,
+        X,
+        labels,
+        pred_probs,
+        thresholds,
+        noise_matrix,
+        inverse_noise_matrix,
+        validation_func,
+    ):
+        """Compute label issues using the standard confident-learning path."""
+
+        self._process_label_issues_kwargs(self.find_label_issues_kwargs)
+        if self.confident_joint is not None:
+            self.py, noise_matrix, inverse_noise_matrix = estimate_latent(
+                confident_joint=self.confident_joint,
+                labels=labels,
+            )
+
+        if noise_matrix is not None:
+            self.noise_matrix = noise_matrix
+            if inverse_noise_matrix is None:
+                if self.verbose:
+                    print("Computing label noise estimates from provided noise matrix ...")
+                self.py, self.inverse_noise_matrix = compute_py_inv_noise_matrix(
+                    ps=self.ps,
+                    noise_matrix=self.noise_matrix,
+                )
+        if inverse_noise_matrix is not None:
+            self.inverse_noise_matrix = inverse_noise_matrix
+            if noise_matrix is None:
+                if self.verbose:
+                    print("Computing label noise estimates from provided inverse noise matrix ...")
+                self.noise_matrix = compute_noise_matrix_from_inverse(
+                    ps=self.ps,
+                    inverse_noise_matrix=self.inverse_noise_matrix,
+                )
+
+        if noise_matrix is None and inverse_noise_matrix is None:
+            if pred_probs is None:
+                if self.verbose:
+                    print(
+                        "Computing out of sample predicted probabilities via "
+                        f"{self.cv_n_folds}-fold cross validation. May take a while ..."
+                    )
+                (
+                    self.py,
+                    self.noise_matrix,
+                    self.inverse_noise_matrix,
+                    self.confident_joint,
+                    pred_probs,
+                ) = estimate_py_noise_matrices_and_cv_pred_proba(
+                    X=X,
+                    labels=labels,
+                    clf=self.clf,
+                    cv_n_folds=self.cv_n_folds,
+                    thresholds=thresholds,
+                    converge_latent_estimates=self.converge_latent_estimates,
+                    seed=self.seed,
+                    clf_kwargs=self.clf_kwargs,
+                    validation_func=validation_func,
+                )
+            else:  # pred_probs is provided by user (assumed holdout probabilities)
+                if self.verbose:
+                    print("Computing label noise estimates from provided pred_probs ...")
+                (
+                    self.py,
+                    self.noise_matrix,
+                    self.inverse_noise_matrix,
+                    self.confident_joint,
+                ) = estimate_py_and_noise_matrices_from_probabilities(
+                    labels=labels,
+                    pred_probs=pred_probs,
+                    thresholds=thresholds,
+                    converge_latent_estimates=self.converge_latent_estimates,
+                )
+
+        if pred_probs is None:
+            if self.verbose:
+                print(
+                    "Computing out of sample predicted probabilities via "
+                    f"{self.cv_n_folds}-fold cross validation. May take a while ..."
+                )
+
+            pred_probs = estimate_cv_predicted_probabilities(
+                X=X,
+                labels=labels,
+                clf=self.clf,
+                cv_n_folds=self.cv_n_folds,
+                seed=self.seed,
+                clf_kwargs=self.clf_kwargs,
+                validation_func=validation_func,
+            )
+        if self.confident_joint is None:
+            self.confident_joint = compute_confident_joint(
+                labels=labels,
+                pred_probs=pred_probs,
+                thresholds=thresholds,
+            )
+
+        if self.num_classes == 2 and self.pulearning is not None:  # pragma: no cover
+            self.noise_matrix[self.pulearning][1 - self.pulearning] = 0
+            self.noise_matrix[1 - self.pulearning][1 - self.pulearning] = 1
+            self.inverse_noise_matrix[1 - self.pulearning][self.pulearning] = 0
+            self.inverse_noise_matrix[self.pulearning][self.pulearning] = 1
+            self.confident_joint[self.pulearning][1 - self.pulearning] = 0
+            self.confident_joint[1 - self.pulearning][1 - self.pulearning] = 1
+
+        if "confident_joint" not in self.find_label_issues_kwargs.keys():
+            if not self.find_label_issues_kwargs.get("filter_by") == "confident_learning":
+                self.find_label_issues_kwargs["confident_joint"] = self.confident_joint
+
+        if self.verbose:
+            print("Using predicted probabilities to identify label issues ...")
+        return filter.find_label_issues(
+            labels,
+            pred_probs,
+            **self.find_label_issues_kwargs,
+        ), pred_probs
+
+    def _finalize_label_issues_df(self, labels, pred_probs, label_issues_mask, save_space):
+        """Build the returned DataFrame and update cached attributes."""
+
+        label_quality_scores = get_label_quality_scores(
+            labels, pred_probs, **self.label_quality_scores_kwargs
+        )
+        label_issues_df = pd.DataFrame(
+            {"is_label_issue": label_issues_mask, "label_quality": label_quality_scores}
+        )
+        if self.verbose:
+            print(f"Identified {np.sum(label_issues_mask)} examples with label issues.")
+
+        predicted_labels = pred_probs.argmax(axis=1)
+        label_issues_df["given_label"] = compress_int_array(labels, self.num_classes)
+        label_issues_df["predicted_label"] = compress_int_array(predicted_labels, self.num_classes)
+
+        if not save_space:
+            if self.label_issues_df is not None and self.verbose:
+                print(
+                    "Overwriting previously identified label issues stored at self.label_issues_df. "
+                    "self.get_label_issues() will now return the newly identified label issues. "
+                )
+            self.label_issues_df = label_issues_df
+            self.label_issues_mask = label_issues_df["is_label_issue"]
+        elif self.verbose:
+            print(  # pragma: no cover
+                "Not storing label_issues as attributes since save_space was specified."
+            )
+
+        return label_issues_df
 
     def _process_label_issues_arg(self, label_issues, labels) -> pd.DataFrame:
         """
