@@ -109,12 +109,7 @@ class Datalab:
         # Map labels to integers for classification task
         self.task = Task.from_str(task)
         self._data = Data(data, self.task, label_name)
-        self.data = self._data._data
         self._labels = self._data.labels
-        self._label_map = self._labels.label_map
-        self.label_name = self._labels.label_name
-        self._data_hash = self._data._data_hash
-        self.cleanlab_version = cleanlab.version.__version__
         self.verbosity = verbosity
         self._imagelab = create_imagelab(dataset=self.data, image_key=image_key)
 
@@ -134,6 +129,35 @@ class Datalab:
     def labels(self) -> Union[np.ndarray, List[List[int]]]:
         """Labels of the dataset, in a [0, 1, ..., K-1] format."""
         return self._labels.labels
+
+    @property
+    def data(self):
+        return self._data._data
+
+    @data.setter
+    def data(self, data) -> None:
+        self._data = Data(data, self.task, self.label_name)
+        self._labels = self._data.labels
+
+    @property
+    def label_name(self):
+        return self._labels.label_name
+
+    @property
+    def label_map(self):
+        return self._labels.label_map
+
+    @property
+    def _label_map(self):
+        return self.label_map
+
+    @property
+    def _data_hash(self):
+        return self._data._data_hash
+
+    @property
+    def cleanlab_version(self):
+        return cleanlab.version.__version__
 
     @property
     def has_labels(self) -> bool:

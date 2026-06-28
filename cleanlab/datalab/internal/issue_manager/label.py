@@ -100,7 +100,7 @@ class LabelIssueManager(IssueManager):
             statistics_dict = self.datalab.get_info("statistics")
             self.health_summary_parameters = {
                 "labels": self.datalab.labels,
-                "class_names": list(self.datalab._label_map.values()),
+                "class_names": list(self.datalab.label_map.values()),
                 "num_examples": statistics_dict.get("num_examples"),
                 "joint": statistics_dict.get("joint", None),
                 "confident_joint": statistics_dict.get("confident_joint", None),
@@ -253,11 +253,11 @@ class LabelIssueManager(IssueManager):
             "overlapping_classes": summary_dict["overlapping_classes"],
         }
 
-        cl_info = {}
-        for k in self.cl.__dict__:
-            if k not in ["py", "noise_matrix", "inverse_noise_matrix", "confident_joint"]:
-                continue
-            cl_info[k] = self.cl.__dict__[k]
+        cl_info = {
+            k: getattr(self.cl, k)
+            for k in ["py", "noise_matrix", "inverse_noise_matrix", "confident_joint"]
+            if getattr(self.cl, k) is not None
+        }
 
         info_dict = {
             **issues_info,

@@ -6,6 +6,9 @@ This is a good example to reference for making your own bespoke model compatible
 You must have PyTorch installed: https://pytorch.org/get-started/locally/
 """
 
+from dataclasses import dataclass
+from typing import Callable, Optional
+
 from sklearn.base import BaseEstimator
 import torch
 import torch.nn as nn
@@ -21,6 +24,27 @@ MNIST_TRAIN_SIZE = 60000
 MNIST_TEST_SIZE = 10000
 SKLEARN_DIGITS_TRAIN_SIZE = 1247
 SKLEARN_DIGITS_TEST_SIZE = 550
+
+
+@dataclass
+class CNNConfig:
+    batch_size: int
+    epochs: int
+    log_interval: int
+    lr: float
+    momentum: float
+    no_cuda: bool
+    seed: int
+    test_batch_size: int
+    loader: Optional[str]
+
+
+@dataclass
+class DatasetSpec:
+    dataset: str
+    get_dataset: Callable[[str], object]
+    train_size: int
+    test_size: int
 
 
 def get_mnist_dataset(loader):  # pragma: no cover
@@ -182,44 +206,151 @@ class CNN(BaseEstimator):  # Inherits sklearn classifier
         dataset="mnist",
         loader=None,
     ):
-        self.batch_size = batch_size
-        self.epochs = epochs
-        self.log_interval = log_interval
-        self.lr = lr
-        self.momentum = momentum
-        self.no_cuda = no_cuda
-        self.seed = seed
-        self.cuda = not self.no_cuda and torch.cuda.is_available()
+        self.config = CNNConfig(
+            batch_size=batch_size,
+            epochs=epochs,
+            log_interval=log_interval,
+            lr=lr,
+            momentum=momentum,
+            no_cuda=no_cuda,
+            seed=seed,
+            test_batch_size=test_batch_size,
+            loader=loader,
+        )
         torch.manual_seed(self.seed)
         if self.cuda:  # pragma: no cover
             torch.cuda.manual_seed(self.seed)
 
-        # Instantiate PyTorch model
         self.model = SimpleNet()
         if self.cuda:  # pragma: no cover
             self.model.cuda()
 
-        self.loader_kwargs = {"num_workers": 1, "pin_memory": True} if self.cuda else {}
-        self.loader = loader
         self._set_dataset(dataset)
-        if test_batch_size is not None:
-            self.test_batch_size = test_batch_size
-        else:
-            self.test_batch_size = self.test_size
+
+        if self.config.test_batch_size is None:
+            self.config.test_batch_size = self.test_size
 
     def _set_dataset(self, dataset):
-        self.dataset = dataset
+        self.dataset_spec = self._make_dataset_spec(dataset)
+
+    def _make_dataset_spec(self, dataset):
         if dataset == "mnist":
             # pragma: no cover
-            self.get_dataset = get_mnist_dataset
-            self.train_size = MNIST_TRAIN_SIZE
-            self.test_size = MNIST_TEST_SIZE
+            return DatasetSpec(
+                dataset=dataset,
+                get_dataset=get_mnist_dataset,
+                train_size=MNIST_TRAIN_SIZE,
+                test_size=MNIST_TEST_SIZE,
+            )
         elif dataset == "sklearn-digits":
-            self.get_dataset = get_sklearn_digits_dataset
-            self.train_size = SKLEARN_DIGITS_TRAIN_SIZE
-            self.test_size = SKLEARN_DIGITS_TEST_SIZE
+            return DatasetSpec(
+                dataset=dataset,
+                get_dataset=get_sklearn_digits_dataset,
+                train_size=SKLEARN_DIGITS_TRAIN_SIZE,
+                test_size=SKLEARN_DIGITS_TEST_SIZE,
+            )
         else:  # pragma: no cover
             raise ValueError("dataset must be 'mnist' or 'sklearn-digits'.")
+
+    @property
+    def batch_size(self):
+        return self.config.batch_size
+
+    @batch_size.setter
+    def batch_size(self, value):
+        self.config.batch_size = value
+
+    @property
+    def epochs(self):
+        return self.config.epochs
+
+    @epochs.setter
+    def epochs(self, value):
+        self.config.epochs = value
+
+    @property
+    def log_interval(self):
+        return self.config.log_interval
+
+    @log_interval.setter
+    def log_interval(self, value):
+        self.config.log_interval = value
+
+    @property
+    def lr(self):
+        return self.config.lr
+
+    @lr.setter
+    def lr(self, value):
+        self.config.lr = value
+
+    @property
+    def momentum(self):
+        return self.config.momentum
+
+    @momentum.setter
+    def momentum(self, value):
+        self.config.momentum = value
+
+    @property
+    def no_cuda(self):
+        return self.config.no_cuda
+
+    @no_cuda.setter
+    def no_cuda(self, value):
+        self.config.no_cuda = value
+
+    @property
+    def seed(self):
+        return self.config.seed
+
+    @seed.setter
+    def seed(self, value):
+        self.config.seed = value
+
+    @property
+    def test_batch_size(self):
+        return self.config.test_batch_size
+
+    @test_batch_size.setter
+    def test_batch_size(self, value):
+        self.config.test_batch_size = self.test_size if value is None else value
+
+    @property
+    def dataset(self):
+        return self.dataset_spec.dataset
+
+    @dataset.setter
+    def dataset(self, value):
+        self._set_dataset(value)
+
+    @property
+    def loader(self):
+        return self.config.loader
+
+    @loader.setter
+    def loader(self, value):
+        self.config.loader = value
+
+    @property
+    def cuda(self):
+        return not self.no_cuda and torch.cuda.is_available()
+
+    @property
+    def loader_kwargs(self):
+        return {"num_workers": 1, "pin_memory": True} if self.cuda else {}
+
+    @property
+    def train_size(self):
+        return self.dataset_spec.train_size
+
+    @property
+    def test_size(self):
+        return self.dataset_spec.test_size
+
+    @property
+    def get_dataset(self):
+        return self.dataset_spec.get_dataset
 
     # XXX this is a pretty weird sklearn estimator that does data loading
     # internally in `fit`, and it supports multiple datasets and is aware of

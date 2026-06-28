@@ -118,6 +118,5 @@ class _Serializer:
                 )
 
             datalab._data = Data(data, datalab.task, datalab.label_name)
-            datalab.data = datalab._data._data
 
         return datalab

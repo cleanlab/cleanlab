@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Union, Tuple
 import warnings
 import inspect
@@ -20,6 +21,15 @@ if TYPE_CHECKING:  # pragma: no cover
 
 CLUSTERING_ALGO = "DBSCAN"
 CLUSTERING_PARAMS_DEFAULT = {"metric": "precomputed"}
+
+
+@dataclass(slots=True)
+class _UnderperformingGroupConfig:
+    metric: Optional[Union[str, Callable]]
+    threshold: float
+    k: int
+    clustering_kwargs: Dict[str, Any] = field(default_factory=dict)
+    min_cluster_samples: int = 5
 
 
 class UnderperformingGroupIssueManager(IssueManager):
@@ -65,16 +75,42 @@ class UnderperformingGroupIssueManager(IssueManager):
         metric: Optional[Union[str, Callable]] = None,
         threshold: float = 0.1,
         k: int = 10,
-        clustering_kwargs: Dict[str, Any] = {},
+        clustering_kwargs: Optional[Dict[str, Any]] = None,
         min_cluster_samples: int = 5,
         **_: Any,
     ):
         super().__init__(datalab)
-        self.metric = metric
-        self.threshold = self._set_threshold(threshold)
-        self.k = k
-        self.clustering_kwargs = clustering_kwargs
-        self.min_cluster_samples = min_cluster_samples
+        self._config = _UnderperformingGroupConfig(
+            metric=metric,
+            threshold=self._set_threshold(threshold),
+            k=k,
+            clustering_kwargs=dict(clustering_kwargs or {}),
+            min_cluster_samples=min_cluster_samples,
+        )
+
+    @property
+    def metric(self) -> Optional[Union[str, Callable]]:
+        return self._config.metric
+
+    @metric.setter
+    def metric(self, value: Optional[Union[str, Callable]]) -> None:
+        self._config.metric = value
+
+    @property
+    def threshold(self) -> float:
+        return self._config.threshold
+
+    @property
+    def k(self) -> int:
+        return self._config.k
+
+    @property
+    def clustering_kwargs(self) -> Dict[str, Any]:
+        return self._config.clustering_kwargs
+
+    @property
+    def min_cluster_samples(self) -> int:
+        return self._config.min_cluster_samples
 
     def find_issues(
         self,
