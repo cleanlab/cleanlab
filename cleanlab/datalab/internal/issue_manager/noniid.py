@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Union, cast
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Union
 import itertools
 
 from scipy.stats import gaussian_kde
@@ -14,6 +15,15 @@ from cleanlab.datalab.internal.issue_manager.knn_graph_helpers import knn_exists
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
+
+
+@dataclass
+class _NonIIDConfig:
+    metric: Optional[Union[str, Callable]]
+    k: int
+    num_permutations: int
+    seed: Optional[int]
+    significance_threshold: float
 
 
 def simplified_kolmogorov_smirnov_test(
@@ -94,10 +104,13 @@ class NonIIDIssueManager(IssueManager):
     tend to have more similar feature values.
     """
     issue_name: ClassVar[str] = "non_iid"
-    verbosity_levels = {
+    verbosity_levels: ClassVar[dict[int, list[str]]] = {
         0: ["p-value"],
         1: [],
         2: [],
+    }
+    tests: ClassVar[dict[str, Callable]] = {
+        "ks": simplified_kolmogorov_smirnov_test,
     }
 
     def __init__(
@@ -111,19 +124,37 @@ class NonIIDIssueManager(IssueManager):
         **_,
     ):
         super().__init__(datalab)
-        self.metric = metric
-        self.k = k
-        self.num_permutations = num_permutations
-        self.tests = {
-            "ks": simplified_kolmogorov_smirnov_test,
-        }
-        self.background_distribution = None
-        self.seed = seed
-        self.significance_threshold = significance_threshold
+        self._config = _NonIIDConfig(
+            metric=metric,
+            k=k,
+            num_permutations=num_permutations,
+            seed=seed,
+            significance_threshold=significance_threshold,
+        )
 
-        # TODO: Temporary flag introduced to decide on storing knn graphs based on pred_probs.
-        # Revisit and finalize the implementation.
-        self._skip_storing_knn_graph_for_pred_probs: bool = False
+    @property
+    def metric(self) -> Optional[Union[str, Callable]]:
+        return self._config.metric
+
+    @metric.setter
+    def metric(self, value: Optional[Union[str, Callable]]) -> None:
+        self._config.metric = value
+
+    @property
+    def k(self) -> int:
+        return self._config.k
+
+    @property
+    def num_permutations(self) -> int:
+        return self._config.num_permutations
+
+    @property
+    def seed(self) -> Optional[int]:
+        return self._config.seed
+
+    @property
+    def significance_threshold(self) -> float:
+        return self._config.significance_threshold
 
     @staticmethod
     def _determine_optional_features(
@@ -168,10 +199,7 @@ class NonIIDIssueManager(IssueManager):
         **kwargs,
     ) -> None:
         statistics = self.datalab.get_info("statistics")
-
-        # Crucial when building knn graphs with pred_probs instead of features, where only the
-        # latter is preferred for storage.
-        self._determine_if_knn_graph_storage_should_be_skipped(
+        skip_storing_knn_graph_for_pred_probs = self._determine_if_knn_graph_storage_should_be_skipped(
             features, pred_probs, kwargs, statistics, self.k
         )
 
@@ -183,20 +211,21 @@ class NonIIDIssueManager(IssueManager):
             statistics=statistics,
         )
 
-        self.neighbor_index_choices = self._get_neighbors(knn_graph=knn_graph)
+        neighbor_index_choices = self._get_neighbors(knn_graph=knn_graph)
+        n = knn_graph.shape[0]
+        indices = np.arange(n)
+        neighbor_index_distances = np.abs(indices.reshape(-1, 1) - neighbor_index_choices)
+        statistics = self._get_statistics(neighbor_index_distances, n)
+        p_value = self._permutation_test(
+            neighbor_index_choices=neighbor_index_choices,
+            statistics=statistics,
+            num_permutations=self.num_permutations,
+            n=n,
+        )
 
-        self.num_neighbors = self.k
-
-        indices = np.arange(self.N)
-        self.neighbor_index_distances = np.abs(indices.reshape(-1, 1) - self.neighbor_index_choices)
-
-        self.statistics = self._get_statistics(self.neighbor_index_distances)
-
-        self.p_value = self._permutation_test(num_permutations=self.num_permutations)
-
-        scores = self._score_dataset()
-        issue_mask = np.zeros(self.N, dtype=bool)
-        if self.p_value < self.significance_threshold:
+        scores = self._score_dataset(neighbor_index_distances, n)
+        issue_mask = np.zeros(n, dtype=bool)
+        if p_value < self.significance_threshold:
             issue_mask[scores.argmin()] = True
         self.issues = pd.DataFrame(
             {
@@ -205,13 +234,17 @@ class NonIIDIssueManager(IssueManager):
             },
         )
 
-        self.summary = self.make_summary(score=self.p_value)
+        self.summary = self.make_summary(score=p_value)
 
-        self.info = self.collect_info(knn_graph=knn_graph)
+        self.info = self.collect_info(
+            p_value=p_value,
+            knn_graph=knn_graph,
+            skip_storing_knn_graph_for_pred_probs=skip_storing_knn_graph_for_pred_probs,
+        )
 
     def _determine_if_knn_graph_storage_should_be_skipped(
         self, features, pred_probs, kwargs, statistics, k
-    ) -> None:
+    ) -> bool:
         """Decide whether to skip storing the knn graph based on the availability of pred_probs.
 
         Should only happend when a new knn graph needs to be computed, and that it
@@ -221,12 +254,17 @@ class NonIIDIssueManager(IssueManager):
         pred_probs_needed = (
             not sufficient_knn_graph_available and features is None and pred_probs is not None
         )
-        if pred_probs_needed:
-            self._skip_storing_knn_graph_for_pred_probs = True
+        return pred_probs_needed
 
-    def collect_info(self, knn_graph: csr_matrix) -> dict:
+    def collect_info(
+        self,
+        *,
+        p_value: float,
+        knn_graph: csr_matrix,
+        skip_storing_knn_graph_for_pred_probs: bool,
+    ) -> dict:
         issues_dict = {
-            "p-value": self.p_value,
+            "p-value": p_value,
         }
 
         params_dict = {
@@ -234,7 +272,10 @@ class NonIIDIssueManager(IssueManager):
             "k": self.k,
         }
 
-        statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
+        statistics_dict = self._build_statistics_dictionary(
+            knn_graph=knn_graph,
+            skip_storing_knn_graph_for_pred_probs=skip_storing_knn_graph_for_pred_probs,
+        )
 
         info_dict = {
             **issues_dict,
@@ -243,10 +284,14 @@ class NonIIDIssueManager(IssueManager):
         }
         return info_dict
 
-    def _build_statistics_dictionary(self, knn_graph: csr_matrix) -> Dict[str, Dict[str, Any]]:
+    def _build_statistics_dictionary(
+        self,
+        knn_graph: csr_matrix,
+        skip_storing_knn_graph_for_pred_probs: bool,
+    ) -> Dict[str, Dict[str, Any]]:
         statistics_dict: Dict[str, Dict[str, Any]] = {"statistics": {}}
 
-        if self._skip_storing_knn_graph_for_pred_probs:
+        if skip_storing_knn_graph_for_pred_probs:
             return statistics_dict
         # Add the knn graph as a statistic if necessary
         graph_key = "weighted_knn_graph"
@@ -264,19 +309,24 @@ class NonIIDIssueManager(IssueManager):
 
         return statistics_dict
 
-    def _permutation_test(self, num_permutations) -> float:
-        N = self.N
+    def _permutation_test(
+        self,
+        neighbor_index_choices: np.ndarray,
+        statistics: dict[str, float],
+        num_permutations: int,
+        n: int,
+    ) -> float:
+        baseline_statistic = statistics["ks"]
 
         if self.seed is not None:
             np.random.seed(self.seed)
         perms = np.fromiter(
             itertools.chain.from_iterable(
-                np.random.permutation(N) for i in range(num_permutations)
+                np.random.permutation(n) for i in range(num_permutations)
             ),
             dtype=int,
-        ).reshape(num_permutations, N)
+        ).reshape(num_permutations, n)
 
-        neighbor_index_choices = self.neighbor_index_choices
         neighbor_index_choices = neighbor_index_choices.reshape(1, *neighbor_index_choices.shape)
         perm_neighbor_choices = perms[:, neighbor_index_choices].reshape(
             num_permutations, *neighbor_index_choices.shape[1:]
@@ -285,20 +335,21 @@ class NonIIDIssueManager(IssueManager):
             num_permutations, -1
         )
 
-        statistics = []
+        sampled_statistics = []
         for neighbor_index_dist in neighbor_index_distances:
             stats = self._get_statistics(
                 neighbor_index_dist,
+                n,
             )
-            statistics.append(stats)
+            sampled_statistics.append(stats)
 
-        ks_stats = np.array([stats["ks"] for stats in statistics])
+        ks_stats = np.array([stats["ks"] for stats in sampled_statistics])
         ks_stats_kde = gaussian_kde(ks_stats)
-        p_value = ks_stats_kde.integrate_box(self.statistics["ks"], 100)
+        p_value = ks_stats_kde.integrate_box(baseline_statistic, 100)
 
         return p_value
 
-    def _score_dataset(self) -> npt.NDArray[np.float64]:
+    def _score_dataset(self, neighbor_index_distances: np.ndarray, n: int) -> npt.NDArray[np.float64]:
         """This function computes a variant of the KS statistic for each
         datapoint. Rather than computing the maximum difference
         between the CDF of the neighbor distances (foreground
@@ -345,51 +396,49 @@ class NonIIDIssueManager(IssueManager):
         possible distance (N - d - 1) and then mapped to [0,1] via
         tanh.
         """
-        N = self.N
-
-        sorted_neighbors = np.sort(self.neighbor_index_distances, axis=1)
+        sorted_neighbors = np.sort(neighbor_index_distances, axis=1)
 
         # find the maximum distance that occurs with double probability
-        middle_idx = np.floor((N - 1) / 2).astype(int)
-        double_distances = np.arange(N).reshape(N, 1)
-        double_distances[double_distances > middle_idx] -= N - 1
+        middle_idx = np.floor((n - 1) / 2).astype(int)
+        double_distances = np.arange(n).reshape(n, 1)
+        double_distances[double_distances > middle_idx] -= n - 1
         double_distances = np.abs(double_distances)
 
-        sorted_neighbors = np.hstack([sorted_neighbors, np.ones((N, 1)) * (N - 1)]).astype(int)
+        sorted_neighbors = np.hstack([sorted_neighbors, np.ones((n, 1)) * (n - 1)]).astype(int)
 
         # the set of distances that are less than the double distance threshold
         set_beginning = sorted_neighbors <= double_distances
         # the set of distances that are greater than the double distance threshold but have nonzero probability
         set_middle = (sorted_neighbors > double_distances) & (
-            sorted_neighbors <= (N - double_distances - 1)
+            sorted_neighbors <= (n - double_distances - 1)
         )
         # the set of distances that occur with 0 probability
-        set_end = sorted_neighbors > (N - double_distances - 1)
+        set_end = sorted_neighbors > (n - double_distances - 1)
 
         shifted_neighbors = np.zeros(sorted_neighbors.shape)
         shifted_neighbors[:, 1:] = sorted_neighbors[:, :-1]
         diffs = sorted_neighbors - shifted_neighbors  # the distances between the sorted indices
 
-        area_beginning = (double_distances**2) / (N - 1)
-        length = N - 2 * double_distances - 1
-        a = 2 * double_distances / (N - 1)
+        area_beginning = (double_distances**2) / (n - 1)
+        length = n - 2 * double_distances - 1
+        a = 2 * double_distances / (n - 1)
         area_middle = 0.5 * (a + 1) * length
 
         # compute the area under the CDF for each of the indices in sorted_neighbors
         background_area = np.zeros(diffs.shape)
         background_diffs = np.zeros(diffs.shape)
-        background_area[set_beginning] = ((sorted_neighbors**2) / (N - 1))[set_beginning]
+        background_area[set_beginning] = ((sorted_neighbors**2) / (n - 1))[set_beginning]
         background_area[set_middle] = (
             area_beginning
             + 0.5
             * (
                 (sorted_neighbors + 3 * double_distances)
                 * (sorted_neighbors - double_distances)
-                / (N - 1)
+                / (n - 1)
             )
         )[set_middle]
         background_area[set_end] = (
-            area_beginning + area_middle + (sorted_neighbors - (N - double_distances - 1) * 1.0)
+            area_beginning + area_middle + (sorted_neighbors - (n - double_distances - 1) * 1.0)
         )[set_end]
 
         # compute the area under the CDF between indices in sorted_neighbors
@@ -406,8 +455,8 @@ class NonIIDIssueManager(IssueManager):
         stats = np.sum(area_diffs, axis=1)
 
         # normalize scores by the index and transform to [0, 1]
-        indices = np.arange(N)
-        reverse = N - indices
+        indices = np.arange(n)
+        reverse = n - indices
         normalizer = np.where(indices > reverse, indices, reverse)
 
         scores = stats / normalizer
@@ -419,24 +468,19 @@ class NonIIDIssueManager(IssueManager):
         Given a knn graph, returns an (N, k) array in
         which j is in A[i] if item i and j are nearest neighbors.
         """
-        self.N = knn_graph.shape[0]
-        kneighbors = knn_graph.indices.reshape(self.N, -1)
+        kneighbors = knn_graph.indices.reshape(knn_graph.shape[0], -1)
         return kneighbors
 
     def _get_statistics(
         self,
         neighbor_index_distances,
+        n: int,
     ) -> dict[str, float]:
         neighbor_index_distances = neighbor_index_distances.flatten()
         sorted_neighbors = np.sort(neighbor_index_distances)
-        sorted_neighbors = np.hstack([sorted_neighbors, np.ones((1)) * (self.N - 1)]).astype(int)
+        sorted_neighbors = np.hstack([sorted_neighbors, np.ones((1)) * (n - 1)]).astype(int)
 
-        if self.background_distribution is None:
-            self.background_distribution = (self.N - np.arange(1, self.N)) / (
-                self.N * (self.N - 1) / 2
-            )
-
-        background_distribution = cast(np.ndarray, self.background_distribution)
+        background_distribution = (n - np.arange(1, n)) / (n * (n - 1) / 2)
         background_cdf = np.cumsum(background_distribution)
 
         foreground_cdf = np.arange(sorted_neighbors.shape[0]) / (sorted_neighbors.shape[0] - 1)

@@ -10,6 +10,112 @@ import pandas as pd
 from cleanlab.internal.token_classification_utils import color_sentence, get_sentence
 
 
+def _class_name(label: int, class_names: Optional[List[str]]) -> Any:
+    return class_names[label] if class_names else label
+
+
+def _print_token_issue_summary(token: str, num_issues: int) -> None:
+    print(f"Token '{token}' is potentially mislabeled {num_issues} times throughout the dataset\n")
+
+
+def _print_token_issue_details(
+    token: str,
+    matrix: np.ndarray,
+    freq: int,
+    *,
+    class_names: Optional[List[str]],
+    verbose: bool,
+) -> None:
+    print(f"Token '{token}' is potentially mislabeled {freq} times throughout the dataset")
+    if not verbose:
+        print()
+        return
+
+    print("---------------------------------------------------------------------------------------")
+    n = matrix.shape[0]
+    most_frequent = np.argsort(matrix.flatten())[::-1]
+    for f in most_frequent:
+        i, j = f // n, f % n
+        if matrix[i][j] == 0:
+            break
+        if class_names:
+            print(
+                f"labeled as class `{class_names[i]}` but predicted to actually be class `{class_names[j]}` {matrix[i][j]} times"
+            )
+        else:
+            print(f"labeled as class {i} but predicted to actually be class {j} {matrix[i][j]} times")
+    print()
+
+
+def _token_issue_rows_without_labels(
+    issues: List[Tuple[int, int]], tokens: List[List[str]], top: int
+) -> pd.DataFrame:
+    count: Dict[str, Any] = {}
+    for i, j in issues:
+        word = tokens[i][j]
+        count[word] = count.get(word, 0) + 1
+
+    words = list(count.keys())
+    freq = [count[word] for word in words]
+    rank = np.argsort(freq)[::-1][:top]
+
+    for r in rank:
+        _print_token_issue_summary(words[r], freq[r])
+
+    info = [[word, f] for word, f in zip(words, freq)]
+    info = sorted(info, key=lambda x: x[1], reverse=True)
+    return pd.DataFrame(info, columns=["token", "num_label_issues"])
+
+
+def _token_issue_rows_with_labels(
+    issues: List[Tuple[int, int]],
+    tokens: List[List[str]],
+    *,
+    labels: list,
+    pred_probs: list,
+    class_names: Optional[List[str]],
+    top: int,
+    exclude: List[Tuple[int, int]],
+    verbose: bool,
+) -> pd.DataFrame:
+    count: Dict[str, Any] = {}
+    n = pred_probs[0].shape[1]
+    for i, j in issues:
+        word = tokens[i][j]
+        label = labels[i][j]
+        pred = pred_probs[i][j].argmax()
+        if word not in count:
+            count[word] = np.zeros([n, n], dtype=int)
+        if (label, pred) not in exclude:
+            count[word][label][pred] += 1
+
+    words = list(count.keys())
+    freq = [np.sum(count[word]) for word in words]
+    rank = np.argsort(freq)[::-1][:top]
+
+    for r in rank:
+        _print_token_issue_details(
+            words[r],
+            count[words[r]],
+            freq[r],
+            class_names=class_names,
+            verbose=verbose,
+        )
+
+    info = []
+    for word in words:
+        for i in range(n):
+            for j in range(n):
+                num = count[word][i][j]
+                if num > 0:
+                    info.append([word, _class_name(i, class_names), _class_name(j, class_names), num])
+
+    info = sorted(info, key=lambda x: x[3], reverse=True)
+    return pd.DataFrame(
+        info, columns=["token", "given_label", "predicted_label", "num_label_issues"]
+    )
+
+
 def display_issues(
     issues: list,
     tokens: List[List[str]],
@@ -97,43 +203,65 @@ def display_issues(
 
     for issue in issues:
         if is_tuple:
-            i, j = issue
-            sentence = get_sentence(tokens[i])
-            word = tokens[i][j]
-
-            if pred_probs:
-                prediction = pred_probs[i][j].argmax()
-            if labels:
-                given = labels[i][j]
-            if pred_probs and labels:
-                if (given, prediction) in exclude:
-                    continue
-
-            if pred_probs and class_names:
-                prediction = class_names[prediction]
-            if labels and class_names:
-                given = class_names[given]
-
-            shown += 1
-            print(f"Sentence index: {i}, Token index: {j}")
-            print(f"Token: {word}")
-            if labels and not pred_probs:
-                print(f"Given label: {given}")
-            elif not labels and pred_probs:
-                print(f"Predicted label according to provided pred_probs: {prediction}")
-            elif labels and pred_probs:
-                print(
-                    f"Given label: {given}, predicted label according to provided pred_probs: {prediction}"
-                )
-            print("----")
-            print(color_sentence(sentence, word))
+            displayed = _display_token_issue(
+                issue,
+                tokens=tokens,
+                labels=labels,
+                pred_probs=pred_probs,
+                exclude=exclude,
+                class_names=class_names,
+            )
+            shown += int(displayed)
         else:
             shown += 1
-            sentence = get_sentence(tokens[issue])
-            print(f"Sentence issue: {sentence}")
+            _display_sentence_issue(issue, tokens=tokens)
         if shown == top:
             break
         print("\n")
+
+
+def _display_token_issue(
+    issue: Tuple[int, int],
+    *,
+    tokens: List[List[str]],
+    labels: Optional[list],
+    pred_probs: Optional[list],
+    exclude: List[Tuple[int, int]],
+    class_names: Optional[List[str]],
+) -> bool:
+    i, j = issue
+    sentence = get_sentence(tokens[i])
+    word = tokens[i][j]
+
+    prediction = pred_probs[i][j].argmax() if pred_probs else None
+    given = labels[i][j] if labels else None
+
+    if pred_probs and labels and (given, prediction) in exclude:
+        return False
+
+    if pred_probs and class_names:
+        prediction = class_names[prediction]
+    if labels and class_names:
+        given = class_names[given]
+
+    print(f"Sentence index: {i}, Token index: {j}")
+    print(f"Token: {word}")
+    if labels and not pred_probs:
+        print(f"Given label: {given}")
+    elif not labels and pred_probs:
+        print(f"Predicted label according to provided pred_probs: {prediction}")
+    elif labels and pred_probs:
+        print(
+            f"Given label: {given}, predicted label according to provided pred_probs: {prediction}"
+        )
+    print("----")
+    print(color_sentence(sentence, word))
+    return True
+
+
+def _display_sentence_issue(issue: int, *, tokens: List[List[str]]) -> None:
+    sentence = get_sentence(tokens[issue])
+    print(f"Sentence issue: {sentence}")
 
 
 def common_label_issues(
@@ -218,27 +346,8 @@ def common_label_issues(
     0      An                 1
     1  ?weird                 1
     """
-    count: Dict[str, Any] = {}
     if not labels or not pred_probs:
-        for issue in issues:
-            i, j = issue
-            word = tokens[i][j]
-            if word not in count:
-                count[word] = 0
-            count[word] += 1
-
-        words = [word for word in count.keys()]
-        freq = [count[word] for word in words]
-        rank = np.argsort(freq)[::-1][:top]
-
-        for r in rank:
-            print(
-                f"Token '{words[r]}' is potentially mislabeled {freq[r]} times throughout the dataset\n"
-            )
-
-        info = [[word, f] for word, f in zip(words, freq)]
-        info = sorted(info, key=lambda x: x[1], reverse=True)
-        return pd.DataFrame(info, columns=["token", "num_label_issues"])
+        return _token_issue_rows_without_labels(issues, tokens, top)
 
     if not class_names:
         print(
@@ -246,56 +355,15 @@ def common_label_issues(
         )
         print("Specify this argument to see the string names of each class. \n")
 
-    n = pred_probs[0].shape[1]
-    for issue in issues:
-        i, j = issue
-        word = tokens[i][j]
-        label = labels[i][j]
-        pred = pred_probs[i][j].argmax()
-        if word not in count:
-            count[word] = np.zeros([n, n], dtype=int)
-        if (label, pred) not in exclude:
-            count[word][label][pred] += 1
-    words = [word for word in count.keys()]
-    freq = [np.sum(count[word]) for word in words]
-    rank = np.argsort(freq)[::-1][:top]
-
-    for r in rank:
-        matrix = count[words[r]]
-        most_frequent = np.argsort(count[words[r]].flatten())[::-1]
-        print(
-            f"Token '{words[r]}' is potentially mislabeled {freq[r]} times throughout the dataset"
-        )
-        if verbose:
-            print(
-                "---------------------------------------------------------------------------------------"
-            )
-            for f in most_frequent:
-                i, j = f // n, f % n
-                if matrix[i][j] == 0:
-                    break
-                if class_names:
-                    print(
-                        f"labeled as class `{class_names[i]}` but predicted to actually be class `{class_names[j]}` {matrix[i][j]} times"
-                    )
-                else:
-                    print(
-                        f"labeled as class {i} but predicted to actually be class {j} {matrix[i][j]} times"
-                    )
-        print()
-    info = []
-    for word in words:
-        for i in range(n):
-            for j in range(n):
-                num = count[word][i][j]
-                if num > 0:
-                    if not class_names:
-                        info.append([word, i, j, num])
-                    else:
-                        info.append([word, class_names[i], class_names[j], num])
-    info = sorted(info, key=lambda x: x[3], reverse=True)
-    return pd.DataFrame(
-        info, columns=["token", "given_label", "predicted_label", "num_label_issues"]
+    return _token_issue_rows_with_labels(
+        issues,
+        tokens,
+        labels=labels,
+        pred_probs=pred_probs,
+        class_names=class_names,
+        top=top,
+        exclude=exclude,
+        verbose=verbose,
     )
 
 

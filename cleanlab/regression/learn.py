@@ -58,6 +58,7 @@ model to be sklearn-compatible. This is made easy by inheriting from
 """
 
 from typing import Optional, Union, Tuple
+from dataclasses import dataclass
 import inspect
 import warnings
 
@@ -76,6 +77,13 @@ from cleanlab.internal.constants import TINY_VALUE
 from cleanlab.internal.util import train_val_split, subset_X_y
 from cleanlab.internal.regression_utils import assert_valid_regression_inputs
 from cleanlab.internal.validation import labels_to_array
+
+
+@dataclass
+class _CleanLearningState:
+    label_issues_df: Optional[pd.DataFrame] = None
+    label_issues_mask: Optional[np.ndarray] = None
+    k: Optional[float] = None  # frac flagged as issue
 
 
 class CleanLearning(BaseEstimator):
@@ -159,9 +167,31 @@ class CleanLearning(BaseEstimator):
         self.n_boot: int = n_boot
         self.include_aleatoric_uncertainty: bool = include_aleatoric_uncertainty
         self.verbose: bool = verbose
-        self.label_issues_df: Optional[pd.DataFrame] = None
-        self.label_issues_mask: Optional[np.ndarray] = None
-        self.k: Optional[float] = None  # frac flagged as issue
+        self._state = _CleanLearningState()
+
+    @property
+    def label_issues_df(self) -> Optional[pd.DataFrame]:
+        return self._state.label_issues_df
+
+    @label_issues_df.setter
+    def label_issues_df(self, value: Optional[pd.DataFrame]):
+        self._state.label_issues_df = value
+
+    @property
+    def label_issues_mask(self) -> Optional[np.ndarray]:
+        return self._state.label_issues_mask
+
+    @label_issues_mask.setter
+    def label_issues_mask(self, value: Optional[np.ndarray]):
+        self._state.label_issues_mask = value
+
+    @property
+    def k(self) -> Optional[float]:
+        return self._state.k
+
+    @k.setter
+    def k(self, value: Optional[float]):
+        self._state.k = value
 
     def fit(
         self,
@@ -236,6 +266,47 @@ class CleanLearning(BaseEstimator):
         """
         assert_valid_regression_inputs(X, y)
 
+        find_label_issues_kwargs, model_kwargs, model_final_kwargs = self._prepare_fit_kwargs(
+            find_label_issues_kwargs=find_label_issues_kwargs,
+            model_kwargs=model_kwargs,
+            model_final_kwargs=model_final_kwargs,
+        )
+
+        self._validate_fit_sample_weight(sample_weight, X)
+
+        label_issues = self._resolve_label_issues_for_fit(
+            X,
+            y,
+            label_issues=label_issues,
+            model_kwargs=model_kwargs,
+            find_label_issues_kwargs=find_label_issues_kwargs,
+        )
+
+        self._state.label_issues_df = self._process_label_issues_arg(label_issues, y)
+        self._state.label_issues_mask = self._state.label_issues_df["is_label_issue"].to_numpy()
+
+        X_mask = np.invert(self._state.label_issues_mask)
+        X_cleaned, y_cleaned = subset_X_y(X, y, X_mask)
+        if self.verbose:
+            print(f"Pruning {np.sum(self._state.label_issues_mask)} examples with label issues ...")
+            print(f"Remaining clean data has {len(y_cleaned)} examples.")
+
+        self._fit_final_model(X_cleaned, y_cleaned, X_mask, sample_weight, model_final_kwargs)
+
+        if self.verbose:
+            print(
+                "Label issues stored in label_issues_df DataFrame accessible via: self.get_label_issues(). "
+                "Call self.save_space() to delete this potentially large DataFrame attribute."
+            )
+        return self
+
+    def _prepare_fit_kwargs(
+        self,
+        *,
+        find_label_issues_kwargs: Optional[dict],
+        model_kwargs: Optional[dict],
+        model_final_kwargs: Optional[dict],
+    ) -> Tuple[dict, dict, dict]:
         if find_label_issues_kwargs is None:
             find_label_issues_kwargs = {}
         if model_kwargs is None:
@@ -248,46 +319,57 @@ class CleanLearning(BaseEstimator):
             raise ValueError(
                 "sample_weight should be provided directly in fit() rather than in model_kwargs or model_final_kwargs"
             )
+        return find_label_issues_kwargs, model_kwargs, model_final_kwargs
 
-        if sample_weight is not None:
-            if "sample_weight" not in inspect.signature(self.model.fit).parameters:
-                raise ValueError(
-                    "sample_weight must be a supported fit() argument for your model in order to be specified here"
-                )
-            if len(sample_weight) != len(X):
-                raise ValueError("sample_weight must be a 1D array that has the same length as y.")
+    def _validate_fit_sample_weight(self, sample_weight: Optional[np.ndarray], X) -> None:
+        if sample_weight is None:
+            return
+        if "sample_weight" not in inspect.signature(self.model.fit).parameters:
+            raise ValueError(
+                "sample_weight must be a supported fit() argument for your model in order to be specified here"
+            )
+        if len(sample_weight) != len(X):
+            raise ValueError("sample_weight must be a 1D array that has the same length as y.")
 
+    def _resolve_label_issues_for_fit(
+        self,
+        X: Union[np.ndarray, pd.DataFrame],
+        y: LabelLike,
+        *,
+        label_issues: Optional[Union[pd.DataFrame, np.ndarray]],
+        model_kwargs: dict,
+        find_label_issues_kwargs: dict,
+    ) -> Union[pd.DataFrame, np.ndarray]:
         if label_issues is None:
             if self.label_issues_df is not None and self.verbose:
                 print(
                     "If you already ran self.find_label_issues() and don't want to recompute, you "
                     "should pass the label_issues in as a parameter to this function next time."
                 )
-
-            label_issues = self.find_label_issues(
+            return self.find_label_issues(
                 X,
                 y,
                 model_kwargs=model_kwargs,
                 **find_label_issues_kwargs,
             )
-        else:
-            if self.verbose:
-                print("Using provided label_issues instead of finding label issues.")
-                if self.label_issues_df is not None:
-                    print(
-                        "These will overwrite self.label_issues_df and will be returned by "
-                        "`self.get_label_issues()`. "
-                    )
 
-        self.label_issues_df = self._process_label_issues_arg(label_issues, y)
-        self.label_issues_mask = self.label_issues_df["is_label_issue"].to_numpy()
-
-        X_mask = np.invert(self.label_issues_mask)
-        X_cleaned, y_cleaned = subset_X_y(X, y, X_mask)
         if self.verbose:
-            print(f"Pruning {np.sum(self.label_issues_mask)} examples with label issues ...")
-            print(f"Remaining clean data has {len(y_cleaned)} examples.")
+            print("Using provided label_issues instead of finding label issues.")
+            if self.label_issues_df is not None:
+                print(
+                    "These will overwrite self.label_issues_df and will be returned by "
+                    "`self.get_label_issues()`. "
+                )
+        return label_issues
 
+    def _fit_final_model(
+        self,
+        X_cleaned,
+        y_cleaned,
+        X_mask: np.ndarray,
+        sample_weight: Optional[np.ndarray],
+        model_final_kwargs: dict,
+    ) -> None:
         if sample_weight is not None:
             model_final_kwargs["sample_weight"] = sample_weight[X_mask]
             if self.verbose:
@@ -297,13 +379,6 @@ class CleanLearning(BaseEstimator):
                 print("Fitting final model on the clean data ...")
 
         self.model.fit(X_cleaned, y_cleaned, **model_final_kwargs)
-
-        if self.verbose:
-            print(
-                "Label issues stored in label_issues_df DataFrame accessible via: self.get_label_issues(). "
-                "Call self.save_space() to delete this potentially large DataFrame attribute."
-            )
-        return self
 
     def predict(self, X: np.ndarray, *args, **kwargs) -> np.ndarray:
         """
@@ -443,7 +518,7 @@ class CleanLearning(BaseEstimator):
         initial_sorted_index = np.argsort(abs(initial_residual))
         initial_r2 = r2_score(y, initial_predictions)
 
-        self.k, r2 = self._find_best_k(
+        self._state.k, r2 = self._find_best_k(
             X=X,
             y=y,
             sorted_index=initial_sorted_index,
@@ -453,11 +528,11 @@ class CleanLearning(BaseEstimator):
 
         # check if initial r2 score (ie. not removing anything) is the best
         if initial_r2 >= r2:
-            self.k = 0
+            self._state.k = 0
 
         # get predictions using the best k
         predictions = self._get_cv_predictions(
-            X, y, sorted_index=initial_sorted_index, k=self.k, model_kwargs=model_kwargs
+            X, y, sorted_index=initial_sorted_index, k=self._state.k, model_kwargs=model_kwargs
         )
         residual = predictions - y
 
@@ -483,7 +558,7 @@ class CleanLearning(BaseEstimator):
         label_quality_scores = np.exp(-residual_adjusted / residual_median)
 
         label_issues_mask = np.zeros(len(y), dtype=bool)
-        num_issues = math.ceil(len(y) * self.k)
+        num_issues = math.ceil(len(y) * self._state.k)
         issues_index = np.argsort(label_quality_scores)[:num_issues]
         label_issues_mask[issues_index] = True
 
@@ -504,13 +579,13 @@ class CleanLearning(BaseEstimator):
             print(f"Identified {np.sum(label_issues_mask)} examples with label issues.")
 
         if not save_space:
-            if self.label_issues_df is not None and self.verbose:
+            if self._state.label_issues_df is not None and self.verbose:
                 print(
                     "Overwriting previously identified label issues stored at self.label_issues_df. "
                     "self.get_label_issues() will now return the newly identified label issues. "
                 )
-            self.label_issues_df = label_issues_df
-            self.label_issues_mask = label_issues_df["is_label_issue"].to_numpy()
+            self._state.label_issues_df = label_issues_df
+            self._state.label_issues_mask = label_issues_df["is_label_issue"].to_numpy()
         elif self.verbose:
             print("Not storing label_issues as attributes since save_space was specified.")
 
@@ -528,11 +603,11 @@ class CleanLearning(BaseEstimator):
         label_issues_df : pd.DataFrame
             DataFrame with (precomputed) info about the label issues for each example.
         """
-        if self.label_issues_df is None:
+        if self._state.label_issues_df is None:
             warnings.warn(
                 "Label issues have not yet been computed. Run `self.find_label_issues()` or `self.fit()` first."
             )
-        return self.label_issues_df
+        return self._state.label_issues_df
 
     def get_epistemic_uncertainty(
         self,
@@ -612,12 +687,12 @@ class CleanLearning(BaseEstimator):
         You may want to call this method before deploying this model (i.e. if you just care about producing predictions).
         After calling this method, certain non-prediction-related attributes/functionality will no longer be available
         """
-        if self.label_issues_df is None and self.verbose:
+        if self._state.label_issues_df is None and self.verbose:
             print("self.label_issues_df is already empty")
 
-        self.label_issues_df = None
-        self.label_issues_mask = None
-        self.k = None
+        self._state.label_issues_df = None
+        self._state.label_issues_mask = None
+        self._state.k = None
 
         if self.verbose:
             print("Deleted non-sklearn attributes such as label_issues_df to save space.")
@@ -743,86 +818,41 @@ class CleanLearning(BaseEstimator):
         if len(coarse_search_range) == 0:
             raise ValueError("coarse_search_range must have at least 1 value of k")
         elif len(coarse_search_range) == 1:
-            curr_k = coarse_search_range[0]
-            num_examples_kept = math.floor(len(y) * (1 - curr_k))
-            if num_examples_kept < self.cv_n_folds:
-                raise ValueError(
-                    f"There are too few examples to conduct {self.cv_n_folds}-fold cross validation. "
-                    "You can either reduce self.cv_n_folds for cross validation, or decrease k to exclude less data."
-                )
-            predictions = self._get_cv_predictions(
+            best_k = coarse_search_range[0]
+            best_r2 = self._get_r2_for_k(
                 X=X,
                 y=y,
                 sorted_index=sorted_index,
-                k=curr_k,
+                k=best_k,
             )
-            best_r2 = r2_score(y, predictions)
-            best_k = coarse_search_range[0]
         else:
             # conduct coarse search
             coarse_search_range = sorted(coarse_search_range)  # sort to conduct fine search well
-            r2_coarse = np.full(len(coarse_search_range), np.nan)
-            for i in range(len(coarse_search_range)):
-                curr_k = coarse_search_range[i]
-                num_examples_kept = math.floor(len(y) * (1 - curr_k))
-                # check if there are too few examples to do cross val
-                if num_examples_kept < self.cv_n_folds:
-                    r2_coarse[i] = -1e30  # arbitrary large negative number
-                else:
-                    predictions = self._get_cv_predictions(
-                        X=X,
-                        y=y,
-                        sorted_index=sorted_index,
-                        k=curr_k,
-                    )
-                    r2_coarse[i] = r2_score(y, predictions)
+            r2_coarse = self._get_r2_scores_for_k_range(
+                X=X,
+                y=y,
+                sorted_index=sorted_index,
+                k_range=coarse_search_range,
+            )
 
             max_r2_ind = np.argmax(r2_coarse)
 
             # conduct fine search
-            if fine_search_size < 0:
-                raise ValueError("fine_search_size must at least 0")
-            elif fine_search_size == 0:
+            if fine_search_size == 0:
                 best_k = coarse_search_range[np.argmax(r2_coarse)]
                 best_r2 = np.max(r2_coarse)
             else:
-                fine_search_range = np.array([])
-                if max_r2_ind != 0:
-                    fine_search_range = np.append(
-                        np.linspace(
-                            coarse_search_range[max_r2_ind - 1],
-                            coarse_search_range[max_r2_ind],
-                            fine_search_size + 1,
-                            endpoint=False,
-                        )[1:],
-                        fine_search_range,
-                    )
-                if max_r2_ind != len(coarse_search_range) - 1:
-                    fine_search_range = np.append(
-                        fine_search_range,
-                        np.linspace(
-                            coarse_search_range[max_r2_ind],
-                            coarse_search_range[max_r2_ind + 1],
-                            fine_search_size + 1,
-                            endpoint=False,
-                        )[1:],
-                    )
-
-                r2_fine = np.full(len(fine_search_range), np.nan)
-                for i in range(len(fine_search_range)):
-                    curr_k = fine_search_range[i]
-                    num_examples_kept = math.floor(len(y) * (1 - curr_k))
-                    # check if there are too few examples to do cross val
-                    if num_examples_kept < self.cv_n_folds:
-                        r2_fine[i] = -1e30  # arbitrary large negative number
-                    else:
-                        predictions = self._get_cv_predictions(
-                            X=X,
-                            y=y,
-                            sorted_index=sorted_index,
-                            k=curr_k,
-                        )
-                        r2_fine[i] = r2_score(y, predictions)
+                fine_search_range = self._get_fine_search_range(
+                    coarse_search_range=coarse_search_range,
+                    max_r2_ind=max_r2_ind,
+                    fine_search_size=fine_search_size,
+                )
+                r2_fine = self._get_r2_scores_for_k_range(
+                    X=X,
+                    y=y,
+                    sorted_index=sorted_index,
+                    k_range=fine_search_range,
+                )
 
                 # check the max between coarse and fine search
                 if max(r2_coarse) > max(r2_fine):
@@ -833,6 +863,78 @@ class CleanLearning(BaseEstimator):
                     best_r2 = np.max(r2_fine)
 
         return best_k, best_r2
+
+    def _get_r2_for_k(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        sorted_index: np.ndarray,
+        k: float,
+    ) -> float:
+        """Compute the cross-validated R2 score for a single value of k."""
+        num_examples_kept = math.floor(len(y) * (1 - k))
+        if num_examples_kept < self.cv_n_folds:
+            return -1e30  # arbitrary large negative number
+
+        predictions = self._get_cv_predictions(
+            X=X,
+            y=y,
+            sorted_index=sorted_index,
+            k=k,
+        )
+        return r2_score(y, predictions)
+
+    def _get_r2_scores_for_k_range(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        sorted_index: np.ndarray,
+        k_range: np.ndarray,
+    ) -> np.ndarray:
+        """Compute the R2 score for each value of k in a search range."""
+        r2_scores = np.full(len(k_range), np.nan)
+        for i, k in enumerate(k_range):
+            r2_scores[i] = self._get_r2_for_k(
+                X=X,
+                y=y,
+                sorted_index=sorted_index,
+                k=k,
+            )
+        return r2_scores
+
+    def _get_fine_search_range(
+        self,
+        coarse_search_range: list,
+        max_r2_ind: int,
+        fine_search_size: int,
+    ) -> np.ndarray:
+        """Build the fine-grained search grid around the best coarse k."""
+        if fine_search_size < 0:
+            raise ValueError("fine_search_size must at least 0")
+
+        fine_search_range = np.array([])
+        if max_r2_ind != 0:
+            fine_search_range = np.append(
+                np.linspace(
+                    coarse_search_range[max_r2_ind - 1],
+                    coarse_search_range[max_r2_ind],
+                    fine_search_size + 1,
+                    endpoint=False,
+                )[1:],
+                fine_search_range,
+            )
+        if max_r2_ind != len(coarse_search_range) - 1:
+            fine_search_range = np.append(
+                fine_search_range,
+                np.linspace(
+                    coarse_search_range[max_r2_ind],
+                    coarse_search_range[max_r2_ind + 1],
+                    fine_search_size + 1,
+                    endpoint=False,
+                )[1:],
+            )
+
+        return fine_search_range
 
     def _process_label_issues_arg(
         self,

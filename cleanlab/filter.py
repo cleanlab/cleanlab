@@ -54,6 +54,296 @@ pred_probs_by_class: Dict[int, np.ndarray]
 prune_count_matrix_cols: Dict[int, np.ndarray]
 
 
+def _validate_find_label_issues_inputs(
+    labels: LabelLike,
+    pred_probs: np.ndarray,
+    *,
+    filter_by: str,
+    frac_noise: float,
+    num_to_remove_per_class: Optional[List[int]],
+    confident_joint: Optional[np.ndarray],
+    multi_label: bool,
+) -> None:
+    """Validate arguments for `find_label_issues`."""
+
+    assert filter_by in [
+        "low_normalized_margin",
+        "low_self_confidence",
+        "prune_by_noise_rate",
+        "prune_by_class",
+        "both",
+        "confident_learning",
+        "predicted_neq_given",
+    ]  # TODO: change default to confident_learning ?
+    allow_one_class = False
+    if isinstance(labels, np.ndarray) or all(isinstance(lab, int) for lab in labels):
+        if set(labels) == {0}:  # occurs with missing classes in multi-label settings
+            allow_one_class = True
+    assert_valid_inputs(
+        X=None,
+        y=labels,
+        pred_probs=pred_probs,
+        multi_label=multi_label,
+        allow_one_class=allow_one_class,
+    )
+
+    if filter_by in [
+        "confident_learning",
+        "predicted_neq_given",
+        "low_normalized_margin",
+        "low_self_confidence",
+    ] and (frac_noise != 1.0 or num_to_remove_per_class is not None):
+        warn_str = (
+            "frac_noise and num_to_remove_per_class parameters are only supported"
+            " for filter_by 'prune_by_noise_rate', 'prune_by_class', and 'both'. They "
+            "are not supported for methods 'confident_learning', 'predicted_neq_given', "
+            "'low_normalized_margin' or 'low_self_confidence'."
+        )
+        warnings.warn(warn_str)
+    if (num_to_remove_per_class is not None) and (
+        filter_by
+        in [
+            "confident_learning",
+            "predicted_neq_given",
+            "low_normalized_margin",
+            "low_self_confidence",
+        ]
+    ):
+        # TODO - add support for these filters
+        raise ValueError(
+            "filter_by 'confident_learning', 'predicted_neq_given', 'low_normalized_margin' "
+            "or 'low_self_confidence' is not supported (yet) when setting 'num_to_remove_per_class'"
+        )
+    if filter_by == "confident_learning" and isinstance(confident_joint, np.ndarray):
+        warn_str = (
+            "The supplied `confident_joint` is ignored when `filter_by = 'confident_learning'`; confident joint will be "
+            "re-estimated from the given labels. To use your supplied `confident_joint`, please specify a different "
+            "`filter_by` value."
+        )
+        warnings.warn(warn_str)
+
+
+def _resolve_find_label_issues_n_jobs(
+    n_jobs: Optional[int], *, multi_label: bool, os_name: str, big_dataset: bool
+) -> int:
+    """Choose a multiprocessing worker count for `find_label_issues`."""
+
+    if n_jobs is None:
+        if multi_label and os_name != "Linux":
+            n_jobs = 1
+        else:
+            if psutil_exists:
+                n_jobs = psutil.cpu_count(logical=False)  # physical cores
+            elif big_dataset:
+                print(
+                    "To default `n_jobs` to the number of physical cores for multiprocessing in find_label_issues(), please: `pip install psutil`.\n"
+                    "Note: You can safely ignore this message. `n_jobs` only affects runtimes, results will be the same no matter its value.\n"
+                    "Since psutil is not installed, `n_jobs` was set to the number of logical cores by default.\n"
+                    "Disable this message by either installing psutil or specifying the `n_jobs` argument."
+                )  # pragma: no cover
+            if not n_jobs:
+                # either psutil does not exist
+                # or psutil can return None when physical cores cannot be determined
+                # switch to logical cores
+                n_jobs = multiprocessing.cpu_count()
+    else:
+        assert n_jobs >= 1
+    return n_jobs
+
+
+def _find_label_issues_multiclass(
+    labels: LabelLike,
+    pred_probs: np.ndarray,
+    *,
+    return_indices_ranked_by: Optional[str],
+    rank_by_kwargs: Dict[str, Any],
+    filter_by: str,
+    frac_noise: float,
+    num_to_remove_per_class: Optional[List[int]],
+    min_examples_per_class,
+    confident_joint: Optional[np.ndarray],
+    n_jobs: int,
+    verbose: bool,
+    K: int,
+    big_dataset: bool,
+    os_name: str,
+) -> np.ndarray:
+    """Find label issues for standard multi-class classification."""
+
+    # Number of examples in each class of labels
+    label_counts = value_counts_fill_missing_classes(labels, K, multi_label=False)
+    # Ensure labels are of type np.ndarray()
+    labels = np.asarray(labels)
+    if confident_joint is None or filter_by == "confident_learning":
+        from cleanlab.count import compute_confident_joint
+
+        confident_joint, cl_error_indices = compute_confident_joint(
+            labels=labels,
+            pred_probs=pred_probs,
+            multi_label=False,
+            return_indices_of_off_diagonals=True,
+        )
+
+    if filter_by in ["low_normalized_margin", "low_self_confidence"]:
+        # TODO: consider setting adjust_pred_probs to true based on benchmarks (or adding it kwargs, or ignoring and leaving as false by default)
+        scores = get_label_quality_scores(
+            labels,
+            pred_probs,
+            method=filter_by[4:],
+            adjust_pred_probs=False,
+        )
+        num_errors = num_label_issues(
+            labels, pred_probs, multi_label=False  # TODO: Check usage of multilabel
+        )
+        # Find label issues O(nlogn) solution (mapped to boolean mask later in the method)
+        cl_error_indices = np.argsort(scores)[:num_errors]
+
+    if filter_by in ["prune_by_noise_rate", "prune_by_class", "both"]:
+        args = _prepare_multiclass_pruning_args(
+            confident_joint=confident_joint,
+            labels=labels,
+            pred_probs=pred_probs,
+            frac_noise=frac_noise,
+            num_to_remove_per_class=num_to_remove_per_class,
+            min_examples_per_class=min_examples_per_class,
+            n_jobs=n_jobs,
+            K=K,
+            label_counts=label_counts,
+            os_name=os_name,
+        )
+
+    # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
+    # Operations are parallelized across all CPU processes
+    if filter_by == "prune_by_class" or filter_by == "both":
+        label_issues_mask = _run_multiclass_pruning(
+            args=args,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            big_dataset=big_dataset,
+            K=K,
+            pruner=_prune_by_class,
+            labels=labels,
+            progress_message="Parallel processing label issues by class.",
+        )
+
+    if filter_by == "both":
+        label_issues_mask_by_class = label_issues_mask
+
+    if filter_by == "prune_by_noise_rate" or filter_by == "both":
+        label_issues_mask = _run_multiclass_pruning(
+            args=args,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            big_dataset=big_dataset,
+            K=K,
+            pruner=_prune_by_count,
+            labels=labels,
+            progress_message="Parallel processing label issues by noise rate.",
+        )
+
+    if filter_by == "both":
+        label_issues_mask = label_issues_mask & label_issues_mask_by_class
+
+    if filter_by in ["confident_learning", "low_normalized_margin", "low_self_confidence"]:
+        label_issues_mask = np.zeros(len(labels), dtype=bool)
+        label_issues_mask[cl_error_indices] = True
+
+    if filter_by == "predicted_neq_given":
+        label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=False)
+
+    if filter_by not in ["low_self_confidence", "low_normalized_margin"]:
+        # Remove label issues if model prediction is close to given label
+        mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
+        label_issues_mask[mask] = False
+
+    if verbose:
+        print("Number of label issues found: {}".format(sum(label_issues_mask)))
+
+    # TODO: run count.num_label_issues() and adjust the total issues found here to match
+    if return_indices_ranked_by is not None:
+        er = order_label_issues(
+            label_issues_mask=label_issues_mask,
+            labels=labels,
+            pred_probs=pred_probs,
+            rank_by=return_indices_ranked_by,
+            rank_by_kwargs=rank_by_kwargs,
+        )
+        return er
+    return label_issues_mask
+
+
+def _prepare_multiclass_pruning_args(
+    *,
+    confident_joint: np.ndarray,
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
+    frac_noise: float,
+    num_to_remove_per_class: Optional[List[int]],
+    min_examples_per_class,
+    n_jobs: int,
+    K: int,
+    label_counts: np.ndarray,
+    os_name: str,
+) -> list:
+    # Create the prune-count matrix and choose the multiprocessing payload shape.
+    prune_count_matrix = _keep_at_least_n_per_class(
+        prune_count_matrix=confident_joint.T,
+        n=min_examples_per_class,
+        frac_noise=frac_noise,
+    )
+
+    if num_to_remove_per_class is not None:
+        psy = prune_count_matrix / np.sum(prune_count_matrix, axis=1)
+        noise_per_s = psy.sum(axis=1) - psy.diagonal()
+        tmp = (psy.T * num_to_remove_per_class / noise_per_s).T
+        np.fill_diagonal(tmp, label_counts - num_to_remove_per_class)
+        prune_count_matrix = round_preserving_row_totals(tmp)
+
+    use_global_vars = n_jobs == 1 or (os_name == "Linux" and sys.version_info < (3, 14))
+    if use_global_vars:
+        global pred_probs_by_class, prune_count_matrix_cols
+        pred_probs_by_class = {k: pred_probs[labels == k] for k in range(K)}
+        prune_count_matrix_cols = {k: prune_count_matrix[:, k] for k in range(K)}
+        return [[k, min_examples_per_class, None] for k in range(K)]
+    return [
+        [k, min_examples_per_class, [pred_probs[labels == k], prune_count_matrix[:, k]]]
+        for k in range(K)
+    ]
+
+
+def _run_multiclass_pruning(
+    *,
+    args: list,
+    n_jobs: int,
+    verbose: bool,
+    big_dataset: bool,
+    K: int,
+    pruner,
+    labels: np.ndarray,
+    progress_message: str,
+) -> np.ndarray:
+    if n_jobs > 1:
+        chunksize = max(1, K // n_jobs)
+        with multiprocessing.Pool(n_jobs) as p:
+            if verbose:  # pragma: no cover
+                print(progress_message)
+            sys.stdout.flush()
+            if big_dataset and tqdm_exists:
+                label_issues_masks_per_class = list(
+                    tqdm.tqdm(p.imap(pruner, args, chunksize=chunksize), total=K)
+                )
+            else:
+                label_issues_masks_per_class = p.map(pruner, args, chunksize=chunksize)
+    else:
+        label_issues_masks_per_class = [pruner(arg) for arg in args]
+
+    label_issues_mask = np.zeros(len(labels), dtype=bool)
+    for k, mask in enumerate(label_issues_masks_per_class):
+        if len(mask) > 1:
+            label_issues_mask[labels == k] = mask
+    return label_issues_mask
+
+
 def find_label_issues(
     labels: LabelLike,
     pred_probs: np.ndarray,
@@ -195,61 +485,15 @@ def find_label_issues(
     if not rank_by_kwargs:
         rank_by_kwargs = {}
 
-    assert filter_by in [
-        "low_normalized_margin",
-        "low_self_confidence",
-        "prune_by_noise_rate",
-        "prune_by_class",
-        "both",
-        "confident_learning",
-        "predicted_neq_given",
-    ]  # TODO: change default to confident_learning ?
-    allow_one_class = False
-    if isinstance(labels, np.ndarray) or all(isinstance(lab, int) for lab in labels):
-        if set(labels) == {0}:  # occurs with missing classes in multi-label settings
-            allow_one_class = True
-    assert_valid_inputs(
-        X=None,
-        y=labels,
-        pred_probs=pred_probs,
+    _validate_find_label_issues_inputs(
+        labels,
+        pred_probs,
+        filter_by=filter_by,
+        frac_noise=frac_noise,
+        num_to_remove_per_class=num_to_remove_per_class,
+        confident_joint=confident_joint,
         multi_label=multi_label,
-        allow_one_class=allow_one_class,
     )
-
-    if filter_by in [
-        "confident_learning",
-        "predicted_neq_given",
-        "low_normalized_margin",
-        "low_self_confidence",
-    ] and (frac_noise != 1.0 or num_to_remove_per_class is not None):
-        warn_str = (
-            "frac_noise and num_to_remove_per_class parameters are only supported"
-            " for filter_by 'prune_by_noise_rate', 'prune_by_class', and 'both'. They "
-            "are not supported for methods 'confident_learning', 'predicted_neq_given', "
-            "'low_normalized_margin' or 'low_self_confidence'."
-        )
-        warnings.warn(warn_str)
-    if (num_to_remove_per_class is not None) and (
-        filter_by
-        in [
-            "confident_learning",
-            "predicted_neq_given",
-            "low_normalized_margin",
-            "low_self_confidence",
-        ]
-    ):
-        # TODO - add support for these filters
-        raise ValueError(
-            "filter_by 'confident_learning', 'predicted_neq_given', 'low_normalized_margin' "
-            "or 'low_self_confidence' is not supported (yet) when setting 'num_to_remove_per_class'"
-        )
-    if filter_by == "confident_learning" and isinstance(confident_joint, np.ndarray):
-        warn_str = (
-            "The supplied `confident_joint` is ignored when `filter_by = 'confident_learning'`; confident joint will be "
-            "re-estimated from the given labels. To use your supplied `confident_joint`, please specify a different "
-            "`filter_by` value."
-        )
-        warnings.warn(warn_str)
 
     K = get_num_classes(
         labels=labels, pred_probs=pred_probs, label_matrix=confident_joint, multi_label=multi_label
@@ -257,30 +501,12 @@ def find_label_issues(
     # Boolean set to true if dataset is large
     big_dataset = K * len(labels) > 1e8
 
-    # Set-up number of multiprocessing threads
     # On Windows/macOS, when multi_label is True, multiprocessing is much slower
     # even for faily large input arrays, so we default to n_jobs=1 in this case
     os_name = platform.system()
-    if n_jobs is None:
-        if multi_label and os_name != "Linux":
-            n_jobs = 1
-        else:
-            if psutil_exists:
-                n_jobs = psutil.cpu_count(logical=False)  # physical cores
-            elif big_dataset:
-                print(
-                    "To default `n_jobs` to the number of physical cores for multiprocessing in find_label_issues(), please: `pip install psutil`.\n"
-                    "Note: You can safely ignore this message. `n_jobs` only affects runtimes, results will be the same no matter its value.\n"
-                    "Since psutil is not installed, `n_jobs` was set to the number of logical cores by default.\n"
-                    "Disable this message by either installing psutil or specifying the `n_jobs` argument."
-                )  # pragma: no cover
-            if not n_jobs:
-                # either psutil does not exist
-                # or psutil can return None when physical cores cannot be determined
-                # switch to logical cores
-                n_jobs = multiprocessing.cpu_count()
-    else:
-        assert n_jobs >= 1
+    n_jobs = _resolve_find_label_issues_n_jobs(
+        n_jobs, multi_label=multi_label, os_name=os_name, big_dataset=big_dataset
+    )
 
     if multi_label:
         if not isinstance(labels, list):
@@ -303,151 +529,22 @@ def find_label_issues(
             verbose,
         )
 
-    # Else this is standard multi-class classification
-    # Number of examples in each class of labels
-    label_counts = value_counts_fill_missing_classes(labels, K, multi_label=multi_label)
-    # Ensure labels are of type np.ndarray()
-    labels = np.asarray(labels)
-    if confident_joint is None or filter_by == "confident_learning":
-        from cleanlab.count import compute_confident_joint
-
-        confident_joint, cl_error_indices = compute_confident_joint(
-            labels=labels,
-            pred_probs=pred_probs,
-            multi_label=multi_label,
-            return_indices_of_off_diagonals=True,
-        )
-
-    if filter_by in ["low_normalized_margin", "low_self_confidence"]:
-        # TODO: consider setting adjust_pred_probs to true based on benchmarks (or adding it kwargs, or ignoring and leaving as false by default)
-        scores = get_label_quality_scores(
-            labels,
-            pred_probs,
-            method=filter_by[4:],
-            adjust_pred_probs=False,
-        )
-        num_errors = num_label_issues(
-            labels, pred_probs, multi_label=multi_label  # TODO: Check usage of multilabel
-        )
-        # Find label issues O(nlogn) solution (mapped to boolean mask later in the method)
-        cl_error_indices = np.argsort(scores)[:num_errors]
-        # The following is the O(n) fastest solution (check for one-off errors), but the problem is if lots of the scores are identical you will overcount,
-        # you can end up returning more or less and they aren't ranked in the boolean form so there's no way to drop the highest scores randomly
-        #     boundary = np.partition(scores, num_errors)[num_errors]  # O(n) solution
-        #     label_issues_mask = scores <= boundary
-
-    if filter_by in ["prune_by_noise_rate", "prune_by_class", "both"]:
-        # Create `prune_count_matrix` with the number of examples to remove in each class and
-        # leave at least min_examples_per_class examples per class.
-        # `prune_count_matrix` is transposed relative to the confident_joint.
-        prune_count_matrix = _keep_at_least_n_per_class(
-            prune_count_matrix=confident_joint.T,
-            n=min_examples_per_class,
-            frac_noise=frac_noise,
-        )
-
-        if num_to_remove_per_class is not None:
-            # Estimate joint probability distribution over label issues
-            psy = prune_count_matrix / np.sum(prune_count_matrix, axis=1)
-            noise_per_s = psy.sum(axis=1) - psy.diagonal()
-            # Calibrate labels.t. noise rates sum to num_to_remove_per_class
-            tmp = (psy.T * num_to_remove_per_class / noise_per_s).T
-            np.fill_diagonal(tmp, label_counts - num_to_remove_per_class)
-            prune_count_matrix = round_preserving_row_totals(tmp)
-
-        # Prepare multiprocessing shared data
-        # On Linux with Python <3.14, multiprocessing is started with fork,
-        # so data can be shared with global variables + COW
-        # On Window/macOS, processes are started with spawn,
-        # so data will need to be pickled to the subprocesses through input args
-        # In Python 3.14+, global variable sharing is no longer reliable even on Linux
-        chunksize = max(1, K // n_jobs)
-        use_global_vars = n_jobs == 1 or (os_name == "Linux" and sys.version_info < (3, 14))
-        if use_global_vars:
-            global pred_probs_by_class, prune_count_matrix_cols
-            pred_probs_by_class = {k: pred_probs[labels == k] for k in range(K)}
-            prune_count_matrix_cols = {k: prune_count_matrix[:, k] for k in range(K)}
-            args = [[k, min_examples_per_class, None] for k in range(K)]
-        else:
-            args = [
-                [k, min_examples_per_class, [pred_probs[labels == k], prune_count_matrix[:, k]]]
-                for k in range(K)
-            ]
-
-    # Perform Pruning with threshold probabilities from BFPRT algorithm in O(n)
-    # Operations are parallelized across all CPU processes
-    if filter_by == "prune_by_class" or filter_by == "both":
-        if n_jobs > 1:
-            with multiprocessing.Pool(n_jobs) as p:
-                if verbose:  # pragma: no cover
-                    print("Parallel processing label issues by class.")
-                sys.stdout.flush()
-                if big_dataset and tqdm_exists:
-                    label_issues_masks_per_class = list(
-                        tqdm.tqdm(p.imap(_prune_by_class, args, chunksize=chunksize), total=K)
-                    )
-                else:
-                    label_issues_masks_per_class = p.map(_prune_by_class, args, chunksize=chunksize)
-        else:
-            label_issues_masks_per_class = [_prune_by_class(arg) for arg in args]
-
-        label_issues_mask = np.zeros(len(labels), dtype=bool)
-        for k, mask in enumerate(label_issues_masks_per_class):
-            if len(mask) > 1:
-                label_issues_mask[labels == k] = mask
-
-    if filter_by == "both":
-        label_issues_mask_by_class = label_issues_mask
-
-    if filter_by == "prune_by_noise_rate" or filter_by == "both":
-        if n_jobs > 1:
-            with multiprocessing.Pool(n_jobs) as p:
-                if verbose:  # pragma: no cover
-                    print("Parallel processing label issues by noise rate.")
-                sys.stdout.flush()
-                if big_dataset and tqdm_exists:
-                    label_issues_masks_per_class = list(
-                        tqdm.tqdm(p.imap(_prune_by_count, args, chunksize=chunksize), total=K)
-                    )
-                else:
-                    label_issues_masks_per_class = p.map(_prune_by_count, args, chunksize=chunksize)
-        else:
-            label_issues_masks_per_class = [_prune_by_count(arg) for arg in args]
-
-        label_issues_mask = np.zeros(len(labels), dtype=bool)
-        for k, mask in enumerate(label_issues_masks_per_class):
-            if len(mask) > 1:
-                label_issues_mask[labels == k] = mask
-
-    if filter_by == "both":
-        label_issues_mask = label_issues_mask & label_issues_mask_by_class
-
-    if filter_by in ["confident_learning", "low_normalized_margin", "low_self_confidence"]:
-        label_issues_mask = np.zeros(len(labels), dtype=bool)
-        label_issues_mask[cl_error_indices] = True
-
-    if filter_by == "predicted_neq_given":
-        label_issues_mask = find_predicted_neq_given(labels, pred_probs, multi_label=multi_label)
-
-    if filter_by not in ["low_self_confidence", "low_normalized_margin"]:
-        # Remove label issues if model prediction is close to given label
-        mask = _reduce_issues(pred_probs=pred_probs, labels=labels)
-        label_issues_mask[mask] = False
-
-    if verbose:
-        print("Number of label issues found: {}".format(sum(label_issues_mask)))
-
-    # TODO: run count.num_label_issues() and adjust the total issues found here to match
-    if return_indices_ranked_by is not None:
-        er = order_label_issues(
-            label_issues_mask=label_issues_mask,
-            labels=labels,
-            pred_probs=pred_probs,
-            rank_by=return_indices_ranked_by,
-            rank_by_kwargs=rank_by_kwargs,
-        )
-        return er
-    return label_issues_mask
+    return _find_label_issues_multiclass(
+        labels,
+        pred_probs,
+        return_indices_ranked_by=return_indices_ranked_by,
+        rank_by_kwargs=rank_by_kwargs,
+        filter_by=filter_by,
+        frac_noise=frac_noise,
+        num_to_remove_per_class=num_to_remove_per_class,
+        min_examples_per_class=min_examples_per_class,
+        confident_joint=confident_joint,
+        n_jobs=n_jobs,
+        verbose=verbose,
+        K=K,
+        big_dataset=big_dataset,
+        os_name=os_name,
+    )
 
 
 def _find_label_issues_multilabel(

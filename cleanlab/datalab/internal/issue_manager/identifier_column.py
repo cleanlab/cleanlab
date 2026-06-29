@@ -44,6 +44,31 @@ class IdentifierColumnIssueManager(IssueManager):
             return False
         return bool((expected_range == unique_sorted).all())
 
+    def _to_array(self, values: Union[npt.NDArray, list]) -> npt.NDArray:
+        arr = np.array(values)
+        if arr.size and isinstance(arr[0], str):
+            return arr.astype(str)
+        return arr
+
+    def _prepare_from_dataframe(self, features: pd.DataFrame) -> List[npt.NDArray]:
+        # Keep string columns as strings for consistent downstream handling.
+        return [
+            np.array(features[col].values).astype(str)
+            if pd.api.types.is_string_dtype(features[col])
+            else self._to_array(features[col].values)
+            for col in features.columns
+        ]
+
+    def _prepare_from_dict(self, features: dict) -> List[npt.NDArray]:
+        return [self._to_array(value) for value in features.values()]
+
+    def _prepare_from_list(self, features: list) -> List[npt.NDArray]:
+        if any(not isinstance(col_list, (list, np.ndarray)) for col_list in features):
+            raise ValueError(
+                "features must be a list of lists or numpy arrays if a list is passed."
+            )
+        return [self._to_array(col_list) for col_list in features]
+
     def _prepare_features(
         self, features: Optional[Union[npt.NDArray, pd.DataFrame, list, dict]]
     ) -> Union[npt.NDArray, List[npt.NDArray]]:
@@ -58,37 +83,13 @@ class IdentifierColumnIssueManager(IssueManager):
         """
         if isinstance(features, np.ndarray):
             return features.T  # Transpose if it's a NumPy array
-        # to keep the datatype of the string columns for dicts and pandas dataframes consistent
-        # we convert the string columns to dtype=str, otherwise we ran into error in our tests
-        elif isinstance(features, pd.DataFrame):
-            result = []
-            for col in features.columns:
-                if pd.api.types.is_string_dtype(
-                    features[col]
-                ):  # detect string columns in both pandas 2.x and 3.x.
-                    arr = np.array(features[col].values).astype(str)
-                else:
-                    arr = np.array(features[col].values)
-                result.append(arr)
-            return result
-        elif isinstance(features, dict):
-            result = []
-            for value in features.values():
-                if isinstance(value[0], str):
-                    arr = np.array(value).astype(str)
-                else:
-                    arr = np.array(value)
-                result.append(arr)
-            return result
-        elif isinstance(features, list):
-            for col_list in features:
-                if not isinstance(col_list, list) and not isinstance(col_list, np.ndarray):
-                    raise ValueError(
-                        "features must be a list of lists or numpy arrays if a list is passed."
-                    )
-            return [np.array(col_list) for col_list in features]
-        else:
-            raise ValueError("features must be a numpy array, pandas DataFrame, list, or dict.")
+        if isinstance(features, pd.DataFrame):
+            return self._prepare_from_dataframe(features)
+        if isinstance(features, dict):
+            return self._prepare_from_dict(features)
+        if isinstance(features, list):
+            return self._prepare_from_list(features)
+        raise ValueError("features must be a numpy array, pandas DataFrame, list, or dict.")
 
     def find_issues(
         self, features: Optional[Union[npt.NDArray, pd.DataFrame, list, dict]], **kwargs

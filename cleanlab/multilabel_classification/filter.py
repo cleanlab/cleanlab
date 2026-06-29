@@ -235,9 +235,7 @@ def find_multilabel_issues_per_class(
         - *pred_probs_list*: a one-vs-rest representation of the original predicted probabilities of shape ``(N, 2)``, useful if you want to compute label quality scores.
           ``pred_probs_list[k][i][0]`` is the estimated probability that example ``i`` belongs to class ``k``, and is equal to: ``1 - pred_probs_list[k][i][1]``.
     """
-    import cleanlab.filter
-    from cleanlab.internal.multilabel_utils import get_onehot_num_classes, stack_complement
-    from cleanlab.experimental.label_issues_batched import find_label_issues_batched
+    from cleanlab.internal.multilabel_utils import get_onehot_num_classes
 
     y_one, num_classes = get_onehot_num_classes(labels, pred_probs)
     if return_indices_ranked_by is None:
@@ -246,50 +244,23 @@ def find_multilabel_issues_per_class(
         label_issues_list = []
     labels_list = []
     pred_probs_list = []
-    if confident_joint is not None and not low_memory:
-        confident_joint_shape = confident_joint.shape
-        if confident_joint_shape == (num_classes, num_classes):
-            warnings.warn(
-                f"The new recommended format for `confident_joint` in multi_label settings is (num_classes,2,2) as output by compute_confident_joint(...,multi_label=True). Your K x K confident_joint in the old format is being ignored."
-            )
-            confident_joint = None
-        elif confident_joint_shape != (num_classes, 2, 2):
-            raise ValueError("confident_joint should be of shape (num_classes, 2, 2)")
+    confident_joint = _validate_multilabel_confident_joint(confident_joint, num_classes)
     for class_num, (label, pred_prob_for_class) in enumerate(zip(y_one.T, pred_probs.T)):
-        pred_probs_binary = stack_complement(pred_prob_for_class)
-        if low_memory:
-            quality_score_kwargs = (
-                {"method": return_indices_ranked_by} if return_indices_ranked_by else None
-            )
-            binary_label_issues = find_label_issues_batched(
-                labels=label,
-                pred_probs=pred_probs_binary,
-                verbose=verbose,
-                quality_score_kwargs=quality_score_kwargs,
-                return_mask=return_indices_ranked_by is None,
-            )
-        else:
-            if confident_joint is None:
-                conf = None
-            else:
-                conf = confident_joint[class_num]
-            if num_to_remove_per_class is not None:
-                ml_num_to_remove_per_class = [num_to_remove_per_class[class_num], 0]
-            else:
-                ml_num_to_remove_per_class = None
-            binary_label_issues = cleanlab.filter.find_label_issues(
-                labels=label,
-                pred_probs=pred_probs_binary,
-                return_indices_ranked_by=return_indices_ranked_by,
-                frac_noise=frac_noise,
-                rank_by_kwargs=rank_by_kwargs,
-                filter_by=filter_by,
-                num_to_remove_per_class=ml_num_to_remove_per_class,
-                min_examples_per_class=min_examples_per_class,
-                confident_joint=conf,
-                n_jobs=n_jobs,
-                verbose=verbose,
-            )
+        binary_label_issues, label, pred_probs_binary = _find_multilabel_issues_for_class(
+            label=label,
+            pred_prob_for_class=pred_prob_for_class,
+            class_num=class_num,
+            return_indices_ranked_by=return_indices_ranked_by,
+            rank_by_kwargs=rank_by_kwargs,
+            filter_by=filter_by,
+            frac_noise=frac_noise,
+            num_to_remove_per_class=num_to_remove_per_class,
+            min_examples_per_class=min_examples_per_class,
+            confident_joint=confident_joint,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            low_memory=low_memory,
+        )
 
         if return_indices_ranked_by is None:
             bissues[:, class_num] = binary_label_issues
@@ -301,3 +272,75 @@ def find_multilabel_issues_per_class(
         return bissues
     else:
         return label_issues_list, labels_list, pred_probs_list
+
+
+def _validate_multilabel_confident_joint(
+    confident_joint: Optional[np.ndarray], num_classes: int
+) -> Optional[np.ndarray]:
+    if confident_joint is None:
+        return None
+
+    confident_joint_shape = confident_joint.shape
+    if confident_joint_shape == (num_classes, num_classes):
+        warnings.warn(
+            f"The new recommended format for `confident_joint` in multi_label settings is (num_classes,2,2) as output by compute_confident_joint(...,multi_label=True). Your K x K confident_joint in the old format is being ignored."
+        )
+        return None
+    if confident_joint_shape != (num_classes, 2, 2):
+        raise ValueError("confident_joint should be of shape (num_classes, 2, 2)")
+    return confident_joint
+
+
+def _find_multilabel_issues_for_class(
+    label: np.ndarray,
+    pred_prob_for_class: np.ndarray,
+    class_num: int,
+    return_indices_ranked_by: Optional[str],
+    rank_by_kwargs={},
+    filter_by: str = "prune_by_noise_rate",
+    frac_noise: float = 1.0,
+    num_to_remove_per_class: Optional[List[int]] = None,
+    min_examples_per_class=1,
+    confident_joint: Optional[np.ndarray] = None,
+    n_jobs: Optional[int] = None,
+    verbose: bool = False,
+    low_memory: bool = False,
+):
+    import cleanlab.filter
+    from cleanlab.experimental.label_issues_batched import find_label_issues_batched
+    from cleanlab.internal.multilabel_utils import stack_complement
+
+    pred_probs_binary = stack_complement(pred_prob_for_class)
+    if low_memory:
+        quality_score_kwargs = (
+            {"method": return_indices_ranked_by} if return_indices_ranked_by else None
+        )
+        return find_label_issues_batched(
+            labels=label,
+            pred_probs=pred_probs_binary,
+            verbose=verbose,
+            quality_score_kwargs=quality_score_kwargs,
+            return_mask=return_indices_ranked_by is None,
+        ), label, pred_probs_binary
+
+    conf = confident_joint[class_num] if confident_joint is not None else None
+    ml_num_to_remove_per_class = (
+        [num_to_remove_per_class[class_num], 0] if num_to_remove_per_class is not None else None
+    )
+    return (
+        cleanlab.filter.find_label_issues(
+            labels=label,
+            pred_probs=pred_probs_binary,
+            return_indices_ranked_by=return_indices_ranked_by,
+            frac_noise=frac_noise,
+            rank_by_kwargs=rank_by_kwargs,
+            filter_by=filter_by,
+            num_to_remove_per_class=ml_num_to_remove_per_class,
+            min_examples_per_class=min_examples_per_class,
+            confident_joint=conf,
+            n_jobs=n_jobs,
+            verbose=verbose,
+        ),
+        label,
+        pred_probs_binary,
+    )

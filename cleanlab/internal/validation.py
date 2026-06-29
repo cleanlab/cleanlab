@@ -19,6 +19,20 @@ def assert_valid_inputs(
     allow_one_class: bool = False,
 ) -> None:
     """Checks that ``X``, ``labels``, ``pred_probs`` are correctly formatted."""
+    y = _validate_labels(y, multi_label, allow_missing_classes, allow_one_class)
+
+    if pred_probs is None:
+        _validate_features_if_needed(X, y)
+    else:
+        _validate_pred_probs(pred_probs, y, multi_label, X)
+
+
+def _validate_labels(
+    y: LabelLike,
+    multi_label: bool,
+    allow_missing_classes: bool,
+    allow_one_class: bool,
+):
     if not isinstance(y, (list, np.ndarray, np.generic, pd.Series, pd.DataFrame)):
         raise TypeError("labels should be a numpy array or pandas Series.")
     if not multi_label:
@@ -26,59 +40,55 @@ def assert_valid_inputs(
         assert_valid_class_labels(
             y=y, allow_missing_classes=allow_missing_classes, allow_one_class=allow_one_class
         )
+    return y
 
-    allow_empty_X = True
-    if pred_probs is None:
-        allow_empty_X = False
 
-    if not allow_empty_X:
-        assert_nonempty_input(X)
+def _get_num_examples(X: DatasetLike) -> int:
+    try:
+        return len(X)
+    except Exception:
         try:
-            num_examples = len(X)
-            len_supported = True
-        except:
-            len_supported = False
-        if not len_supported:
-            try:
-                num_examples = X.shape[0]
-                shape_supported = True
-            except:
-                shape_supported = False
-        if (not len_supported) and (not shape_supported):
-            raise TypeError("Data features X must support either: len(X) or X.shape[0]")
+            return X.shape[0]
+        except Exception as exc:
+            raise TypeError("Data features X must support either: len(X) or X.shape[0]") from exc
 
-        if num_examples != len(y):
-            raise ValueError(
-                f"X and labels must be same length, but X is length {num_examples} and labels is length {len(y)}."
-            )
 
-        assert_indexing_works(X, length_X=num_examples)
+def _validate_features_if_needed(X: DatasetLike, y) -> None:
+    assert_nonempty_input(X)
+    num_examples = _get_num_examples(X)
+    if num_examples != len(y):
+        raise ValueError(
+            f"X and labels must be same length, but X is length {num_examples} and labels is length {len(y)}."
+        )
 
-    if pred_probs is not None:
-        if not isinstance(pred_probs, (np.ndarray, np.generic)):
-            raise TypeError("pred_probs must be a numpy array.")
-        if len(pred_probs) != len(y):
-            raise ValueError("pred_probs and labels must have same length.")
-        if len(pred_probs.shape) != 2:
-            raise ValueError("pred_probs array must have shape: num_examples x num_classes.")
-        if not multi_label:
-            assert isinstance(y, np.ndarray)
-            highest_class = max(y) + 1
-        else:
-            assert isinstance(y, list)
-            assert all(isinstance(y_i, list) for y_i in y)
-            highest_class = max([max(y_i) for y_i in y if len(y_i) != 0]) + 1
-        if pred_probs.shape[1] < highest_class:
-            raise ValueError(
-                f"pred_probs must have at least {highest_class} columns, based on the largest class index which appears in labels."
-            )
-        # Check for valid probabilities.
-        if (np.min(pred_probs) < 0 - FLOATING_POINT_COMPARISON) or (
-            np.max(pred_probs) > 1 + FLOATING_POINT_COMPARISON
-        ):
-            raise ValueError("Values in pred_probs must be between 0 and 1.")
-        if X is not None:
-            warnings.warn("When X and pred_probs are both provided, the former may be ignored.")
+    assert_indexing_works(X, length_X=num_examples)
+
+
+def _validate_pred_probs(pred_probs, y, multi_label: bool, X: DatasetLike) -> None:
+    if not isinstance(pred_probs, (np.ndarray, np.generic)):
+        raise TypeError("pred_probs must be a numpy array.")
+    if len(pred_probs) != len(y):
+        raise ValueError("pred_probs and labels must have same length.")
+    if len(pred_probs.shape) != 2:
+        raise ValueError("pred_probs array must have shape: num_examples x num_classes.")
+    if not multi_label:
+        assert isinstance(y, np.ndarray)
+        highest_class = max(y) + 1
+    else:
+        assert isinstance(y, list)
+        assert all(isinstance(y_i, list) for y_i in y)
+        highest_class = max([max(y_i) for y_i in y if len(y_i) != 0]) + 1
+    if pred_probs.shape[1] < highest_class:
+        raise ValueError(
+            f"pred_probs must have at least {highest_class} columns, based on the largest class index which appears in labels."
+        )
+    # Check for valid probabilities.
+    if (np.min(pred_probs) < 0 - FLOATING_POINT_COMPARISON) or (
+        np.max(pred_probs) > 1 + FLOATING_POINT_COMPARISON
+    ):
+        raise ValueError("Values in pred_probs must be between 0 and 1.")
+    if X is not None:
+        warnings.warn("When X and pred_probs are both provided, the former may be ignored.")
 
 
 def assert_valid_class_labels(

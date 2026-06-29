@@ -395,71 +395,107 @@ def visualize(
             "This functionality requires matplotlib. Install it via: `pip install matplotlib`"
         )
 
-    # Create figure and axes
     if isinstance(image, str):
         image = plt.imread(image)
-
-    if prediction is not None:
-        prediction_type = _get_prediction_type(prediction)
-        pbbox, plabels, pred_probs = _separate_prediction(
-            prediction, prediction_type=prediction_type
-        )
-
-        if prediction_threshold is not None:
-            keep_idx = np.where(pred_probs > prediction_threshold)
-            pbbox = pbbox[keep_idx]
-            plabels = plabels[keep_idx]
 
     if label is not None:
         abbox, alabels = _separate_label(label)
 
-    if overlay:
-        figsize = (8, 5) if figsize is None else figsize
-        fig, ax = plt.subplots(frameon=False, figsize=figsize)
-        plt.axis("off")
-        ax.imshow(image)
-        if label is not None:
-            fig, ax = _draw_boxes(
-                fig, ax, abbox, alabels, edgecolor="r", linestyle="-", linewidth=1
-            )
-        if prediction is not None:
-            _, _ = _draw_boxes(fig, ax, pbbox, plabels, edgecolor="b", linestyle="-.", linewidth=1)
-    else:
-        figsize = (14, 10) if figsize is None else figsize
-        fig, axes = plt.subplots(nrows=1, ncols=2, frameon=False, figsize=figsize)
-        axes = cast(Tuple[Axes, Axes], axes)
-        axes[0].axis("off")
-        axes[0].imshow(image)
-        axes[1].axis("off")
-        axes[1].imshow(image)
+    pbbox = plabels = None
+    if prediction is not None:
+        pbbox, plabels = _prepare_prediction_boxes(prediction, prediction_threshold)
 
-        if label is not None:
-            fig, ax = _draw_boxes(
-                fig, axes[0], abbox, alabels, edgecolor="r", linestyle="-", linewidth=1
-            )
-        if prediction is not None:
-            _, _ = _draw_boxes(
-                fig, axes[1], pbbox, plabels, edgecolor="b", linestyle="-.", linewidth=1
-            )
+    if overlay:
+        _draw_visualize_overlay(
+            plt,
+            image,
+            figsize,
+            label,
+            prediction,
+            abbox if label is not None else None,
+            alabels if label is not None else None,
+            pbbox,
+            plabels,
+        )
+    else:
+        _draw_visualize_side_by_side(
+            plt,
+            image,
+            figsize,
+            label,
+            prediction,
+            abbox if label is not None else None,
+            alabels if label is not None else None,
+            pbbox,
+            plabels,
+        )
     bbox_extra_artists = None
     if label or prediction is not None:
         legend, plt = _plot_legend(class_names, label, prediction)
         bbox_extra_artists = (legend,)
 
     if save_path:
-        allowed_image_formats = set(["png", "pdf", "ps", "eps", "svg"])
-        image_format: Optional[str] = None
-        if save_path.split(".")[-1] in allowed_image_formats and "." in save_path:
-            image_format = save_path.split(".")[-1]
-        plt.savefig(
-            save_path,
-            format=image_format,
-            bbox_extra_artists=bbox_extra_artists,
-            bbox_inches="tight",
-            transparent=True,
-            pad_inches=0.5,
-        )
+        _save_visualize_figure(plt, save_path, bbox_extra_artists)
     plt.show(**kwargs)
+
+
+def _prepare_prediction_boxes(prediction, prediction_threshold):
+    prediction_type = _get_prediction_type(prediction)
+    pbbox, plabels, pred_probs = _separate_prediction(prediction, prediction_type=prediction_type)
+
+    if prediction_threshold is not None:
+        keep_idx = np.where(pred_probs > prediction_threshold)
+        pbbox = pbbox[keep_idx]
+        plabels = plabels[keep_idx]
+
+    return pbbox, plabels
+
+
+def _draw_visualize_overlay(
+    plt, image, figsize, label, prediction, abbox, alabels, pbbox, plabels
+):
+    figsize = (8, 5) if figsize is None else figsize
+    fig, ax = plt.subplots(frameon=False, figsize=figsize)
+    plt.axis("off")
+    ax.imshow(image)
+    if label is not None:
+        fig, ax = _draw_boxes(fig, ax, abbox, alabels, edgecolor="r", linestyle="-", linewidth=1)
+    if prediction is not None:
+        _, _ = _draw_boxes(fig, ax, pbbox, plabels, edgecolor="b", linestyle="-.", linewidth=1)
+    return fig, ax
+
+
+def _draw_visualize_side_by_side(
+    plt, image, figsize, label, prediction, abbox, alabels, pbbox, plabels
+):
+    figsize = (14, 10) if figsize is None else figsize
+    fig, axes = plt.subplots(nrows=1, ncols=2, frameon=False, figsize=figsize)
+    axes = cast(Tuple[Axes, Axes], axes)
+    axes[0].axis("off")
+    axes[0].imshow(image)
+    axes[1].axis("off")
+    axes[1].imshow(image)
+
+    if label is not None:
+        fig, ax = _draw_boxes(fig, axes[0], abbox, alabels, edgecolor="r", linestyle="-", linewidth=1)
+    if prediction is not None:
+        _, _ = _draw_boxes(fig, axes[1], pbbox, plabels, edgecolor="b", linestyle="-.", linewidth=1)
+    return fig, axes
+
+
+def _save_visualize_figure(plt, save_path, bbox_extra_artists):
+    allowed_image_formats = {"png", "pdf", "ps", "eps", "svg"}
+    image_format: Optional[str] = None
+    if save_path.split(".")[-1] in allowed_image_formats and "." in save_path:
+        image_format = save_path.split(".")[-1]
+    plt.savefig(
+        save_path,
+        format=image_format,
+        bbox_extra_artists=bbox_extra_artists,
+        bbox_inches="tight",
+        transparent=True,
+        pad_inches=0.5,
+    )
 
 
 def _get_per_class_confusion_matrix_dict_(

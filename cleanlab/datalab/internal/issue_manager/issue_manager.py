@@ -188,6 +188,62 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         )
 
     @classmethod
+    def _validate_verbosity(cls, verbosity: int) -> int:
+        max_verbosity = max(cls.verbosity_levels.keys())
+        top_level = max_verbosity + 1
+        if verbosity not in list(cls.verbosity_levels.keys()) + [top_level]:
+            raise ValueError(
+                f"Verbosity level {verbosity} not supported. "
+                f"Supported levels: {cls.verbosity_levels.keys()}"
+                f"Use verbosity={top_level} to print all info."
+            )
+        return top_level
+
+    @staticmethod
+    def _truncate_value(value, max_len: int = 4) -> str:
+        if hasattr(value, "shape") or hasattr(value, "ndim"):
+            value = np.array(value)
+            if value.ndim > 1:
+                description = f"array of shape {value.shape}\n"
+                with np.printoptions(threshold=max_len):
+                    description += f"{value}"
+                return description
+            value = value.tolist()
+
+        if isinstance(value, list):
+            if all(isinstance(value_item, list) for value_item in value):
+                return IssueManager._truncate_value(np.array(value, dtype=object), max_len=max_len)
+            if len(value) > max_len:
+                value = value[:max_len] + ["..."]
+        return str(value)
+
+    @classmethod
+    def _format_additional_info(
+        cls,
+        info: Dict[str, Any],
+        info_to_print: Set[str],
+    ) -> str:
+        if not info_to_print:
+            return ""
+
+        report_str = "\n\nAdditional Information: "
+        for key in info_to_print:
+            if key == "statistics":
+                continue
+            value = info[key]
+            if isinstance(value, dict):
+                report_str += f"\n{key}:\n{json.dumps(value, indent=4)}"
+            elif isinstance(value, pd.DataFrame):
+                max_rows = 5
+                df_str = value.head(max_rows).to_string()
+                if len(value) > max_rows:
+                    df_str += f"\n... (total {len(value)} rows)"
+                report_str += f"\n{key}:\n{df_str}"
+            else:
+                report_str += f"\n{key}: {cls._truncate_value(value)}"
+        return report_str
+
+    @classmethod
     def report(
         cls,
         issues: pd.DataFrame,
@@ -251,15 +307,7 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         report_str :
             A string containing the report.
         """
-
-        max_verbosity = max(cls.verbosity_levels.keys())
-        top_level = max_verbosity + 1
-        if verbosity not in list(cls.verbosity_levels.keys()) + [top_level]:
-            raise ValueError(
-                f"Verbosity level {verbosity} not supported. "
-                f"Supported levels: {cls.verbosity_levels.keys()}"
-                f"Use verbosity={top_level} to print all info."
-            )
+        top_level = cls._validate_verbosity(verbosity)
         if issues.empty:
             print(f"No issues found")
 
@@ -290,41 +338,5 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
         report_str += "Examples representing most severe instances of this issue:\n"
         report_str += issues.loc[topk_ids].to_string()
 
-        def truncate(s, max_len=4) -> str:
-            if hasattr(s, "shape") or hasattr(s, "ndim"):
-                s = np.array(s)
-                if s.ndim > 1:
-                    description = f"array of shape {s.shape}\n"
-                    with np.printoptions(threshold=max_len):
-                        if s.ndim == 2:
-                            description += f"{s}"
-                        if s.ndim > 2:
-                            description += f"{s}"
-                    return description
-                s = s.tolist()
-
-            if isinstance(s, list):
-                if all([isinstance(s_, list) for s_ in s]):
-                    return truncate(np.array(s, dtype=object), max_len=max_len)
-                if len(s) > max_len:
-                    s = s[:max_len] + ["..."]
-            return str(s)
-
-        if info_to_print:
-            info_to_print_dict = {key: info[key] for key in info_to_print}
-            # Print the info dict, truncating arrays to 4 elements,
-            report_str += f"\n\nAdditional Information: "
-            for key, value in info_to_print_dict.items():
-                if key == "statistics":
-                    continue
-                if isinstance(value, dict):
-                    report_str += f"\n{key}:\n{json.dumps(value, indent=4)}"
-                elif isinstance(value, pd.DataFrame):
-                    max_rows = 5
-                    df_str = value.head(max_rows).to_string()
-                    if len(value) > max_rows:
-                        df_str += f"\n... (total {len(value)} rows)"
-                    report_str += f"\n{key}:\n{df_str}"
-                else:
-                    report_str += f"\n{key}: {truncate(value)}"
+        report_str += cls._format_additional_info(info=info, info_to_print=info_to_print)
         return report_str

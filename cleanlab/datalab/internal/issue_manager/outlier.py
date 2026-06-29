@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple
 
 from scipy.sparse import csr_matrix
@@ -17,6 +18,17 @@ if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
     from cleanlab.datalab.datalab import Datalab
     from cleanlab.typing import Metric
+
+
+@dataclass(slots=True)
+class _OutlierState:
+    k: int
+    t: int
+    metric: Optional[Metric]
+    scaling_factor: Optional[float]
+    threshold: Optional[float]
+    ood: OutOfDistribution
+    find_issues_inputs: Dict[str, bool]
 
 
 class OutlierIssueManager(IssueManager):
@@ -74,25 +86,48 @@ class OutlierIssueManager(IssueManager):
         # Simplified API: directly specify k and metric instead of NearestNeighbors object
         # This reduces dependency on OutOfDistribution and aligns with Datalab's approach
         params["k"] = k
-        self.k = k
-        self.t = t
-        self.metric: Optional[Metric] = metric
-        self.scaling_factor = scaling_factor
 
         if params:
             ood_kwargs["params"] = params
 
         # OutOfDistribution still used for pred-prob based outlier detection
-        self.ood: OutOfDistribution = OutOfDistribution(**ood_kwargs)
+        self._state = _OutlierState(
+            k=k,
+            t=t,
+            metric=metric,
+            scaling_factor=scaling_factor,
+            threshold=threshold,
+            ood=OutOfDistribution(**ood_kwargs),
+            find_issues_inputs={
+                "features": False,
+                "pred_probs": False,
+                "knn_graph": False,
+            },
+        )
 
-        self._find_issues_inputs: Dict[str, bool] = {
-            "features": False,
-            "pred_probs": False,
-            "knn_graph": False,
-        }
+    @property
+    def k(self) -> int:
+        return self._state.k
 
-        # Used for both methods of outlier detection
-        self.threshold = threshold
+    @property
+    def t(self) -> int:
+        return self._state.t
+
+    @property
+    def metric(self) -> Optional[Metric]:
+        return self._state.metric
+
+    @property
+    def scaling_factor(self) -> Optional[float]:
+        return self._state.scaling_factor
+
+    @property
+    def threshold(self) -> Optional[float]:
+        return self._state.threshold
+
+    @property
+    def ood(self) -> OutOfDistribution:
+        return self._state.ood
 
     def find_issues(
         self,
@@ -101,18 +136,19 @@ class OutlierIssueManager(IssueManager):
         **kwargs,
     ) -> None:
         statistics = self.datalab.get_info("statistics")
+        state = self._state
 
         # Determine if we can use kNN-based outlier detection
-        knn_graph_works: bool = self._knn_graph_works(features, kwargs, statistics, self.k)
+        knn_graph_works: bool = self._knn_graph_works(features, kwargs, statistics, state.k)
         knn_graph = None
         knn = None
         if knn_graph_works:
             # Set up or retrieve the kNN graph
-            knn_graph, self.metric, knn = set_knn_graph(
+            knn_graph, state.metric, knn = set_knn_graph(
                 features=features,
                 find_issues_kwargs=kwargs,
-                metric=self.metric,
-                k=self.k,
+                metric=state.metric,
+                k=state.k,
                 statistics=statistics,
             )
 
@@ -120,42 +156,42 @@ class OutlierIssueManager(IssueManager):
             distances = knn_graph.data.reshape(knn_graph.shape[0], -1)
             assert isinstance(distances, np.ndarray)
             (
-                self.threshold,
+                state.threshold,
                 issue_threshold,  # Useful info for detecting issues in test data
                 is_issue_column,
-            ) = self._compute_threshold_and_issue_column_from_distances(distances, self.threshold)
+            ) = self._compute_threshold_and_issue_column_from_distances(distances, state.threshold)
 
             # Calculate outlier scores based on average distances
             avg_distances = distances.mean(axis=1)
             median_avg_distance = np.median(avg_distances)
-            self._find_issues_inputs.update({"knn_graph": True})
+            state.find_issues_inputs.update({"knn_graph": True})
 
             # Ensure scaling factor is not too small to avoid numerical issues
-            if self.scaling_factor is None:
-                self.scaling_factor = float(
+            if state.scaling_factor is None:
+                state.scaling_factor = float(
                     max(median_avg_distance, 100 * np.finfo(np.float64).eps)
                 )
             scores = transform_distances_to_scores(
-                avg_distances, t=self.t, scaling_factor=self.scaling_factor
+                avg_distances, t=state.t, scaling_factor=state.scaling_factor
             )
 
             # Apply precision error correction if metric is available
-            _metric = self.metric
+            _metric = state.metric
             if _metric is not None:
                 _metric = _metric if isinstance(_metric, str) else _metric.__name__
                 scores = correct_precision_errors(scores, avg_distances, _metric)
         elif pred_probs is not None:
             # Fallback to prediction probabilities-based outlier detection
             scores = self._score_with_pred_probs(pred_probs, **kwargs)
-            self._find_issues_inputs.update({"pred_probs": True})
+            state.find_issues_inputs.update({"pred_probs": True})
 
             # Set threshold for pred_probs-based detection
-            if self.threshold is None:
-                self.threshold = self.DEFAULT_THRESHOLDS["pred_probs"]
-            if not 0 <= self.threshold:
-                raise ValueError(f"threshold must be non-negative, but got {self.threshold}.")
+            if state.threshold is None:
+                state.threshold = self.DEFAULT_THRESHOLDS["pred_probs"]
+            if not 0 <= state.threshold:
+                raise ValueError(f"threshold must be non-negative, but got {state.threshold}.")
             issue_threshold = float(
-                self.threshold * np.median(scores)
+                state.threshold * np.median(scores)
             )  # Useful info for detecting issues in test data
             is_issue_column = scores < issue_threshold
 
@@ -217,7 +253,7 @@ class OutlierIssueManager(IssueManager):
     ) -> dict:
         issues_dict = {
             "average_ood_score": self.issues[self.issue_score_key].mean(),
-            "threshold": self.threshold,
+            "threshold": self._state.threshold,
             "issue_threshold": issue_threshold,
         }
         pred_probs_issues_dict: Dict[str, Any] = {}
@@ -231,22 +267,22 @@ class OutlierIssueManager(IssueManager):
 
             feature_issues_dict.update(
                 {
-                    "k": self.k,  # type: ignore[union-attr]
+                    "k": self._state.k,
                     "nearest_neighbor": nn_ids.tolist(),
                     "distance_to_nearest_neighbor": dists.tolist(),
-                    "metric": self.metric,  # type: ignore[union-attr]
-                    "scaling_factor": self.scaling_factor,
-                    "t": self.t,
+                    "metric": self._state.metric,
+                    "scaling_factor": self._state.scaling_factor,
+                    "t": self._state.t,
                     "knn": knn,
                 }
             )
 
-        if self.ood.params["confident_thresholds"] is not None:
+        if self._state.ood.params["confident_thresholds"] is not None:
             pass  #
         statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
         ood_params_dict = {
-            "ood": self.ood,
-            **self.ood.params,
+            "ood": self._state.ood,
+            **self._state.ood.params,
         }
         knn_dict = {
             **pred_probs_issues_dict,
@@ -257,7 +293,7 @@ class OutlierIssueManager(IssueManager):
             **ood_params_dict,  # type: ignore[arg-type]
             **knn_dict,
             **statistics_dict,
-            "find_issues_inputs": self._find_issues_inputs,
+            "find_issues_inputs": self._state.find_issues_inputs,
         }
         return info_dict
 
@@ -277,13 +313,13 @@ class OutlierIssueManager(IssueManager):
                 and old_knn_graph is not None
                 and knn_graph.nnz > old_knn_graph.nnz
             )
-            or self.metric != self.datalab.get_info("statistics").get("knn_metric", None)
+            or self._state.metric != self.datalab.get_info("statistics").get("knn_metric", None)
         )
         if prefer_new_graph:
             if knn_graph is not None:
                 statistics_dict["statistics"][graph_key] = knn_graph
-        if self.metric is not None:
-            statistics_dict["statistics"]["knn_metric"] = self.metric
+        if self._state.metric is not None:
+            statistics_dict["statistics"]["knn_metric"] = self._state.metric
 
         return statistics_dict
 
@@ -297,5 +333,5 @@ class OutlierIssueManager(IssueManager):
                 f"with pred_probs, but got {type(labels)}."
             )
             raise TypeError(error_msg)
-        scores = self.ood.fit_score(pred_probs=pred_probs, labels=labels, **kwargs)
+        scores = self._state.ood.fit_score(pred_probs=pred_probs, labels=labels, **kwargs)
         return scores
