@@ -358,6 +358,117 @@ def overall_label_health_score(
     return health_score
 
 
+def overall_label_signal_pvalue(
+    labels=None,
+    pred_probs=None,
+    *,
+    delta: float = 0.05,
+    multi_label=False,
+    verbose=True,
+) -> float:
+    """Returns an exact p-value testing whether there is *any* extractable signal between the
+    features and labels in your dataset, i.e. whether ``pred_probs`` predicts ``labels`` better
+    than chance.
+
+    This answers a question that is logically prior to `~cleanlab.dataset.overall_label_health_score`:
+    the health score estimates *how much* of a dataset is mislabeled, which presupposes there is a
+    meaningful signal for labels to deviate from. On a dataset with no real signal (e.g. shuffled
+    labels), the confident-joint machinery is not designed to be trustworthy, yet can still return a
+    health score that looks informative. This test gives a calibrated way to catch that case before
+    trusting the health score.
+
+    Conditional on the out-of-sample predictions ``pred_probs.argmax(axis=1)``, under the null
+    hypothesis H0 = "the labels carry no information beyond the class prior", each per-example match
+    indicator ``1[prediction_i == label_i]`` is an independent Bernoulli trial with success
+    probability equal to the empirical prior of the predicted class. The number of correct
+    predictions is therefore exactly Poisson-binomial distributed under H0, and its survival
+    function is an *exact* p-value for that null: no concentration-inequality slack and no Monte
+    Carlo / permutation sampling.
+
+    Reject H0 (declare signal) iff the returned p-value ``<= delta``; this controls the
+    false-positive rate at ``<= delta`` by construction (empirically conservative once the prior
+    itself has to be estimated from data, as is done here).
+
+    Note
+    ----
+    Unlike `~cleanlab.dataset.overall_label_health_score`, this test needs the actual per-example
+    predictions, not just their aggregate confident joint / count matrix. It must therefore be
+    called with ``labels`` and ``pred_probs`` directly -- it cannot be computed from a
+    pre-aggregated ``joint`` or ``confident_joint`` alone.
+
+    Runtime is O(n_samples^2) (a sequential Poisson-binomial convolution over the per-example match
+    probabilities) -- not O(n_samples) or O(n_samples * n_classes) -- so it can become slow on very
+    large datasets (tens of thousands of examples or more). A grouped-by-class convolution or a
+    DFT-based Poisson-binomial algorithm (e.g. Fernandez & Williams, 2010) could bring this down to
+    roughly O(n_samples * n_classes) or O(n_samples log n_samples) respectively; neither is
+    implemented here.
+
+    Examples
+    --------
+    >>> from cleanlab.dataset import overall_label_signal_pvalue
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.model_selection import cross_val_predict
+    >>> data, labels = get_data_labels_from_dataset()
+    >>> yourFavoriteModel = LogisticRegression()
+    >>> pred_probs = cross_val_predict(yourFavoriteModel, data, labels, cv=3, method="predict_proba")
+    >>> p_value = overall_label_signal_pvalue(labels=labels, pred_probs=pred_probs)  # doctest: +SKIP
+
+    **Parameters**: For ``labels``/``pred_probs``/``multi_label``, see the docstring of
+    `~cleanlab.dataset.find_overlapping_classes`. Unlike that function, ``joint``,
+    ``confident_joint``, and ``num_examples`` are not accepted here (see Note above).
+
+    delta : float, optional
+        Significance level used only for the verbose verdict printed when ``verbose=True``; does
+        not affect the returned p-value itself. Default 0.05.
+
+    Returns
+    -------
+    p_value : float
+        Exact p-value for P(number of correct predictions >= observed | H0). Small values
+        (``<= delta``) indicate the dataset carries a detectable label signal.
+    """
+    if multi_label:
+        raise ValueError("overall_label_signal_pvalue does not yet support multi_label datasets.")
+    if labels is None or pred_probs is None:
+        raise ValueError(
+            "overall_label_signal_pvalue requires both `labels` and `pred_probs` directly; "
+            "unlike overall_label_health_score, it cannot be derived from a pre-aggregated "
+            "`joint` or `confident_joint` since the underlying test needs per-example alignment "
+            "between predictions and labels."
+        )
+    labels = np.asarray(labels)
+    pred_probs = np.asarray(pred_probs)
+    if len(labels) != len(pred_probs):
+        raise ValueError("labels and pred_probs must have the same length.")
+    num_examples = len(labels)
+    if num_examples == 0:
+        raise ValueError("labels and pred_probs must contain at least one example.")
+
+    predictions = pred_probs.argmax(axis=1)
+    classes = np.unique(labels)
+    prior = {int(c): float((labels == c).mean()) for c in classes}
+    match_prob = np.array([prior.get(int(p), 0.0) for p in predictions])
+    num_correct = int((predictions == labels).sum())
+
+    # Poisson-binomial pmf of the number of correct predictions under H0, via the standard
+    # convolution recurrence (O(n^2), see the Note above), then its survival function
+    # P(K >= num_correct).
+    dist = np.zeros(num_examples + 1)
+    dist[0] = 1.0
+    for p in match_prob:
+        dist[1:] = dist[1:] * (1.0 - p) + dist[:-1] * p
+        dist[0] *= 1.0 - p
+    p_value = float(dist[num_correct:].sum())
+
+    if verbose:
+        verdict = "detected" if p_value <= delta else "NOT detected"
+        print(
+            f" * Label signal {verdict} (p-value={p_value:.3g}, delta={delta}): testing the null "
+            f"hypothesis that labels carry no information beyond the class prior."
+        )
+    return p_value
+
+
 def health_summary(
     labels=None,
     pred_probs=None,
@@ -369,6 +480,7 @@ def health_summary(
     confident_joint=None,
     multi_label=False,
     verbose=True,
+    delta: float = 0.05,
 ) -> dict:
     """Prints a health summary of your dataset.
 
@@ -377,6 +489,8 @@ def health_summary(
     * The classes with the most and least label issues.
     * Classes that overlap and could potentially be merged.
     * Overall label quality scores, summarizing how accurate the labels appear overall.
+    * Whether there is any statistically detectable label signal at all (only when ``labels`` and
+      ``pred_probs`` are both provided directly -- see ``delta`` below).
 
     This method works by providing any one (and only one) of the following inputs:
 
@@ -398,12 +512,20 @@ def health_summary(
 
     **Parameters**: For parameter info, see the docstring of `~cleanlab.dataset.find_overlapping_classes`.
 
+    delta : float, optional
+        Significance level passed to `~cleanlab.dataset.overall_label_signal_pvalue`. Only used
+        (and the signal test only run) when both ``labels`` and ``pred_probs`` are provided
+        directly, since that test cannot be computed from ``joint``/``confident_joint`` alone.
+        Default 0.05.
+
     Returns
     -------
     summary : dict
         A dictionary containing keys (see the corresponding functions' documentation to understand the values):
 
         - ``"overall_label_health_score"``, corresponding to `~cleanlab.dataset.overall_label_health_score`
+        - ``"overall_label_signal_pvalue"``, corresponding to `~cleanlab.dataset.overall_label_signal_pvalue`.
+          ``None`` when ``labels``/``pred_probs`` were not both provided directly (see ``delta`` above).
         - ``"joint"``, corresponding to :py:func:`count.estimate_joint <cleanlab.count.estimate_joint>`
         - ``"classes_by_label_quality"``, corresponding to `~cleanlab.dataset.rank_classes_by_label_quality`
         - ``"overlapping_classes"``, corresponding to `~cleanlab.dataset.find_overlapping_classes`
@@ -478,10 +600,21 @@ def health_summary(
         confident_joint=confident_joint,
         verbose=verbose,
     )
+
+    signal_pvalue = None
+    if labels is not None and pred_probs is not None:
+        signal_pvalue = overall_label_signal_pvalue(
+            labels=labels,
+            pred_probs=pred_probs,
+            delta=delta,
+            verbose=verbose,
+        )
+
     if verbose:
         print("\nGenerated with <3 from Cleanlab.\n")
     return {
         "overall_label_health_score": health_score,
+        "overall_label_signal_pvalue": signal_pvalue,
         "joint": joint,
         "classes_by_label_quality": df_class_label_quality,
         "overlapping_classes": df_overlapping_classes,

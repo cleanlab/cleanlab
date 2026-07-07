@@ -10,6 +10,7 @@ from cleanlab.dataset import (
     find_overlapping_classes,
     rank_classes_by_label_quality,
     overall_label_health_score,
+    overall_label_signal_pvalue,
 )
 from cleanlab.count import estimate_joint, num_label_issues, compute_confident_joint
 
@@ -562,3 +563,83 @@ def test_find_overlapping_classes_with_confident_joint(confident_joint):
     # Joint probabilities sorted in descending order
     if K > 2:
         assert (overlapping_classes["Joint Probability"].diff()[1:] <= 0).all()
+
+
+def _make_pred_probs_labels(n=400, num_classes=4, signal=True, seed=0):
+    """Self-contained synthetic (pred_probs, labels) generator for signal-pvalue tests.
+
+    signal=True: pred_probs strongly favor the true label (detectable signal).
+    signal=False: pred_probs independent of labels (pure noise, matches the class prior).
+    """
+    rng = np.random.RandomState(seed)
+    labels = rng.randint(0, num_classes, n)
+    logits = rng.normal(scale=0.3, size=(n, num_classes))
+    if signal:
+        logits[np.arange(n), labels] += 4.0
+    exp_logits = np.exp(logits - logits.max(axis=1, keepdims=True))
+    pred_probs = exp_logits / exp_logits.sum(axis=1, keepdims=True)
+    return pred_probs, labels
+
+
+class TestOverallLabelSignalPvalue:
+    def test_pure_noise_not_detected(self):
+        pred_probs, labels = _make_pred_probs_labels(signal=False, seed=0)
+        p_value = overall_label_signal_pvalue(labels=labels, pred_probs=pred_probs, verbose=False)
+        assert p_value > 0.05
+
+    def test_strong_signal_detected(self):
+        pred_probs, labels = _make_pred_probs_labels(signal=True, seed=0)
+        p_value = overall_label_signal_pvalue(labels=labels, pred_probs=pred_probs, verbose=False)
+        assert p_value < 1e-6
+
+    def test_type_i_error_calibrated(self):
+        # Repeated trials under H0 (no signal): the fraction of p-values <= delta must not exceed
+        # delta by more than sampling noise -- this is the false-positive-rate guarantee itself.
+        delta = 0.05
+        num_trials = 200
+        rejections = 0
+        for seed in range(num_trials):
+            pred_probs, labels = _make_pred_probs_labels(n=150, signal=False, seed=1000 + seed)
+            p_value = overall_label_signal_pvalue(
+                labels=labels, pred_probs=pred_probs, verbose=False
+            )
+            rejections += p_value <= delta
+        assert rejections / num_trials <= delta + 0.03
+
+    def test_length_mismatch_raises(self):
+        pred_probs, labels = _make_pred_probs_labels(seed=0)
+        with pytest.raises(ValueError):
+            overall_label_signal_pvalue(labels=labels[:-5], pred_probs=pred_probs, verbose=False)
+
+    def test_requires_labels_and_pred_probs(self):
+        pred_probs, labels = _make_pred_probs_labels(seed=0)
+        with pytest.raises(ValueError):
+            overall_label_signal_pvalue(labels=None, pred_probs=pred_probs, verbose=False)
+        with pytest.raises(ValueError):
+            overall_label_signal_pvalue(labels=labels, pred_probs=None, verbose=False)
+
+    def test_multi_label_raises(self):
+        pred_probs, labels = _make_pred_probs_labels(seed=0)
+        with pytest.raises(ValueError):
+            overall_label_signal_pvalue(
+                labels=labels, pred_probs=pred_probs, multi_label=True, verbose=False
+            )
+
+
+class TestHealthSummarySignalPvalue:
+    def test_includes_signal_pvalue_when_labels_and_pred_probs_given(self):
+        pred_probs, labels = _make_pred_probs_labels(signal=True, seed=0)
+        summary = health_summary(labels=labels, pred_probs=pred_probs, verbose=False)
+        assert "overall_label_signal_pvalue" in summary
+        expected = overall_label_signal_pvalue(labels=labels, pred_probs=pred_probs, verbose=False)
+        assert summary["overall_label_signal_pvalue"] == expected
+
+    def test_none_when_confident_joint_only(self):
+        pred_probs, labels = _make_pred_probs_labels(signal=True, seed=0)
+        confident_joint = compute_confident_joint(labels=labels, pred_probs=pred_probs)
+        summary = health_summary(
+            confident_joint=confident_joint,
+            num_examples=len(labels),
+            verbose=False,
+        )
+        assert summary["overall_label_signal_pvalue"] is None
