@@ -284,3 +284,7 @@ To understand/cite other cleanlab functionality not described above, check out o
 **Interested in contributing?**  See the [contributing guide](CONTRIBUTING.md), [development guide](DEVELOPMENT.md), and [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab).
 
 **Have questions?**  Check out [our FAQ](https://docs.cleanlab.ai/stable/tutorials/faq.html) and [Github Issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue).
+
+---
+
+*[Mukller](https://github.com/Mukller)*
