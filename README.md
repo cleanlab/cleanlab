@@ -20,13 +20,13 @@
 </h4>
 
 Cleanlab’s open-source library helps you **clean** data and **lab**els by automatically detecting issues in a ML dataset. To facilitate **machine learning with messy, real-world data**, this data-centric AI package uses your *existing* models to estimate dataset problems that can be fixed to train even *better* models.
- 
+
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/datalab_issues.png" width=74%>
 </p>
 <p align="center">
-    Examples of various issues in Cat/Dog dataset <b>automatically detected</b> by cleanlab via this code:    
+    Examples of various issues in Cat/Dog dataset <b>automatically detected</b> by cleanlab via this code:
 </p>
 
 ```python
@@ -53,7 +53,7 @@ This cleanlab package runs on Python 3.10+ and supports Linux, macOS, as well as
 **Practicing data-centric AI can look like this:**
 1. Train initial ML model on original dataset.
 2. Utilize this model to diagnose data issues (via cleanlab methods) and improve the dataset.
-3. Train the same model on the improved dataset. 
+3. Train the same model on the improved dataset.
 4. Try various modeling techniques to further improve performance.
 
 Most folks jump from Step 1 → 4, but you may achieve big gains without *any* change to your modeling code by using cleanlab!
@@ -116,7 +116,7 @@ cleanlab is:
 
 ![](https://raw.githubusercontent.com/cleanlab/assets/master/cleanlab/label-errors-examples.png)
 <p align="center">
-Examples of incorrect given labels in various image datasets <a href="https://l7.curtisnorthcutt.com/label-errors">found and corrected</a> using cleanlab. 
+Examples of incorrect given labels in various image datasets <a href="https://l7.curtisnorthcutt.com/label-errors">found and corrected</a> using cleanlab.
 While these examples are from image datasets, this also works for text, audio, tabular data.
 </p>
 

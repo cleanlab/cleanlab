@@ -1,4 +1,4 @@
-# Useful models adapted for use with cleanlab 
+# Useful models adapted for use with cleanlab
 
 Methods in this ``models`` module are not guaranteed to be stable between different ``cleanlab`` versions.
 

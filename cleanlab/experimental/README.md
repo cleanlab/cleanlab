@@ -1,4 +1,4 @@
-# Useful methods/models adapted for use with cleanlab 
+# Useful methods/models adapted for use with cleanlab
 
 Methods in this `experimental` module are bleeding edge and may have sharp edges. They are not guaranteed to be stable between different cleanlab versions.
 

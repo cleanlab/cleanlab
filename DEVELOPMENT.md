@@ -106,7 +106,7 @@ EXTRAS_REQUIRE = {
 
 Or assign to a separate variable and add it to `EXTRAS_REQUIRE`
 
-```python	
+```python
 GPU_REQUIRES = [
   # Explanation ...
   "cupy",
@@ -255,7 +255,7 @@ It is ideal to stick to a format that maintains consistency and readability.
 Generally, the format includes a title, explanation of the issue, required arguments, then any additional information.
 It would be helpful to include a tip for users on how to detect the issue using Datalab.
 
-Try to add tests for this new issue type. It's a good idea to start with some tests in a separate module in the [issue manager test directory](https://github.com/cleanlab/cleanlab/tree/master/tests/datalab/issue_manager). 
+Try to add tests for this new issue type. It's a good idea to start with some tests in a separate module in the [issue manager test directory](https://github.com/cleanlab/cleanlab/tree/master/tests/datalab/issue_manager).
 
 
 ## Documentation
@@ -325,12 +325,12 @@ Try to adhere to this standardized terminology unless you have good reason not t
 
 Use relative linking to connect information between docs and jupyter notebooks, and make sure links will remain valid in the future as new cleanlab versions are released! Sphinx/html works with relative paths so try to specify relative paths if necessary. For specific situations:
 
-- Link another function or class from within a source code docstring: 
-  - If you just want to specify the function/class name (ie. the function/class is unique throughout our library): `` `~cleanlab.file.function_or_class_name` ``. 
-  
+- Link another function or class from within a source code docstring:
+  - If you just want to specify the function/class name (ie. the function/class is unique throughout our library): `` `~cleanlab.file.function_or_class_name` ``.
+
     This uses the [Sphinx's](https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-default_role) `default_role = "py:obj"` setting, so the leading tilde shortens the link to only display `function_or_class_name`.
-  - If you want to additionally specify the module which the function belongs to: 
-      - `` :py:func:`file.function_name <cleanlab.file.function_name>` `` for functions 
+  - If you want to additionally specify the module which the function belongs to:
+      - `` :py:func:`file.function_name <cleanlab.file.function_name>` `` for functions
       - ``:py:class:`file.class_name <cleanlab.file.class_name>` `` for classes
 
     Here you have more control over the text that is displayed to display the module name.  When referring to a function that is alternatively defined in other modules as well, always use this option to be more explicit about which module you are referencing.
@@ -384,7 +384,7 @@ It's important to test the release process on a separate PyPI project before rel
 
 - On your fork of the cleanlab repository, create two environments called `testpypi` and `pypi` in the "Environments" tab, under the repository "Settings".
   - For the `testpypi` environment, add a wait timer of 1 minute to allow TestPyPI uploads to complete processing before testing installation.
-  - For the `pypi` environment, add a protection rule for requiring a review from a maintainer. For extra security, you may disallow a self-review so that a second maintainer must approve the release. 
+  - For the `pypi` environment, add a protection rule for requiring a review from a maintainer. For extra security, you may disallow a self-review so that a second maintainer must approve the release.
   - You may wish to limit which tags can trigger a release in these environment, to avoid accidental releases.
   - Github Docs provides instructions on [how to create a new environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) with these considerations.
 
