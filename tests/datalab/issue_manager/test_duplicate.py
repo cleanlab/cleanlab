@@ -32,6 +32,56 @@ def embeddings_strategy(draw):
     return embeddings
 
 
+@composite
+def embeddings_with_near_duplicates_strategy(draw):
+    """Generate embeddings guaranteed to contain both near-duplicates and non-duplicates.
+
+    Base rows are placed far apart (>= ~1 apart per feature, well above the default
+    ``0.13`` near-duplicate threshold) so they are never flagged among themselves. A
+    non-empty proper subset of base rows is then re-appended with tiny noise, producing
+    genuine near-duplicates that must be flagged while leaving at least one non-duplicated
+    base row. This lets the "issue scores are smaller than non-issue scores" property be
+    checked without relying on a single hand-crafted toy dataset.
+    """
+    n_base = draw(st.integers(min_value=4, max_value=8))
+    dim = draw(st.integers(min_value=2, max_value=3))
+
+    # Small within-cell jitter keeps base rows distinct without bringing any two within
+    # the near-duplicate threshold (max per-feature jitter 0.05 << inter-row spacing 1.0).
+    jitter = draw(
+        arrays(
+            dtype=np.float64,
+            shape=(n_base, dim),
+            elements=st.floats(
+                min_value=0.0, max_value=0.05, allow_nan=False, allow_infinity=False
+            ),
+        )
+    )
+    base = jitter + np.arange(n_base, dtype=np.float64).reshape(-1, 1)
+
+    # Duplicate a non-empty proper subset of rows (leave >= 1 non-duplicated base row).
+    dup_indices = draw(
+        st.lists(
+            st.integers(min_value=0, max_value=n_base - 1),
+            min_size=1,
+            max_size=n_base - 1,
+            unique=True,
+        )
+    )
+    # Tiny noise (<= 1e-4) keeps appended rows well inside the near-duplicate threshold.
+    noise = draw(
+        arrays(
+            dtype=np.float64,
+            shape=(len(dup_indices), dim),
+            elements=st.floats(
+                min_value=-1e-4, max_value=1e-4, allow_nan=False, allow_infinity=False
+            ),
+        )
+    )
+    near_duplicates = base[dup_indices] + noise
+    return np.vstack([base, near_duplicates])
+
+
 class TestNearDuplicateIssueManager:
     @pytest.fixture
     def embeddings(self, lab):
@@ -86,13 +136,20 @@ class TestNearDuplicateIssueManager:
         )
         new_issue_manager.find_issues(features=embeddings["embedding"])
 
-    def test_scores_of_examples_with_issues_are_smaller_than_those_without(
-        self, issue_manager, embeddings
-    ):
-        # TODO: Turn this into a property-based test
-        issue_manager.find_issues(features=embeddings["embedding"])
+    @given(embeddings=embeddings_with_near_duplicates_strategy())
+    @settings(deadline=None)
+    def test_scores_of_examples_with_issues_are_smaller_than_those_without(self, embeddings):
+        data = {"metadata": ["" for _ in range(len(embeddings))]}
+        lab = Datalab(data)
+        issue_manager = NearDuplicateIssueManager(datalab=lab, metric="euclidean", k=2)
+        issue_manager.find_issues(features=embeddings)
+
         is_issue = issue_manager.issues["is_near_duplicate_issue"]
         scores = issue_manager.issues["near_duplicate_score"]
+
+        # The strategy guarantees both near-duplicates and non-duplicates are present.
+        assume(is_issue.any() and (~is_issue).any())
+
         max_issue_score = np.max(scores[is_issue])
         min_non_issue_score = np.min(scores[~is_issue])
         assert max_issue_score < min_non_issue_score
