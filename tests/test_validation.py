@@ -27,3 +27,15 @@ def test_label_to_array_raises_error():
     y = pd.DataFrame({"a": [0, 1], "b": [2, 3]})
     with pytest.raises(ValueError):
         validation.labels_to_array(y)
+
+
+def test_labels_to_list_multilabel_returns_nested_list():
+    labels = [[0, 1], [1], []]
+
+    assert validation.labels_to_list_multilabel(labels) == labels
+
+
+@pytest.mark.parametrize("labels", [np.array([[0], [1]]), [0, 1]])
+def test_labels_to_list_multilabel_rejects_unsupported_formats(labels):
+    with pytest.raises(ValueError):
+        validation.labels_to_list_multilabel(labels)
