@@ -247,6 +247,9 @@ class Datalab:
             More specifically, the values are constructor keyword arguments passed to the corresponding ``IssueManager``,
             which is responsible for detecting the particular issue type.
 
+            See the `Issue Types guide <https://docs.cleanlab.ai/stable/cleanlab/datalab/guide/issue_type_description.html>`_
+            for a comprehensive list of all available issue types and descriptions of when they are detected.
+
             .. seealso::
                 :py:class:`IssueManager <cleanlab.datalab.internal.issue_manager.issue_manager.IssueManager>`
 
