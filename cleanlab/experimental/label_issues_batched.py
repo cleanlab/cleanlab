@@ -609,7 +609,7 @@ class LabelInspector:
                     )
                     & mask
                 )
-                self.prune_count += prune_count_batch
+                self.prune_count += int(prune_count_batch)
             else:  # calibrated
                 self.class_counts += value_counts_fill_missing_classes(
                     labels, num_classes=self.num_class
