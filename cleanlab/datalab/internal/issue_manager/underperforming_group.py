@@ -222,7 +222,11 @@ class UnderperformingGroupIssueManager(IssueManager):
             if worst_cluster_ratio < self.threshold
             else self.NO_UNDERPERFORMING_CLUSTER_ID
         )
-        return cluster_ids_to_score, worst_cluster_id, worst_cluster_ratio
+        return (
+            {int(k): float(v) for k, v in cluster_ids_to_score.items()},
+            int(worst_cluster_id),
+            float(worst_cluster_ratio),
+        )
 
     def collect_info(
         self,

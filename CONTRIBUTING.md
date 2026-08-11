@@ -9,7 +9,7 @@ If you are unsure or confused about anything, please go ahead and submit your
 issue or pull request anyways! We appreciate all contributions, and we'll do
 our best to incorporate your feedback or code into cleanlab.
 
-For some [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab), look for [Issues](https://github.com/cleanlab/cleanlab/issues) or [Projects](https://github.com/cleanlab/cleanlab/projects) with the "good first issue" tag. Join our [Slack Community](https://cleanlab.ai/slack) to discuss other ideas!
+For some [ideas on useful contributions](https://github.com/cleanlab/cleanlab/wiki#ideas-for-contributing-to-cleanlab), look for [Issues](https://github.com/cleanlab/cleanlab/issues) or [good first issues](https://github.com/cleanlab/cleanlab/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). Join our [Slack Community](https://cleanlab.ai/community/) to discuss other ideas!
 
 Detailed contributing instructions can be found in the [Development Guide](DEVELOPMENT.md), please read this carefully!
  
