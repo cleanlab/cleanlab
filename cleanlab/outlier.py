@@ -569,12 +569,10 @@ def _get_ood_predictions_scores(
             1 - np.sum(probs_sorted**gamma * (1 - probs_sorted) ** (gamma), axis=1) / M
         )  # Use 1 + original gen score/M to make the scores lie in 0-1
     else:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             {method} is not a valid OOD scoring method!
             Please choose a valid scoring_method: {valid_methods}
-            """
-        )
+            """)
 
     return (
         ood_predictions_scores,

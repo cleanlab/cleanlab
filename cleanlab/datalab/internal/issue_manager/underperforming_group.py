@@ -42,9 +42,7 @@ class UnderperformingGroupIssueManager(IssueManager):
     >>> lab.find_issues(pred_probs=pred_probs, features=X, issue_types=issue_types)
     """
 
-    description: ClassVar[
-        str
-    ] = """An underperforming group refers to a cluster of similar examples
+    description: ClassVar[str] = """An underperforming group refers to a cluster of similar examples
     (i.e. a slice) in the dataset for which the ML model predictions
     are particularly poor (loss evaluation over this subpopulation is high).
     """
@@ -224,7 +222,11 @@ class UnderperformingGroupIssueManager(IssueManager):
             if worst_cluster_ratio < self.threshold
             else self.NO_UNDERPERFORMING_CLUSTER_ID
         )
-        return cluster_ids_to_score, worst_cluster_id, worst_cluster_ratio
+        return (
+            {int(k): float(v) for k, v in cluster_ids_to_score.items()},
+            int(worst_cluster_id),
+            float(worst_cluster_ratio),
+        )
 
     def collect_info(
         self,

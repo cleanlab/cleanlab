@@ -26,7 +26,6 @@ from cleanlab.internal.object_detection_utils import (
     assert_valid_inputs,
 )
 
-
 if TYPE_CHECKING:  # pragma: no cover
     from typing import TypedDict
 
@@ -144,11 +143,9 @@ def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0
     """
 
     if threshold > 1.0:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             Threshold is a cutoff of label_quality_scores and therefore should be <= 1.
-            """
-        )
+            """)
 
     issue_indices = np.argwhere(label_quality_scores <= threshold).flatten()
     issue_vals = label_quality_scores[issue_indices]

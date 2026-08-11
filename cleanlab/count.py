@@ -151,24 +151,20 @@ def num_label_issues(
         num_issues = np.rint(frac_issues * len(labels)).astype(int)
     elif estimation_method == "off_diagonal_custom":
         if not isinstance(confident_joint, np.ndarray):
-            raise ValueError(
-                f"""
+            raise ValueError(f"""
                 No `confident_joint` provided. For 'estimation_method' = {estimation_method} you need to provide pre-calculated
                 `confident_joint` matrix. Use a different `estimation_method` if you want the `confident_joint` matrix to
                 be calculated for you.
-                """
-            )
+                """)
         else:
             joint = estimate_joint(labels, pred_probs, confident_joint=confident_joint)
             frac_issues = 1.0 - joint.trace()
             num_issues = np.rint(frac_issues * len(labels)).astype(int)
     else:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
                 {estimation_method} is not a valid estimation method!
                 Please choose a valid estimation method: {valid_methods}
-                """
-        )
+                """)
 
     return num_issues
 
@@ -1023,7 +1019,7 @@ def estimate_confident_joint_and_cv_pred_proba(
                 )
                 for missing_class in missing_classes:
                     # Duplicate one instance of missing_class from holdout data to the training data:
-                    holdout_inds = np.where(s_holdout_cv == missing_class)[0]
+                    holdout_inds = np.where(np.asarray(s_holdout_cv) == missing_class)[0]
                     dup_idx = holdout_inds[0]
                     s_train_cv = np.append(s_train_cv, s_holdout_cv[dup_idx])
                     # labels are always np.ndarray so don't have to consider .iloc above

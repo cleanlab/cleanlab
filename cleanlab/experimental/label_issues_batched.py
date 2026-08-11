@@ -609,7 +609,7 @@ class LabelInspector:
                     )
                     & mask
                 )
-                self.prune_count += prune_count_batch
+                self.prune_count += int(prune_count_batch)
             else:  # calibrated
                 self.class_counts += value_counts_fill_missing_classes(
                     labels, num_classes=self.num_class
@@ -663,7 +663,7 @@ class LabelInspector:
                     prune_count_batch = np.sum(
                         np.asarray(list(pool.imap_unordered(_compute_num_issues, args)))
                     )
-                    self.prune_count += prune_count_batch
+                    self.prune_count += int(prune_count_batch)
                 else:
                     results = list(pool.imap_unordered(_compute_num_issues_calibrated, args))
                     for result in results:
@@ -707,10 +707,12 @@ def _compute_num_issues(arg: Tuple[np.ndarray, bool]) -> int:
             )
             & (pred_class != label)
         )
-    return prune_count_batch
+    return int(prune_count_batch)
 
 
-def _compute_num_issues_calibrated(arg: Tuple[np.ndarray, bool]) -> Tuple[Any, int, int]:
+def _compute_num_issues_calibrated(
+    arg: Tuple[np.ndarray, bool],
+) -> Tuple[Any, np.ndarray, np.ndarray]:
     """
     Helper function for `_update_num_label_issues` multiprocessing with calibration.
     """
