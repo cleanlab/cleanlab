@@ -1019,7 +1019,7 @@ def estimate_confident_joint_and_cv_pred_proba(
                 )
                 for missing_class in missing_classes:
                     # Duplicate one instance of missing_class from holdout data to the training data:
-                    holdout_inds = np.where(s_holdout_cv == missing_class)[0]
+                    holdout_inds = np.where(np.asarray(s_holdout_cv) == missing_class)[0]
                     dup_idx = holdout_inds[0]
                     s_train_cv = np.append(s_train_cv, s_holdout_cv[dup_idx])
                     # labels are always np.ndarray so don't have to consider .iloc above

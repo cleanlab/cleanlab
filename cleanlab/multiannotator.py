@@ -1723,7 +1723,7 @@ def _get_annotator_quality(
     annotator_weight: np.ndarray,
     detailed_label_quality: Optional[np.ndarray] = None,
     quality_method: str = "crowdlab",
-) -> pd.DataFrame:
+) -> np.ndarray:
     """Returns annotator quality score for each annotator.
 
     Parameters
