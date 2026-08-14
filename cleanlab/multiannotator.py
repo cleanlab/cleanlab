@@ -650,10 +650,15 @@ def get_active_learning_scores(
             labels_multiannotator = (
                 labels_multiannotator.replace({pd.NA: np.nan}).astype(float).to_numpy()
             )
-        elif not isinstance(labels_multiannotator, np.ndarray):
+        elif isinstance(labels_multiannotator, np.ndarray):
+            pass
+        elif isinstance(labels_multiannotator, list):
+            labels_multiannotator = np.asarray(labels_multiannotator, dtype=float)
+        else:
             raise ValueError(
                 "labels_multiannotator must be either a NumPy array or Pandas DataFrame."
             )
+        assert isinstance(labels_multiannotator, np.ndarray)
         # check that labels_multiannotator is a 2D array
         if labels_multiannotator.ndim != 2:
             raise ValueError(
@@ -816,11 +821,15 @@ def get_active_learning_scores_ensemble(
             labels_multiannotator = (
                 labels_multiannotator.replace({pd.NA: np.nan}).astype(float).to_numpy()
             )
-        elif not isinstance(labels_multiannotator, np.ndarray):
+        elif isinstance(labels_multiannotator, np.ndarray):
+            pass
+        elif isinstance(labels_multiannotator, list):
+            labels_multiannotator = np.asarray(labels_multiannotator, dtype=float)
+        else:
             raise ValueError(
                 "labels_multiannotator must be either a NumPy array or Pandas DataFrame."
             )
-
+        assert isinstance(labels_multiannotator, np.ndarray)
         # check that labels_multiannotator is a 2D array
         if labels_multiannotator.ndim != 2:
             raise ValueError(
