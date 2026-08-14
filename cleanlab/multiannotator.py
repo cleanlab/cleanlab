@@ -255,12 +255,10 @@ def get_label_quality_multiannotator(
             )
 
         else:
-            raise ValueError(
-                f"""
+            raise ValueError(f"""
                 {curr_method} is not a valid consensus method!
                 Please choose a valid consensus_method: {valid_methods}
-                """
-            )
+                """)
 
         if verbose:
             # check if any classes no longer appear in the set of consensus labels
@@ -1615,12 +1613,10 @@ def _get_post_pred_probs_and_weights(
         post_pred_probs = label_counts / num_annotations.reshape(-1, 1)
 
     else:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             {quality_method} is not a valid quality method!
             Please choose a valid quality_method: {valid_methods}
-            """
-        )
+            """)
 
     return post_pred_probs, return_model_weight, return_annotator_weight
 
@@ -1788,12 +1784,10 @@ def _get_consensus_quality_score(
         consensus_quality_score = annotator_agreement
 
     else:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             {quality_method} is not a valid consensus quality method!
             Please choose a valid quality_method: {valid_methods}
-            """
-        )
+            """)
 
     return consensus_quality_score
 
@@ -1927,12 +1921,10 @@ def _get_annotator_quality(
                 )
 
     else:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             {quality_method} is not a valid annotator quality method!
             Please choose a valid quality_method: {valid_methods}
-            """
-        )
+            """)
 
     return annotator_quality
 
