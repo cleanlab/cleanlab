@@ -3,7 +3,7 @@ Helper methods used internally in cleanlab.multiannotator
 """
 
 import warnings
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -350,3 +350,123 @@ def temp_scale_pred_probs(
     )  # normalize
 
     return scaled_pred_probs
+
+
+def _format_multilabel_multiannotator(
+    labels_multiannotator: Union[pd.DataFrame, np.ndarray, list],
+    num_classes: int,
+) -> Tuple[List[np.ndarray], Optional[pd.Index]]:
+    """Format multi-annotator multi-label annotations into a list of K binary matrices of shape (N, M),
+    where each entry is 1.0 (class present), 0.0 (class absent), or np.nan (unlabeled).
+
+    Parameters
+    ----------
+    labels_multiannotator : pd.DataFrame, np.ndarray, or list
+        Multi-annotator multi-label annotations. Can be:
+        - 3D np.ndarray of shape (N, M, K) containing 0, 1, or np.nan.
+        - 2D pd.DataFrame or np.ndarray of shape (N, M) where entries are lists/tuples/sets of class indices (or empty collections) or NaN/None.
+        - 2D binary np.ndarray of shape (N, K) or List[List[int]] of length N (single annotator case).
+    num_classes : int
+        Number of classes K.
+
+    Returns
+    -------
+    y_list : list of np.ndarray
+        List of K 2D numpy arrays of shape (N, M) with values in {0.0, 1.0, np.nan}.
+    annotator_ids : pd.Index or None
+        Annotator column IDs if pd.DataFrame was provided.
+    """
+    from cleanlab.internal.multilabel_utils import int2onehot
+
+    if isinstance(labels_multiannotator, pd.DataFrame):
+        annotator_ids = labels_multiannotator.columns
+        N, M = labels_multiannotator.shape
+        y_list = [np.full((N, M), np.nan, dtype=float) for _ in range(num_classes)]
+        for i in range(N):
+            for j in range(M):
+                val = labels_multiannotator.iat[i, j]
+                if (
+                    val is None
+                    or val is pd.NA
+                    or (isinstance(val, (float, np.floating)) and np.isnan(val))
+                ):
+                    continue
+                elif isinstance(val, (list, tuple, set, np.ndarray, pd.Series)):
+                    for c in val:
+                        if not isinstance(c, (int, np.integer)):
+                            raise ValueError(
+                                f"Class indices must be integers, got {c} of type {type(c)}"
+                            )
+                        if c < 0 or c >= num_classes:
+                            raise ValueError(
+                                f"Class index {c} is out of bounds for dataset with {num_classes} classes."
+                            )
+                    for k in range(num_classes):
+                        y_list[k][i, j] = 1.0 if k in val else 0.0
+                elif isinstance(val, (int, np.integer)):
+                    c = int(val)
+                    if c < 0 or c >= num_classes:
+                        raise ValueError(
+                            f"Class index {c} is out of bounds for dataset with {num_classes} classes."
+                        )
+                    for k in range(num_classes):
+                        y_list[k][i, j] = 1.0 if k == c else 0.0
+                else:
+                    raise ValueError(f"Unsupported label format in labels_multiannotator: {val}")
+        return y_list, annotator_ids
+
+    elif isinstance(labels_multiannotator, np.ndarray):
+        if labels_multiannotator.ndim == 3:
+            N, M, K = labels_multiannotator.shape
+            if K != num_classes:
+                raise ValueError(
+                    f"labels_multiannotator has {K} classes, but pred_probs has {num_classes} classes."
+                )
+            non_nan = labels_multiannotator[~np.isnan(labels_multiannotator)]
+            if len(non_nan) > 0 and not np.all(np.isin(non_nan, [0, 1])):
+                raise ValueError(
+                    "3D labels_multiannotator array must contain only 0, 1, or NaN values."
+                )
+            return [labels_multiannotator[:, :, k].astype(float) for k in range(num_classes)], None
+
+        elif labels_multiannotator.ndim == 2:
+            if labels_multiannotator.dtype == object:
+                return _format_multilabel_multiannotator(
+                    pd.DataFrame(labels_multiannotator), num_classes
+                )
+            else:
+                if labels_multiannotator.shape[1] == num_classes and np.all(
+                    np.isin(labels_multiannotator[~np.isnan(labels_multiannotator)], [0, 1])
+                ):
+                    return [
+                        labels_multiannotator[:, k : k + 1].astype(float)
+                        for k in range(num_classes)
+                    ], None
+                else:
+                    return _format_multilabel_multiannotator(
+                        pd.DataFrame(labels_multiannotator), num_classes
+                    )
+        else:
+            raise ValueError(
+                f"labels_multiannotator array must be 2D or 3D, got {labels_multiannotator.ndim}D array."
+            )
+
+    elif isinstance(labels_multiannotator, list):
+        if (
+            len(labels_multiannotator) > 0
+            and all(isinstance(row, (list, tuple, set)) for row in labels_multiannotator)
+            and not any(
+                isinstance(item, (list, tuple, set))
+                for row in labels_multiannotator
+                for item in row
+            )
+        ):
+            onehot = int2onehot(labels_multiannotator, K=num_classes)
+            return [onehot[:, k : k + 1].astype(float) for k in range(num_classes)], None
+        else:
+            return _format_multilabel_multiannotator(
+                pd.DataFrame(labels_multiannotator), num_classes
+            )
+
+    else:
+        raise TypeError("labels_multiannotator must be a pandas DataFrame, numpy array, or list.")
