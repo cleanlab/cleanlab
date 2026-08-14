@@ -470,3 +470,8 @@ def _format_multilabel_multiannotator(
 
     else:
         raise TypeError("labels_multiannotator must be a pandas DataFrame, numpy array, or list.")
+
+
+def stack_complement(p: np.ndarray) -> np.ndarray:
+    """Stack 1 - p and p along the last axis to form a 2-class probability distribution."""
+    return np.vstack((1 - p, p)).T
