@@ -100,6 +100,28 @@ jobs:
       - name: Run tests
         run: |
           pytest tests/test_multilabel_classification.py tests/test_multiannotator.py tests/test_filter_count.py
+  test-datalab-without-optional-dependencies:
+    name: "Test Datalab core workflow with only [datalab] extras: Python ${{ matrix.python }}"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install cleanlab[datalab]
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[datalab]"
+          pip install pytest
+      - name: Run Datalab minimal workflow test
+        run: |
+          pytest tests/test_datalab_minimal.py
   test-max-versions:
     name: "Maximum Dependency Versions: Python 3.14"
     runs-on: ubuntu-latest
