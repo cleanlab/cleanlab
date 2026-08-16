@@ -587,4 +587,3 @@ def test_health_summary_with_confident_joint(confident_joint):
     assert "overall_label_health_score" in summary
     assert "classes_by_label_quality" in summary
     assert "overlapping_classes" in summary
-
