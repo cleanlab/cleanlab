@@ -33,12 +33,9 @@ import pandas as pd
 
 from cleanlab.internal.constants import CLIPPING_LOWER_BOUND
 from cleanlab.internal.multiannotator_utils import (
-    assert_valid_inputs_multiannotator,
-    assert_valid_pred_probs,
-    check_consensus_label_classes,
-    find_best_temp_scaler,
-    temp_scale_pred_probs,
-)
+    _format_multilabel_multiannotator, assert_valid_inputs_multiannotator,
+    assert_valid_pred_probs, check_consensus_label_classes,
+    find_best_temp_scaler, stack_complement, temp_scale_pred_probs)
 from cleanlab.internal.util import get_num_classes, value_counts
 from cleanlab.rank import get_label_quality_scores
 
@@ -253,12 +250,10 @@ def get_label_quality_multiannotator(
             )
 
         else:
-            raise ValueError(
-                f"""
+            raise ValueError(f"""
                 {curr_method} is not a valid consensus method!
                 Please choose a valid consensus_method: {valid_methods}
-                """
-            )
+                """)
 
         if verbose:
             # check if any classes no longer appear in the set of consensus labels
@@ -562,57 +557,63 @@ def get_label_quality_multiannotator_ensemble(
 
 
 def get_active_learning_scores(
-    labels_multiannotator: Optional[Union[pd.DataFrame, np.ndarray]] = None,
+    labels_multiannotator: Optional[Union[pd.DataFrame, np.ndarray, list]] = None,
     pred_probs: Optional[np.ndarray] = None,
     pred_probs_unlabeled: Optional[np.ndarray] = None,
+    *,
+    multi_label: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Returns an ActiveLab quality score for each example in the dataset, to estimate which examples are most informative to (re)label next in active learning.
+    """Returns an ActiveLab quality score for each example in the dataset.
 
-    We consider settings where one example can be labeled by one or more annotators and some examples have no labels at all so far.
+    This score is used to rank examples in order of priority for which we should collect another annotation label for.
+    For each example, the score represents the likelihood that acquiring an additional label will improve our classifier's performance.
 
-    The score is in between 0 and 1, and can be used to prioritize what data to collect additional labels for.
-    Lower scores indicate examples whose true label we are least confident about based on the current data;
-    collecting additional labels for these low-scoring examples will be more informative than collecting labels for other examples.
-    To use an annotation budget most efficiently, select a batch of examples with the lowest scores and collect one additional label for each example,
-    and repeat this process after retraining your classifier.
+    If you only want to compute active learning scores for already-labeled examples (which have entries in `labels_multiannotator`),
+    then you do not need to provide `pred_probs_unlabeled`.
+    If you only want to compute active learning scores for unlabeled examples (which have no entries in `labels_multiannotator`),
+    then you do not need to provide `labels_multiannotator` or `pred_probs`.
 
-    You can use this function to get active learning scores for: examples that already have one or more labels (specify ``labels_multiannotator`` and ``pred_probs``
-    as arguments), or for unlabeled examples (specify ``pred_probs_unlabeled``), or for both types of examples (specify all of the above arguments).
+    If you want to compute active learning scores for both labeled and unlabeled examples, you must provide all three arguments:
+    `labels_multiannotator`, `pred_probs`, and `pred_probs_unlabeled`. In this case, you can combine the active learning scores of both
+    labeled and unlabeled examples, which are directly comparable with each other, to prioritize which examples to label next.
 
-    To analyze a fixed dataset labeled by multiple annotators rather than collecting additional labels, try the
+    To calculate label quality scores for datasets with multiple annotators instead of active learning scores, consider using the
     `~cleanlab.multiannotator.get_label_quality_multiannotator` (CROWDLAB) function instead.
 
     Parameters
     ----------
-    labels_multiannotator : pd.DataFrame or np.ndarray, optional
-        2D pandas DataFrame or array of multiple given labels for each example with shape ``(N, M)``,
-        where N is the number of examples and M is the number of annotators. Note that this function also works with
-        datasets where there is only one annotator (M=1).
-        For more details, labels in the same format expected by the `~cleanlab.multiannotator.get_label_quality_multiannotator`.
-        Note that examples that have no annotator labels should not be included in this DataFrame/array.
-        This argument is optional if ``pred_probs`` is not provided (you might only provide ``pred_probs_unlabeled`` to only get active learning scores for the unlabeled examples).
+    labels_multiannotator : pd.DataFrame, np.ndarray, or list, optional
+        Multiannotator labels in the format expected by `get_label_quality_multiannotator`.
     pred_probs : np.ndarray, optional
-        An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model.
-        Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
-        This argument is optional if you only want to get active learning scores for unlabeled examples (specify only ``pred_probs_unlabeled`` instead).
+        Predicted class probabilities from trained model.
     pred_probs_unlabeled : np.ndarray, optional
-        An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model for examples that have no annotator labels.
-        Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
-        This argument is optional if you only want to get active learning scores for already-labeled examples (specify only ``pred_probs`` instead).
+        Predicted class probabilities for unlabeled examples.
+    multi_label : bool, default = False
+        Set to ``True`` for multi-label datasets.
 
     Returns
     -------
     active_learning_scores : np.ndarray
-        Array of shape ``(N,)`` indicating the ActiveLab quality scores for each example.
-        This array is empty if no already-labeled data was provided via ``labels_multiannotator``.
-        Examples with the lowest scores are those we should label next in order to maximally improve our classifier model.
-
+        Array of shape ``(N,)`` indicating active learning scores for labeled examples.
     active_learning_scores_unlabeled : np.ndarray
-        Array of shape ``(N,)`` indicating the active learning quality scores for each unlabeled example.
-        Returns an empty array if no unlabeled data is provided.
-        Examples with the lowest scores are those we should label next in order to maximally improve our classifier model
-        (scores for unlabeled data are directly comparable with the `active_learning_scores` for labeled data).
+        Array of shape ``(N,)`` indicating active learning scores for unlabeled examples.
     """
+
+    is_valid_3d = isinstance(labels_multiannotator, np.ndarray) and labels_multiannotator.ndim == 3
+    is_valid_list_3d = (
+        isinstance(labels_multiannotator, list)
+        and len(labels_multiannotator) > 0
+        and isinstance(labels_multiannotator[0], np.ndarray)
+        and labels_multiannotator[0].ndim == 2
+    )
+
+    if multi_label or is_valid_3d or is_valid_list_3d:
+        return _get_active_learning_scores_multilabel(
+            labels_multiannotator=labels_multiannotator,
+            pred_probs=pred_probs,
+            pred_probs_unlabeled=pred_probs_unlabeled,
+            ensemble=False,
+        )
 
     assert_valid_pred_probs(pred_probs=pred_probs, pred_probs_unlabeled=pred_probs_unlabeled)
 
@@ -727,42 +728,29 @@ def get_active_learning_scores(
 
 
 def get_active_learning_scores_ensemble(
-    labels_multiannotator: Optional[Union[pd.DataFrame, np.ndarray]] = None,
+    labels_multiannotator: Optional[Union[pd.DataFrame, np.ndarray, list]] = None,
     pred_probs: Optional[np.ndarray] = None,
     pred_probs_unlabeled: Optional[np.ndarray] = None,
+    *,
+    multi_label: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Returns an ActiveLab quality score for each example in the dataset, based on predictions from an ensemble of models.
+    """Returns an ActiveLab quality score for each example in the dataset, based on predictions from an ensemble of models."""
 
-    This function is similar to `~cleanlab.multiannotator.get_active_learning_scores` but allows for an
-    ensemble of multiple classifier models to be trained and will aggregate predictions from the models to compute the ActiveLab quality score.
+    is_valid_3d = isinstance(labels_multiannotator, np.ndarray) and labels_multiannotator.ndim == 3
+    is_valid_list_3d = (
+        isinstance(labels_multiannotator, list)
+        and len(labels_multiannotator) > 0
+        and isinstance(labels_multiannotator[0], np.ndarray)
+        and labels_multiannotator[0].ndim == 2
+    )
 
-    Parameters
-    ----------
-    labels_multiannotator : pd.DataFrame or np.ndarray
-        Multiannotator labels in the same format expected by `~cleanlab.multiannotator.get_active_learning_scores`.
-        This argument is optional if ``pred_probs`` is not provided (in cases where you only provide ``pred_probs_unlabeled`` to get active learning scores for unlabeled examples).
-    pred_probs : np.ndarray
-        An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from the ensemble models.
-        Note that this function also works with datasets where there is only one annotator (M=1).
-        Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
-        This argument is optional if you only want to get active learning scores for unlabeled examples (pass in ``pred_probs_unlabeled`` instead).
-    pred_probs_unlabeled : np.ndarray, optional
-        An array of shape ``(P, N, K)`` where P is the number of models, consisting of predicted class probabilities from a trained classifier model
-        for examples that have no annotated labels so far (but which we may want to label in the future, and hence compute active learning quality scores for).
-        Each set of predicted probabilities with shape ``(N, K)`` is in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
-        This argument is optional if you only want to get active learning scores for labeled examples (pass in ``pred_probs`` instead).
-
-    Returns
-    -------
-    active_learning_scores : np.ndarray
-        Similar to output as :py:func:`get_label_quality_scores <cleanlab.multiannotator.get_label_quality_scores>`.
-    active_learning_scores_unlabeled : np.ndarray
-        Similar to output as :py:func:`get_label_quality_scores <cleanlab.multiannotator.get_label_quality_scores>`.
-
-    See Also
-    --------
-    get_active_learning_scores
-    """
+    if multi_label or is_valid_3d or is_valid_list_3d:
+        return _get_active_learning_scores_multilabel(
+            labels_multiannotator=labels_multiannotator,
+            pred_probs=pred_probs,
+            pred_probs_unlabeled=pred_probs_unlabeled,
+            ensemble=True,
+        )
 
     assert_valid_pred_probs(
         pred_probs=pred_probs, pred_probs_unlabeled=pred_probs_unlabeled, ensemble=True
@@ -888,6 +876,144 @@ def get_active_learning_scores_ensemble(
         active_learning_scores_unlabeled = get_label_quality_scores(
             consensus_label_unlabeled, modified_pred_probs_unlabeled
         )
+    else:
+        active_learning_scores_unlabeled = np.array([])
+
+    return active_learning_scores, active_learning_scores_unlabeled
+
+
+def _get_active_learning_scores_multilabel(
+    labels_multiannotator: Optional[Union[pd.DataFrame, np.ndarray, list]] = None,
+    pred_probs: Optional[np.ndarray] = None,
+    pred_probs_unlabeled: Optional[np.ndarray] = None,
+    ensemble: bool = False,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute active learning scores for multi-label classification by decomposing into binary one-vs-rest per class."""
+    assert_valid_pred_probs(
+        pred_probs=pred_probs, pred_probs_unlabeled=pred_probs_unlabeled, ensemble=ensemble
+    )
+
+    if pred_probs is not None:
+        num_classes = pred_probs.shape[2] if ensemble else pred_probs.shape[1]
+    elif pred_probs_unlabeled is not None:
+        num_classes = pred_probs_unlabeled.shape[2] if ensemble else pred_probs_unlabeled.shape[1]
+    elif (
+        labels_multiannotator is not None
+        and isinstance(labels_multiannotator, np.ndarray)
+        and labels_multiannotator.ndim == 3
+    ):
+        num_classes = labels_multiannotator.shape[2]
+    else:
+        raise ValueError(
+            "pred_probs and pred_probs_unlabeled cannot both be None, specify at least one of the two."
+        )
+
+    if pred_probs is not None:
+        if labels_multiannotator is None:
+            raise ValueError(
+                "labels_multiannotator cannot be None when passing in pred_probs. ",
+                "Either provide labels_multiannotator to obtain active learning scores for the labeled examples, "
+                "or just pass in pred_probs_unlabeled to get active learning scores for unlabeled examples.",
+            )
+        y_list, annotator_ids = _format_multilabel_multiannotator(
+            labels_multiannotator, num_classes=num_classes
+        )
+        N = pred_probs.shape[1] if ensemble else len(pred_probs)
+        if len(y_list[0]) != N:
+            raise ValueError("labels_multiannotator and pred_probs must have the same length.")
+
+        annotator_labeled_any = np.zeros(y_list[0].shape, dtype=bool)
+        for y_k in y_list:
+            annotator_labeled_any |= ~np.isnan(y_k)
+
+        nan_row_mask = ~annotator_labeled_any.any(axis=1)
+        if nan_row_mask.any():
+            nan_rows = list(np.where(nan_row_mask)[0])
+            raise ValueError(
+                "labels_multiannotator cannot have rows with all NaN, each example must have at least one label.\n"
+                f"Examples {nan_rows} do not have any labels."
+            )
+
+        nan_col_mask = ~annotator_labeled_any.any(axis=0)
+        if nan_col_mask.any():
+            if annotator_ids is not None:
+                nan_cols = list(annotator_ids[np.where(nan_col_mask)[0]])
+            else:
+                nan_cols = list(np.where(nan_col_mask)[0])
+            raise ValueError(
+                "labels_multiannotator cannot have columns with all NaN, each annotator must label at least one example.\n"
+                f"Annotators {nan_cols} did not label any examples."
+            )
+    else:
+        y_list = None
+
+    scores_labeled_per_class = []
+    scores_unlabeled_per_class = []
+
+    for k in range(num_classes):
+        has_positives = y_list is None or bool((y_list[k] == 1.0).any())
+        if not has_positives:
+            s_lab = None
+            s_unlab = None
+        else:
+            try:
+                if ensemble:
+                    pred_probs_k = (
+                        np.array([stack_complement(p[:, k]) for p in pred_probs])
+                        if pred_probs is not None
+                        else None
+                    )
+                    pred_probs_unlabeled_k = (
+                        np.array([stack_complement(p[:, k]) for p in pred_probs_unlabeled])
+                        if pred_probs_unlabeled is not None
+                        else None
+                    )
+                    s_lab, s_unlab = get_active_learning_scores_ensemble(
+                        labels_multiannotator=y_list[k] if y_list is not None else None,
+                        pred_probs=pred_probs_k,
+                        pred_probs_unlabeled=pred_probs_unlabeled_k,
+                        multi_label=False,
+                    )
+                else:
+                    pred_probs_k = (
+                        stack_complement(pred_probs[:, k]) if pred_probs is not None else None
+                    )
+                    pred_probs_unlabeled_k = (
+                        stack_complement(pred_probs_unlabeled[:, k])
+                        if pred_probs_unlabeled is not None
+                        else None
+                    )
+                    s_lab, s_unlab = get_active_learning_scores(
+                        labels_multiannotator=y_list[k] if y_list is not None else None,
+                        pred_probs=pred_probs_k,
+                        pred_probs_unlabeled=pred_probs_unlabeled_k,
+                        multi_label=False,
+                    )
+            except Exception:
+                s_lab = None
+                s_unlab = None
+
+        if pred_probs is not None:
+            scores_labeled_per_class.append(s_lab)
+        if pred_probs_unlabeled is not None:
+            scores_unlabeled_per_class.append(s_unlab)
+
+    if pred_probs is not None:
+        valid_scores = [s for s in scores_labeled_per_class if s is not None]
+        if valid_scores:
+            active_learning_scores = np.mean(valid_scores, axis=0)
+        else:
+            active_learning_scores = np.full(N, 0.5, dtype=np.float32)
+    else:
+        active_learning_scores = np.array([])
+
+    if pred_probs_unlabeled is not None:
+        valid_scores_unlabeled = [s for s in scores_unlabeled_per_class if s is not None]
+        if valid_scores_unlabeled:
+            active_learning_scores_unlabeled = np.mean(valid_scores_unlabeled, axis=0)
+        else:
+            N_unlab = pred_probs_unlabeled.shape[1] if ensemble else len(pred_probs_unlabeled)
+            active_learning_scores_unlabeled = np.full(N_unlab, 0.5, dtype=np.float32)
     else:
         active_learning_scores_unlabeled = np.array([])
 
@@ -1514,12 +1640,10 @@ def _get_post_pred_probs_and_weights(
         post_pred_probs = label_counts / num_annotations.reshape(-1, 1)
 
     else:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             {quality_method} is not a valid quality method!
             Please choose a valid quality_method: {valid_methods}
-            """
-        )
+            """)
 
     return post_pred_probs, return_model_weight, return_annotator_weight
 
@@ -1687,12 +1811,10 @@ def _get_consensus_quality_score(
         consensus_quality_score = annotator_agreement
 
     else:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             {quality_method} is not a valid consensus quality method!
             Please choose a valid quality_method: {valid_methods}
-            """
-        )
+            """)
 
     return consensus_quality_score
 
@@ -1826,12 +1948,10 @@ def _get_annotator_quality(
                 )
 
     else:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             {quality_method} is not a valid annotator quality method!
             Please choose a valid quality_method: {valid_methods}
-            """
-        )
+            """)
 
     return annotator_quality
 

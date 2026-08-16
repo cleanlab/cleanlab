@@ -60,9 +60,7 @@ class DataValuationIssueManager(IssueManager):
         >>> lab.find_issues(knn_graph=knn_graph, issue_types=issue_types)
     """
 
-    description: ClassVar[
-        str
-    ] = """
+    description: ClassVar[str] = """
     Examples that contribute minimally to a model's training
     receive lower valuation scores.
     Since the original knn-shapley value is in [-1, 1], we transform it to [0, 1] by:
