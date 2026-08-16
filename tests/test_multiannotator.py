@@ -7,21 +7,15 @@ from sklearn.linear_model import LogisticRegression
 
 from cleanlab import count
 from cleanlab.benchmarking.noise_generation import (
-    generate_noise_matrix_from_trace,
-    generate_noisy_labels,
-)
+    generate_noise_matrix_from_trace, generate_noisy_labels)
 from cleanlab.internal.multiannotator_utils import (
-    assert_valid_inputs_multiannotator,
-    format_multiannotator_labels,
-)
-from cleanlab.multiannotator import (
-    convert_long_to_wide_dataset,
-    get_active_learning_scores,
-    get_active_learning_scores_ensemble,
-    get_label_quality_multiannotator,
-    get_label_quality_multiannotator_ensemble,
-    get_majority_vote_label,
-)
+    assert_valid_inputs_multiannotator, format_multiannotator_labels)
+from cleanlab.multiannotator import (convert_long_to_wide_dataset,
+                                     get_active_learning_scores,
+                                     get_active_learning_scores_ensemble,
+                                     get_label_quality_multiannotator,
+                                     get_label_quality_multiannotator_ensemble,
+                                     get_majority_vote_label)
 
 
 def make_data(
