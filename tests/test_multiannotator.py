@@ -7,21 +7,15 @@ from sklearn.linear_model import LogisticRegression
 
 from cleanlab import count
 from cleanlab.benchmarking.noise_generation import (
-    generate_noise_matrix_from_trace,
-    generate_noisy_labels,
-)
+    generate_noise_matrix_from_trace, generate_noisy_labels)
 from cleanlab.internal.multiannotator_utils import (
-    assert_valid_inputs_multiannotator,
-    format_multiannotator_labels,
-)
-from cleanlab.multiannotator import (
-    convert_long_to_wide_dataset,
-    get_active_learning_scores,
-    get_active_learning_scores_ensemble,
-    get_label_quality_multiannotator,
-    get_label_quality_multiannotator_ensemble,
-    get_majority_vote_label,
-)
+    assert_valid_inputs_multiannotator, format_multiannotator_labels)
+from cleanlab.multiannotator import (convert_long_to_wide_dataset,
+                                     get_active_learning_scores,
+                                     get_active_learning_scores_ensemble,
+                                     get_label_quality_multiannotator,
+                                     get_label_quality_multiannotator_ensemble,
+                                     get_majority_vote_label)
 
 
 def make_data(
@@ -1079,7 +1073,8 @@ def test_multilabel_active_learning_errors_and_edge_cases():
 
 
 def test_format_multilabel_multiannotator_vectorized():
-    from cleanlab.internal.multiannotator_utils import _format_multilabel_multiannotator
+    from cleanlab.internal.multiannotator_utils import \
+        _format_multilabel_multiannotator
 
     df = pd.DataFrame(
         {
@@ -1146,4 +1141,3 @@ def test_multilabel_active_learning_zero_positive_classes():
     assert len(scores_unlab_ens) == 2
     assert np.all((scores_lab_ens >= 0.0) & (scores_lab_ens <= 1.0))
     assert np.all((scores_unlab_ens >= 0.0) & (scores_unlab_ens <= 1.0))
-

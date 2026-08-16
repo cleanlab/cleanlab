@@ -429,7 +429,9 @@ def _format_multilabel_multiannotator(
                 raise ValueError(
                     "3D labels_multiannotator array must contain only 0, 1, or NaN values."
                 )
-            return [labels_multiannotator[:, :, k].astype(np.float32) for k in range(num_classes)], None
+            return [
+                labels_multiannotator[:, :, k].astype(np.float32) for k in range(num_classes)
+            ], None
 
         elif labels_multiannotator.ndim == 2:
             if labels_multiannotator.dtype == object:

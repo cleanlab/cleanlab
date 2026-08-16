@@ -33,14 +33,9 @@ import pandas as pd
 
 from cleanlab.internal.constants import CLIPPING_LOWER_BOUND
 from cleanlab.internal.multiannotator_utils import (
-    _format_multilabel_multiannotator,
-    assert_valid_inputs_multiannotator,
-    assert_valid_pred_probs,
-    check_consensus_label_classes,
-    find_best_temp_scaler,
-    stack_complement,
-    temp_scale_pred_probs,
-)
+    _format_multilabel_multiannotator, assert_valid_inputs_multiannotator,
+    assert_valid_pred_probs, check_consensus_label_classes,
+    find_best_temp_scaler, stack_complement, temp_scale_pred_probs)
 from cleanlab.internal.util import get_num_classes, value_counts
 from cleanlab.rank import get_label_quality_scores
 
