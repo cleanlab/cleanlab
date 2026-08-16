@@ -1076,3 +1076,74 @@ def test_multilabel_active_learning_errors_and_edge_cases():
         labels_multiannotator=all_zeros_df, pred_probs=pred_probs, multi_label=True
     )
     assert len(scores_lab) == 2
+
+
+def test_format_multilabel_multiannotator_vectorized():
+    from cleanlab.internal.multiannotator_utils import _format_multilabel_multiannotator
+
+    df = pd.DataFrame(
+        {
+            "a1": [[0, 2], [1], [], np.nan],
+            "a2": [[0], np.nan, [1, 2], []],
+        }
+    )
+    y_list, annotator_ids = _format_multilabel_multiannotator(df, num_classes=3)
+    assert len(y_list) == 3
+    assert list(annotator_ids) == ["a1", "a2"]
+    for y_k in y_list:
+        assert y_k.dtype == np.float32
+
+    # Check values
+    np.testing.assert_array_equal(y_list[0][:, 0], [1.0, 0.0, 0.0, np.nan])
+    np.testing.assert_array_equal(y_list[0][:, 1], [1.0, np.nan, 0.0, 0.0])
+    np.testing.assert_array_equal(y_list[1][:, 0], [0.0, 1.0, 0.0, np.nan])
+    np.testing.assert_array_equal(y_list[1][:, 1], [0.0, np.nan, 1.0, 0.0])
+    np.testing.assert_array_equal(y_list[2][:, 0], [1.0, 0.0, 0.0, np.nan])
+    np.testing.assert_array_equal(y_list[2][:, 1], [0.0, np.nan, 1.0, 0.0])
+
+
+def test_multilabel_active_learning_zero_positive_classes():
+    df_labels = pd.DataFrame(
+        {
+            "a1": [[0], [1], [0], []],
+            "a2": [[0], [0], [1], [0]],
+        }
+    )
+    pred_probs = np.array(
+        [
+            [0.9, 0.1, 0.01],
+            [0.1, 0.9, 0.02],
+            [0.8, 0.2, 0.01],
+            [0.2, 0.1, 0.05],
+        ]
+    )
+    pred_probs_unlab = np.array(
+        [
+            [0.5, 0.5, 0.1],
+            [0.8, 0.1, 0.05],
+        ]
+    )
+    scores_lab, scores_unlab = get_active_learning_scores(
+        labels_multiannotator=df_labels,
+        pred_probs=pred_probs,
+        pred_probs_unlabeled=pred_probs_unlab,
+        multi_label=True,
+    )
+    assert len(scores_lab) == 4
+    assert len(scores_unlab) == 2
+    assert np.all((scores_lab >= 0.0) & (scores_lab <= 1.0))
+    assert np.all((scores_unlab >= 0.0) & (scores_unlab <= 1.0))
+
+    pred_probs_ens = np.array([pred_probs, pred_probs])
+    pred_probs_unlab_ens = np.array([pred_probs_unlab, pred_probs_unlab])
+    scores_lab_ens, scores_unlab_ens = get_active_learning_scores_ensemble(
+        labels_multiannotator=df_labels,
+        pred_probs=pred_probs_ens,
+        pred_probs_unlabeled=pred_probs_unlab_ens,
+        multi_label=True,
+    )
+    assert len(scores_lab_ens) == 4
+    assert len(scores_unlab_ens) == 2
+    assert np.all((scores_lab_ens >= 0.0) & (scores_lab_ens <= 1.0))
+    assert np.all((scores_unlab_ens >= 0.0) & (scores_unlab_ens <= 1.0))
+

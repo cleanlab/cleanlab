@@ -944,36 +944,78 @@ def _get_active_learning_scores_multilabel(
     scores_unlabeled_per_class = []
 
     for k in range(num_classes):
-        if ensemble:
-            pred_probs_k = (
-                np.array([stack_complement(p[:, k]) for p in pred_probs])
-                if pred_probs is not None
-                else None
-            )
-            pred_probs_unlabeled_k = (
-                np.array([stack_complement(p[:, k]) for p in pred_probs_unlabeled])
-                if pred_probs_unlabeled is not None
-                else None
-            )
-            s_lab, s_unlab = get_active_learning_scores_ensemble(
-                labels_multiannotator=y_list[k] if y_list is not None else None,
-                pred_probs=pred_probs_k,
-                pred_probs_unlabeled=pred_probs_unlabeled_k,
-                multi_label=False,
-            )
+        has_positives = y_list is None or bool((y_list[k] == 1.0).any())
+        if not has_positives:
+            s_lab = np.full(N, 0.5, dtype=np.float32)
+            if pred_probs_unlabeled is not None:
+                if ensemble:
+                    pred_probs_unlabeled_k = np.array(
+                        [stack_complement(p[:, k]) for p in pred_probs_unlabeled]
+                    )
+                    _, s_unlab = get_active_learning_scores_ensemble(
+                        pred_probs_unlabeled=pred_probs_unlabeled_k,
+                        multi_label=False,
+                    )
+                else:
+                    pred_probs_unlabeled_k = stack_complement(pred_probs_unlabeled[:, k])
+                    _, s_unlab = get_active_learning_scores(
+                        pred_probs_unlabeled=pred_probs_unlabeled_k,
+                        multi_label=False,
+                    )
+            else:
+                s_unlab = np.array([], dtype=np.float32)
         else:
-            pred_probs_k = stack_complement(pred_probs[:, k]) if pred_probs is not None else None
-            pred_probs_unlabeled_k = (
-                stack_complement(pred_probs_unlabeled[:, k])
-                if pred_probs_unlabeled is not None
-                else None
-            )
-            s_lab, s_unlab = get_active_learning_scores(
-                labels_multiannotator=y_list[k] if y_list is not None else None,
-                pred_probs=pred_probs_k,
-                pred_probs_unlabeled=pred_probs_unlabeled_k,
-                multi_label=False,
-            )
+            try:
+                if ensemble:
+                    pred_probs_k = (
+                        np.array([stack_complement(p[:, k]) for p in pred_probs])
+                        if pred_probs is not None
+                        else None
+                    )
+                    pred_probs_unlabeled_k = (
+                        np.array([stack_complement(p[:, k]) for p in pred_probs_unlabeled])
+                        if pred_probs_unlabeled is not None
+                        else None
+                    )
+                    s_lab, s_unlab = get_active_learning_scores_ensemble(
+                        labels_multiannotator=y_list[k] if y_list is not None else None,
+                        pred_probs=pred_probs_k,
+                        pred_probs_unlabeled=pred_probs_unlabeled_k,
+                        multi_label=False,
+                    )
+                else:
+                    pred_probs_k = (
+                        stack_complement(pred_probs[:, k]) if pred_probs is not None else None
+                    )
+                    pred_probs_unlabeled_k = (
+                        stack_complement(pred_probs_unlabeled[:, k])
+                        if pred_probs_unlabeled is not None
+                        else None
+                    )
+                    s_lab, s_unlab = get_active_learning_scores(
+                        labels_multiannotator=y_list[k] if y_list is not None else None,
+                        pred_probs=pred_probs_k,
+                        pred_probs_unlabeled=pred_probs_unlabeled_k,
+                        multi_label=False,
+                    )
+            except Exception:
+                s_lab = (
+                    np.full(N, 0.5, dtype=np.float32)
+                    if pred_probs is not None
+                    else np.array([], dtype=np.float32)
+                )
+                N_unlab = (
+                    pred_probs_unlabeled.shape[1]
+                    if ensemble
+                    else len(pred_probs_unlabeled)
+                    if pred_probs_unlabeled is not None
+                    else 0
+                )
+                s_unlab = (
+                    np.full(N_unlab, 0.5, dtype=np.float32)
+                    if pred_probs_unlabeled is not None
+                    else np.array([], dtype=np.float32)
+                )
 
         if pred_probs is not None:
             scores_labeled_per_class.append(s_lab)
