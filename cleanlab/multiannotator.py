@@ -604,9 +604,15 @@ def get_active_learning_scores(
         Array of shape ``(N,)`` indicating active learning scores for unlabeled examples.
     """
 
-    if multi_label or (
-        isinstance(labels_multiannotator, np.ndarray) and labels_multiannotator.ndim == 3
-    ):
+    is_valid_3d = isinstance(labels_multiannotator, np.ndarray) and labels_multiannotator.ndim == 3
+    is_valid_list_3d = (
+        isinstance(labels_multiannotator, list)
+        and len(labels_multiannotator) > 0
+        and isinstance(labels_multiannotator[0], np.ndarray)
+        and labels_multiannotator[0].ndim == 2
+    )
+
+    if multi_label or is_valid_3d or is_valid_list_3d:
         return _get_active_learning_scores_multilabel(
             labels_multiannotator=labels_multiannotator,
             pred_probs=pred_probs,
@@ -735,9 +741,15 @@ def get_active_learning_scores_ensemble(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Returns an ActiveLab quality score for each example in the dataset, based on predictions from an ensemble of models."""
 
-    if multi_label or (
-        isinstance(labels_multiannotator, np.ndarray) and labels_multiannotator.ndim == 3
-    ):
+    is_valid_3d = isinstance(labels_multiannotator, np.ndarray) and labels_multiannotator.ndim == 3
+    is_valid_list_3d = (
+        isinstance(labels_multiannotator, list)
+        and len(labels_multiannotator) > 0
+        and isinstance(labels_multiannotator[0], np.ndarray)
+        and labels_multiannotator[0].ndim == 2
+    )
+
+    if multi_label or is_valid_3d or is_valid_list_3d:
         return _get_active_learning_scores_multilabel(
             labels_multiannotator=labels_multiannotator,
             pred_probs=pred_probs,
@@ -946,24 +958,8 @@ def _get_active_learning_scores_multilabel(
     for k in range(num_classes):
         has_positives = y_list is None or bool((y_list[k] == 1.0).any())
         if not has_positives:
-            s_lab = np.full(N, 0.5, dtype=np.float32)
-            if pred_probs_unlabeled is not None:
-                if ensemble:
-                    pred_probs_unlabeled_k = np.array(
-                        [stack_complement(p[:, k]) for p in pred_probs_unlabeled]
-                    )
-                    _, s_unlab = get_active_learning_scores_ensemble(
-                        pred_probs_unlabeled=pred_probs_unlabeled_k,
-                        multi_label=False,
-                    )
-                else:
-                    pred_probs_unlabeled_k = stack_complement(pred_probs_unlabeled[:, k])
-                    _, s_unlab = get_active_learning_scores(
-                        pred_probs_unlabeled=pred_probs_unlabeled_k,
-                        multi_label=False,
-                    )
-            else:
-                s_unlab = np.array([], dtype=np.float32)
+            s_lab = None
+            s_unlab = None
         else:
             try:
                 if ensemble:
@@ -999,23 +995,8 @@ def _get_active_learning_scores_multilabel(
                         multi_label=False,
                     )
             except Exception:
-                s_lab = (
-                    np.full(N, 0.5, dtype=np.float32)
-                    if pred_probs is not None
-                    else np.array([], dtype=np.float32)
-                )
-                N_unlab = (
-                    pred_probs_unlabeled.shape[1]
-                    if ensemble
-                    else len(pred_probs_unlabeled)
-                    if pred_probs_unlabeled is not None
-                    else 0
-                )
-                s_unlab = (
-                    np.full(N_unlab, 0.5, dtype=np.float32)
-                    if pred_probs_unlabeled is not None
-                    else np.array([], dtype=np.float32)
-                )
+                s_lab = None
+                s_unlab = None
 
         if pred_probs is not None:
             scores_labeled_per_class.append(s_lab)
@@ -1023,12 +1004,21 @@ def _get_active_learning_scores_multilabel(
             scores_unlabeled_per_class.append(s_unlab)
 
     if pred_probs is not None:
-        active_learning_scores = np.mean(scores_labeled_per_class, axis=0)
+        valid_scores = [s for s in scores_labeled_per_class if s is not None]
+        if valid_scores:
+            active_learning_scores = np.mean(valid_scores, axis=0)
+        else:
+            active_learning_scores = np.full(N, 0.5, dtype=np.float32)
     else:
         active_learning_scores = np.array([])
 
     if pred_probs_unlabeled is not None:
-        active_learning_scores_unlabeled = np.mean(scores_unlabeled_per_class, axis=0)
+        valid_scores_unlabeled = [s for s in scores_unlabeled_per_class if s is not None]
+        if valid_scores_unlabeled:
+            active_learning_scores_unlabeled = np.mean(valid_scores_unlabeled, axis=0)
+        else:
+            N_unlab = pred_probs_unlabeled.shape[1] if ensemble else len(pred_probs_unlabeled)
+            active_learning_scores_unlabeled = np.full(N_unlab, 0.5, dtype=np.float32)
     else:
         active_learning_scores_unlabeled = np.array([])
 
