@@ -1,17 +1,19 @@
-import requests
-import pytest
+import io
+
 import hypothesis.extra.numpy as npst
 import hypothesis.strategies as st
-import io
 import numpy as np
+import pytest
+import requests
 from hypothesis import given, settings
+
+from cleanlab.count import compute_confident_joint, estimate_joint, num_label_issues
 from cleanlab.dataset import (
-    health_summary,
     find_overlapping_classes,
-    rank_classes_by_label_quality,
+    health_summary,
     overall_label_health_score,
+    rank_classes_by_label_quality,
 )
-from cleanlab.count import estimate_joint, num_label_issues, compute_confident_joint
 
 cifar100 = [
     "apple",
@@ -562,3 +564,23 @@ def test_find_overlapping_classes_with_confident_joint(confident_joint):
     # Joint probabilities sorted in descending order
     if K > 2:
         assert (overlapping_classes["Joint Probability"].diff()[1:] <= 0).all()
+
+
+def test_rank_classes_by_label_quality_with_confident_joint():
+    """Regression test for issue #1329: rank_classes_by_label_quality should work with standalone confident_joint."""
+    confident_joint = np.array([[80, 5], [10, 105]])
+    df = rank_classes_by_label_quality(confident_joint=confident_joint)
+    assert df is not None
+    assert len(df) == 2
+    assert "Label Quality Score" in df.columns
+    assert "Label Issues" in df.columns
+
+
+def test_health_summary_with_confident_joint():
+    """Regression test for issue #1329: health_summary should work with standalone confident_joint."""
+    confident_joint = np.array([[80, 5], [10, 105]])
+    summary = health_summary(confident_joint=confident_joint, verbose=False)
+    assert summary is not None
+    assert "overall_label_health_score" in summary
+    assert "joint" in summary
+    assert "classes_by_label_quality" in summary

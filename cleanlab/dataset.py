@@ -6,6 +6,7 @@ and which classes to merge (see `~cleanlab.dataset.find_overlapping_classes`).
 """
 
 from typing import Optional, cast
+
 import numpy as np
 import pandas as pd
 
@@ -83,7 +84,7 @@ def rank_classes_by_label_quality(
             confident_joint=confident_joint,
         )
     if num_examples is None:
-        num_examples = _get_num_examples(labels=labels)
+        num_examples = _get_num_examples(labels=labels, confident_joint=confident_joint)
     given_label_noise = joint.sum(axis=1) - joint.diagonal()  # p(s=k) - p(s=k,y=k) = p(y!=k, s=k)
     true_label_noise = joint.sum(axis=0) - joint.diagonal()  # p(y=k) - p(s=k,y=k) = p(s!=k,y=k)
     given_conditional_noise = given_label_noise / np.clip(
@@ -421,7 +422,7 @@ def health_summary(
             confident_joint=confident_joint,
         )
     if num_examples is None:
-        num_examples = _get_num_examples(labels=labels)
+        num_examples = _get_num_examples(labels=labels, confident_joint=confident_joint)
 
     if verbose:
         longest_line = (
