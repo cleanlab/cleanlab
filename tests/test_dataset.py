@@ -562,3 +562,17 @@ def test_find_overlapping_classes_with_confident_joint(confident_joint):
     # Joint probabilities sorted in descending order
     if K > 2:
         assert (overlapping_classes["Joint Probability"].diff()[1:] <= 0).all()
+
+
+def test_rank_classes_and_health_summary_with_confident_joint():
+    cj = np.array([[10, 2], [1, 15]])
+    # rank_classes_by_label_quality with confident_joint and no labels
+    df_classes = rank_classes_by_label_quality(confident_joint=cj)
+    assert len(df_classes) == 2
+    assert "Label Issues" in df_classes.columns
+    assert "Label Quality Score" in df_classes.columns
+
+    # health_summary with confident_joint and no labels
+    summary = health_summary(confident_joint=cj, verbose=False)
+    assert "overall_label_health_score" in summary
+    assert "classes_by_label_quality" in summary
