@@ -202,7 +202,8 @@ def get_label_quality_ensemble_scores(
       Weighting scheme used to aggregate scores from each model:
 
       - "uniform": Take the simple average of scores.
-      - "accuracy": Take weighted average of scores, weighted by model accuracy.
+      - "accuracy": Take weighted average of scores, weighted by model accuracy. If every model
+        has zero accuracy, take the simple average instead.
       - "log_loss_search": Take weighted average of scores, weighted by exp(t * -log_loss) where t is selected from log_loss_search_T_values parameter and log_loss is the log-loss between a model's pred_probs and the given labels.
       - "custom": Take weighted average of scores using custom weights that the user passes to the custom_weights parameter.
 
@@ -319,9 +320,18 @@ def get_label_quality_ensemble_scores(
         label_quality_scores = scores_ensemble.mean(axis=1)  # Uniform weights (simple average)
 
     elif weight_ensemble_members_by == "accuracy":
-        weights = np.array(accuracy_list) / sum(accuracy_list)  # Weight by relative accuracy
+        accuracies = np.array(accuracy_list)
+        accuracy_sum = accuracies.sum()
+        weights = (
+            accuracies / accuracy_sum
+            if accuracy_sum > 0
+            else np.full(len(accuracies), 1.0 / len(accuracies))
+        )
         if verbose:
-            print("Ensemble members will be weighted by their relative accuracy")
+            if accuracy_sum > 0:
+                print("Ensemble members will be weighted by their relative accuracy")
+            else:
+                print("All ensemble members have zero accuracy; using uniform weights")
             for i, acc in enumerate(accuracy_list):
                 print(f"  Model {i} accuracy : {acc}")
                 print(f"  Model {i} weight   : {weights[i]}")
