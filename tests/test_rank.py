@@ -233,6 +233,33 @@ def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_member
         ).all(), f"Test failed with scoring method: {method}"
 
 
+def test_ensemble_scoring_with_zero_accuracy_models(capsys):
+    labels = np.array([0, 1, 0, 1])
+    pred_probs_list = [
+        np.array([[0.1, 0.9], [0.9, 0.1], [0.2, 0.8], [0.8, 0.2]]),
+        np.array([[0.3, 0.7], [0.6, 0.4], [0.4, 0.6], [0.7, 0.3]]),
+    ]
+    assert all((pred_probs.argmax(axis=1) != labels).all() for pred_probs in pred_probs_list)
+
+    scores_weighted_by_accuracy = rank.get_label_quality_ensemble_scores(
+        labels,
+        pred_probs_list,
+        weight_ensemble_members_by="accuracy",
+    )
+    assert (
+        "All ensemble members have zero accuracy; using uniform weights" in capsys.readouterr().out
+    )
+    scores_weighted_uniformly = rank.get_label_quality_ensemble_scores(
+        labels,
+        pred_probs_list,
+        weight_ensemble_members_by="uniform",
+        verbose=False,
+    )
+
+    assert np.isfinite(scores_weighted_by_accuracy).all()
+    np.testing.assert_allclose(scores_weighted_by_accuracy, scores_weighted_uniformly)
+
+
 def test_bad_weight_ensemble_members_by_parameter_error():
     with pytest.raises(ValueError) as e:
         labels = data["labels"]

@@ -198,22 +198,23 @@ class UnderperformingGroupIssueManager(IssueManager):
             Tuple[Dict[int, float], int, float]: (Cluster IDs and their scores, Worst Cluster ID, Worst Cluster Quality Score)
         """
         worst_cluster_ratio = 1.0  # Largest possible probability value
-        worst_cluster_id = min(unique_cluster_ids) - 1
+        worst_cluster_id = int(min(unique_cluster_ids)) - 1
         # For calculating mean_performance of the dataset, choose labels and pred-probs of samples belonging to non-noisy clusters
         filtered_cluster_id_mask = np.isin(cluster_ids, unique_cluster_ids)
         filtered_labels = labels[filtered_cluster_id_mask]
         filtered_pred_probs = pred_probs[filtered_cluster_id_mask]
-        mean_performance = get_self_confidence_for_each_label(
-            filtered_labels, filtered_pred_probs
-        ).mean()
-        cluster_ids_to_score = {}
-        for cluster_id in unique_cluster_ids:
+        mean_performance = float(
+            get_self_confidence_for_each_label(filtered_labels, filtered_pred_probs).mean()
+        )
+        cluster_ids_to_score: Dict[int, float] = {}
+        for cluster_id_raw in unique_cluster_ids:
+            cluster_id = int(cluster_id_raw)
             cluster_mask = cluster_ids == cluster_id
             cur_cluster_ids = labels[cluster_mask]
             cur_cluster_pred_probs = pred_probs[cluster_mask]
-            cluster_performance = get_self_confidence_for_each_label(
-                cur_cluster_ids, cur_cluster_pred_probs
-            ).mean()
+            cluster_performance = float(
+                get_self_confidence_for_each_label(cur_cluster_ids, cur_cluster_pred_probs).mean()
+            )
             if cluster_performance < mean_performance:
                 cluster_ids_to_score[cluster_id] = cluster_performance / mean_performance
                 if cluster_performance < worst_cluster_ratio:
