@@ -143,6 +143,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: psf/black@stable
+        with:
+          version: "24.10.0"
   flake8:
     name: Check for unused/wildcard imports
     runs-on: ubuntu-latest
