@@ -132,12 +132,14 @@ def display_issues(
 
         # First image - Given truth labels
         if labels is not None and plot_index < len(axes_list):
+            assert cmap is not None  # set above when label/pred plots are requested
             axes_list[plot_index].imshow(cmap[labels[i]])
             axes_list[plot_index].set_title("Given Labels")
             plot_index += 1
 
         # Second image - Argmaxed pred_probs
         if pred_probs is not None and plot_index < len(axes_list):
+            assert cmap is not None  # set above when label/pred plots are requested
             axes_list[plot_index].imshow(cmap[np.argmax(pred_probs[i], axis=0)])
             axes_list[plot_index].set_title("Argmaxed Prediction Probabilities")
             plot_index += 1

@@ -30,7 +30,6 @@ except ImportError:
 
 from cleanlab.internal.validation import labels_to_array, labels_to_list_multilabel
 
-
 if TYPE_CHECKING:  # pragma: no cover
     DatasetLike = Union[Dataset, pd.DataFrame, Dict[str, Any], List[Dict[str, Any]], str]
 

@@ -22,7 +22,6 @@ Code adapted from: https://github.com/bhanML/Co-teaching/blob/master/model.py
 You must have PyTorch installed: https://pytorch.org/get-started/locally/
 """
 
-
 import torch.nn as nn
 import torch.nn.functional as F
 
