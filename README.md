@@ -10,6 +10,10 @@
 <a href="https://twitter.com/CleanlabAI" target="_blank"><img src="https://img.shields.io/twitter/follow/CleanlabAI?style=social" alt="Twitter"></a>
 </div>
 
+<p align="center">
+    <b>English</b> · <a href="README.zh.md">简体中文</a>
+</p>
+
 <h4 align="center">
     <p>
         <a href="https://docs.cleanlab.ai/">Documentation</a> |
