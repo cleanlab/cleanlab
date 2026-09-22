@@ -1022,13 +1022,15 @@ class TestDatalabFindLabelIssues:
         lab.find_issues(features=random_embeddings)
         check_lab_dtypes(lab)
         summary = lab.get_issue_summary()
-        assert len(summary) == 6
-        assert "label" in summary["issue_type"].values
+        issue_types_before = set(summary["issue_type"])
+        assert issue_types_before
+        assert "label" in issue_types_before
+        # An incremental, label-only re-audit must merge into the existing results without
+        # adding or dropping any other audited issue type, so the set of issue types is stable.
         lab.find_issues(pred_probs=pred_probs, issue_types={"label": {}})
         check_lab_dtypes(lab)
         summary = lab.get_issue_summary()
-        assert len(summary) == 6
-        assert "label" in summary["issue_type"].values
+        assert set(summary["issue_type"]) == issue_types_before
         label_summary = lab.get_issue_summary("label")
         assert label_summary["num_issues"].values[0] > 0
         # Compare results with low_memory=True
@@ -1307,9 +1309,19 @@ class TestDatalabWithoutLabels:
         issues_with_labels = lab_with_labels.issues
         issues_without_label_name = lab_without_label_name.issues
 
-        # issues_with_labels should have four additional columns, which include label issues
-        # and class_imbalance issues
-        assert len(issues_without_labels.columns) + 4 == len(issues_with_labels.columns)
+        # Labels enable the label-gated checks (label + class_imbalance) that a label-less
+        # audit cannot run. Assert these columns by name, and that a label-less audit is a
+        # strict subset of a labeled one, so the test stays valid when non-label-gated issue
+        # types are added to the defaults.
+        label_dependent_columns = {
+            "is_label_issue",
+            "label_score",
+            "is_class_imbalance_issue",
+            "class_imbalance_score",
+        }
+        assert set(issues_without_labels.columns) < set(issues_with_labels.columns)
+        assert label_dependent_columns < set(issues_with_labels.columns)
+        assert not (label_dependent_columns & set(issues_without_labels.columns))
         pd.testing.assert_frame_equal(issues_without_labels, issues_without_label_name)
 
 
