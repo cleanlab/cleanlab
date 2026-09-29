@@ -25,6 +25,20 @@ def test_latent_inv():
     assert np.all(abs(inv - inv2) < 1e-3)
 
 
+def test_column_prior_scales_the_class_it_names():
+    # P(label=0|true=0) * P(true=0) / P(label=0). A column prior returned 0.889.
+    py = np.array([[0.25], [0.75]])
+    noise = np.array([[0.8, 0.1], [0.2, 0.9]])
+    got = latent_algebra.compute_inv_noise_matrix(py, noise)
+    assert got[0, 0] == pytest.approx(0.8 * 0.25 / (0.8 * 0.25 + 0.1 * 0.75))
+    flat = latent_algebra.compute_inv_noise_matrix(py.ravel(), noise)
+    assert np.allclose(got, flat)
+
+    ps = noise.dot(py.ravel()).reshape(-1, 1)
+    recovered = latent_algebra.compute_noise_matrix_from_inverse(ps, flat, py=py)
+    assert recovered[0, 1] == pytest.approx(0.1)
+
+
 def test_latent_nm():
     ps, py, inv = get_latent_py_ps_inv()
     nm2 = latent_algebra.compute_noise_matrix_from_inverse(ps, inv, py=py)
