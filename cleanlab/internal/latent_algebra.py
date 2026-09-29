@@ -68,7 +68,7 @@ def compute_inv_noise_matrix(py, noise_matrix, *, ps=None) -> np.ndarray:
 
     Parameters
     ----------
-    py : np.ndarray (shape (K, 1))
+    py : np.ndarray (shape (K,), (K, 1), or (1, K))
         The fraction (prior probability) of each TRUE class label, P(true_label = k)
 
     noise_matrix : np.ndarray
@@ -77,7 +77,7 @@ def compute_inv_noise_matrix(py, noise_matrix, *, ps=None) -> np.ndarray:
         Assumes columns of noise_matrix sum to 1.
 
     ps : np.ndarray
-        Array of shape ``(K, 1)`` containing the fraction (prior probability) of each NOISY given label, ``P(labels = k)``.
+        Array of shape ``(K,)``, ``(K, 1)``, or ``(1, K)`` containing the fraction (prior probability) of each NOISY given label, ``P(labels = k)``.
         `ps` is easily computable from py and should only be provided if it has already been precomputed, to increase code efficiency.
 
     Examples
@@ -105,8 +105,10 @@ def compute_inv_noise_matrix(py, noise_matrix, *, ps=None) -> np.ndarray:
                                                  py[k_y] / ps[k_s]
     """
 
+    # A column prior must scale the true-class axis, not the given-label axis.
+    py = np.ravel(py)
     joint = noise_matrix * py
-    ps = joint.sum(axis=1) if ps is None else ps
+    ps = joint.sum(axis=1) if ps is None else np.ravel(ps)
     inverse_noise_matrix = joint.T / np.clip(ps, a_min=TINY_VALUE, a_max=None)
 
     # Clip inverse noise rates P(true_label=k_s|true_label=k_y) into proper range [0,1)
@@ -119,7 +121,7 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None) -> n
     Parameters
     ----------
     py : np.ndarray
-        Array of shape ``(K, 1)`` containing the fraction (prior probability) of each TRUE class label, ``P(true_label = k)``.
+        Array of shape ``(K,)``, ``(K, 1)``, or ``(1, K)`` containing the fraction (prior probability) of each TRUE class label, ``P(true_label = k)``.
 
     inverse_noise_matrix : np.ndarray
         A conditional probability matrix (of shape ``(K, K)``) of the form P(true_label=k_y|label=k_s) representing
@@ -129,7 +131,7 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None) -> n
         Assumes columns of inverse_noise_matrix sum to 1.
 
     ps : np.ndarray
-        Array of shape ``(K, 1)`` containing the fraction (prior probability) of each observed NOISY label, P(labels = k).
+        Array of shape ``(K,)``, ``(K, 1)``, or ``(1, K)`` containing the fraction (prior probability) of each observed NOISY label, P(labels = k).
         `ps` is easily computable from `py` and should only be provided if it has already been precomputed, to increase code efficiency.
 
     Returns
@@ -165,8 +167,10 @@ def compute_noise_matrix_from_inverse(ps, inverse_noise_matrix, *, py=None) -> n
 
     """
 
+    # A column prior must scale the label it names, not the other axis.
+    ps = np.ravel(ps)
     joint = (inverse_noise_matrix * ps).T
-    py = joint.sum(axis=0) if py is None else py
+    py = joint.sum(axis=0) if py is None else np.ravel(py)
     noise_matrix = joint / np.clip(py, a_min=TINY_VALUE, a_max=None)
 
     # Clip inverse noise rates P(true_label=k_y|true_label=k_s) into proper range [0,1)
