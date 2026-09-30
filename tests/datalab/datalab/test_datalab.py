@@ -34,6 +34,13 @@ def test_datalab_invalid_datasetdict(dataset, label_name):
         assert "Please pass a single dataset, not a DatasetDict." in str(e)
 
 
+def test_datalab_nan_label_column():
+    df = pd.DataFrame({"text": ["a", "b", "c", "d"], "label": [0, 1, np.nan, 1]})
+    with pytest.raises(ValueError, match="contains NaN or missing values"):
+        Datalab(data=df, label_name="label")
+
+
+
 def check_issues_dtypes(lab):
     """
     Asserts that each column in lab.issues has the expected dtype.
