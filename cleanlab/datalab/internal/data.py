@@ -263,8 +263,8 @@ class Label(ABC):
         self.labels = labels_to_array([])
         self.label_map: Mapping[Union[str, int], Any] = {}
         if label_name is not None:
-            self.labels, self.label_map = self._extract_labels(data, label_name, map_to_int)
             self._validate_labels()
+            self.labels, self.label_map = self._extract_labels(data, label_name, map_to_int)
 
     def __len__(self) -> int:
         if self.labels is None:
@@ -309,6 +309,11 @@ class Label(ABC):
         )
         assert _is_valid_label_column(labels), error_message
         assert len(labels) == len(self._data)
+        if _check_nan_labels(labels):
+            raise ValueError(
+                f"Label column '{self.label_name}' contains NaN or missing values. "
+                "Please clean or remove missing labels before passing data to Datalab."
+            )
 
     @abstractmethod
     def _extract_labels(self, *args, **kwargs) -> Any:
@@ -429,3 +434,47 @@ def _convert_column_to_list(labels):
     elif IterableColumn is not None and isinstance(labels, IterableColumn):
         return list(labels)
     return labels
+
+
+def _check_nan_labels(labels: Any) -> bool:
+    """Helper function to check if labels contain NaN, None, or missing values.
+
+    Parameters
+    ----------
+    labels : Any
+        The labels object to check.
+
+    Returns
+    -------
+    bool
+        True if labels contain NaN or None values.
+    """
+    labels_list = _convert_column_to_list(labels)
+    if isinstance(labels_list, (list, tuple, np.ndarray)):
+        for item in labels_list:
+            if item is None:
+                return True
+            if isinstance(item, (float, np.floating)) and np.isnan(item):
+                return True
+            try:
+                if pd.isna(item):
+                    return True
+            except Exception:
+                pass
+            if isinstance(item, (list, tuple)):
+                for subitem in item:
+                    if subitem is None or (isinstance(subitem, (float, np.floating)) and np.isnan(subitem)):
+                        return True
+                    try:
+                        if pd.isna(subitem):
+                            return True
+                    except Exception:
+                        pass
+    try:
+        if pd.isna(labels_list).any():
+            return True
+    except Exception:
+        pass
+    return False
+
+
