@@ -1,3 +1,5 @@
+import math
+
 import pytest
 import random
 import numpy as np
@@ -265,3 +267,58 @@ def test_all_identical_examples(N, method):
     else:
         # Residual method should give "imperfect" scores for the last ~quarter of examples, but not necessarily near 0
         assert np.all(scores[-cutoff_index:] < 1)
+
+
+@pytest.mark.parametrize("method", ["residual", "outre"])
+@pytest.mark.parametrize(
+    "dtype, labels, predictions",
+    [
+        (np.uint8, [1, 2, 3, 4, 10, 20], [2, 1, 3, 5, 20, 10]),
+        (np.uint64, [1, 2, 3, 4, 10, 20], [2, 1, 3, 5, 20, 10]),
+        (np.int8, [-128, 127, 0, 10, 20, 30], [127, -128, -128, 11, 19, 32]),
+        (
+            np.int64,
+            [-(2**62), 2**62, 0, 10, 20, 30],
+            [2**62, -(2**62), 0, 11, 19, 32],
+        ),
+    ],
+)
+def test_integer_label_quality_scores(method, dtype, labels, predictions):
+    integer_labels = np.array(labels, dtype=dtype)
+    integer_predictions = np.array(predictions, dtype=dtype)
+    if method == "residual":
+        # Python integers avoid overflow in the independent residual calculation.
+        expected = np.array(
+            [math.exp(-abs(prediction - label)) for label, prediction in zip(labels, predictions)]
+        )
+    else:
+        expected = get_label_quality_scores(
+            np.array(labels, dtype=float), np.array(predictions, dtype=float), method=method
+        )
+
+    with np.errstate(over="raise", invalid="raise"):
+        scores = get_label_quality_scores(integer_labels, integer_predictions, method=method)
+
+    np.testing.assert_allclose(scores, expected, rtol=1e-6, atol=0)
+    assert np.all((scores >= 0) & (scores <= 1))
+    np.testing.assert_array_equal(integer_labels, labels)
+    np.testing.assert_array_equal(integer_predictions, predictions)
+
+
+@pytest.mark.parametrize("label_dtype", [np.int64, np.uint64])
+@pytest.mark.parametrize("prediction_dtype", [np.int64, np.uint64])
+def test_residual_scores_for_large_adjacent_integers(label_dtype, prediction_dtype):
+    labels = np.array([2**53, 2**53 + 2, 2**53 + 4], dtype=label_dtype)
+    predictions = np.array([2**53 + 1, 2**53 + 1, 2**53 + 4], dtype=prediction_dtype)
+    scores = get_label_quality_scores(labels, predictions, method="residual")
+    np.testing.assert_allclose(scores, [np.exp(-1), np.exp(-1), 1])
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64, np.longdouble])
+def test_residual_scores_preserve_floating_precision(dtype):
+    labels = np.array([1, 2, 3], dtype=dtype)
+    predictions = np.array([2, 1, 3], dtype=dtype)
+    expected = np.exp(-np.abs(predictions - labels))
+    scores = get_label_quality_scores(labels, predictions, method="residual")
+    np.testing.assert_array_equal(scores, expected)
+    assert scores.dtype == expected.dtype

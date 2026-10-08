@@ -87,6 +87,16 @@ def get_label_quality_scores(
     return label_quality_scores
 
 
+def _get_residuals(labels: np.ndarray, predictions: np.ndarray) -> np.ndarray:
+    """Compute residuals without overflowing integer inputs."""
+    if np.issubdtype(labels.dtype, np.integer) and np.issubdtype(predictions.dtype, np.integer):
+        if max(labels.dtype.itemsize, predictions.dtype.itemsize) >= 8:
+            # Subtract exactly before converting: large integers can differ by only one.
+            return np.asarray(np.subtract(predictions, labels, dtype=object), dtype=float)
+        return np.subtract(predictions, labels, dtype=float)
+    return predictions - labels
+
+
 def _get_residual_score_for_each_label(
     labels: np.ndarray,
     predictions: np.ndarray,
@@ -114,7 +124,7 @@ def _get_residual_score_for_each_label(
         Lower scores indicate more likely mislabled examples.
 
     """
-    residual = predictions - labels
+    residual = _get_residuals(labels, predictions)
     label_quality_scores = np.exp(-abs(residual))
     return label_quality_scores
 
@@ -156,7 +166,7 @@ def _get_outre_score_for_each_label(
         Contains one score (between 0 and 1) per example.
         Lower scores indicate more likely mislabled examples.
     """
-    residual = predictions - labels
+    residual = _get_residuals(labels, predictions)
     labels = (labels - labels.mean()) / (labels.std() + TINY_VALUE)
     residual = residual_scale * ((residual - residual.mean()) / (residual.std() + TINY_VALUE))
 
