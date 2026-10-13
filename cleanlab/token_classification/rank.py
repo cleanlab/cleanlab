@@ -221,9 +221,10 @@ def issues_from_scores(
         return issues
 
     else:
-        ranking = np.argsort(sentence_scores)
+        scores = np.asarray(sentence_scores)
+        ranking = np.argsort(scores)
         cutoff = 0
-        while sentence_scores[ranking[cutoff]] < threshold and cutoff < len(ranking):
+        while cutoff < len(ranking) and scores[ranking[cutoff]] < threshold:
             cutoff += 1
         return ranking[:cutoff]
 
