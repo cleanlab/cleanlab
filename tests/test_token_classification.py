@@ -283,6 +283,34 @@ def test_issues_from_scores(label_quality_scores):
     assert issues_without[0] == 1
 
 
+def test_issues_from_scores_edge_cases():
+    # All scores below threshold (previously crashed with IndexError)
+    all_below = np.array([0.01, 0.02, 0.03])
+    res_all_below = issues_from_scores(all_below, threshold=0.1)
+    assert np.array_equal(res_all_below, np.array([0, 1, 2]))
+
+    # Single score below threshold (previously crashed with IndexError)
+    single_below = np.array([0.01])
+    res_single_below = issues_from_scores(single_below, threshold=0.1)
+    assert np.array_equal(res_single_below, np.array([0]))
+
+    # Empty inputs (previously crashed with IndexError)
+    res_empty_arr = issues_from_scores(np.array([]), threshold=0.1)
+    assert len(res_empty_arr) == 0
+    res_empty_list = issues_from_scores([], threshold=0.1)
+    assert len(res_empty_list) == 0
+
+    # No scores below threshold
+    none_below = np.array([0.5, 0.6, 0.9])
+    res_none_below = issues_from_scores(none_below, threshold=0.1)
+    assert len(res_none_below) == 0
+
+    # Pandas Series input with non-default index
+    series_input = pd.Series([0.02, 0.01, 0.5], index=[10, 20, 30])
+    res_series = issues_from_scores(series_input, threshold=0.1)
+    assert np.array_equal(res_series, np.array([1, 0]))
+
+
 def test_display_issues():
     display_issues(issues, words)
     display_issues(issues, tokens=words, labels=labels)
