@@ -1028,3 +1028,90 @@ def test_calculate_areas_across_boxes():
 
     rectangles = np.array([[1, 1, 1, 1]])
     assert calculate_bounding_box_areas(rectangles) == 0
+
+
+def test_separate_label_empty_and_1d():
+    # Empty 1D numpy array
+    label_empty_np = {"bboxes": np.array([]), "labels": np.array([])}
+    bboxes, labels_arr = _separate_label(label_empty_np)
+    assert bboxes.shape == (0, 4)
+    assert labels_arr.shape == (0,)
+
+    # Empty list
+    label_empty_list = {"bboxes": [], "labels": []}
+    bboxes, labels_arr = _separate_label(label_empty_list)
+    assert bboxes.shape == (0, 4)
+    assert labels_arr.shape == (0,)
+
+    # Empty 2D numpy array
+    label_empty_2d = {"bboxes": np.empty((0, 4)), "labels": np.empty((0,))}
+    bboxes, labels_arr = _separate_label(label_empty_2d)
+    assert bboxes.shape == (0, 4)
+    assert labels_arr.shape == (0,)
+
+    # Single 1D bbox
+    label_1d = {"bboxes": np.array([10.0, 10.0, 20.0, 20.0]), "labels": np.array([0])}
+    bboxes, labels_arr = _separate_label(label_1d)
+    assert bboxes.shape == (1, 4)
+    assert labels_arr.shape == (1,)
+
+
+def test_filter_by_class_empty_labels():
+    labels_with_empty = [
+        {"bboxes": np.array([[10, 10, 50, 50]]), "labels": np.array([0])},
+        {"bboxes": np.array([]), "labels": np.array([])},
+        {"bboxes": [], "labels": []},
+    ]
+    preds = [
+        np.array([np.array([[10, 10, 50, 50, 0.95]]), np.empty((0, 5))], dtype=object),
+        np.array([np.empty((0, 5)), np.empty((0, 5))], dtype=object),
+        np.array([np.empty((0, 5)), np.empty((0, 5))], dtype=object),
+    ]
+    pred_bboxes, lab_bboxes = _filter_by_class(labels_with_empty, preds, class_num=0)
+    assert len(lab_bboxes) == 3
+    assert lab_bboxes[0].shape == (1, 4)
+    assert lab_bboxes[1].shape == (0, 4)
+    assert lab_bboxes[2].shape == (0, 4)
+
+
+def test_find_label_issues_empty_bboxes_and_isin():
+    # Test handling of background-only images (empty bboxes) and NumPy 2.0 np.isin
+    labels_mix = [
+        {"bboxes": np.array([[10, 10, 50, 50]]), "labels": np.array([0])},
+        {"bboxes": np.array([]), "labels": np.array([])},
+    ]
+    preds_mix = [
+        np.array([np.array([[10, 10, 50, 50, 0.95]]), np.empty((0, 5))], dtype=object),
+        np.array([np.array([[20, 20, 60, 60, 0.90]]), np.empty((0, 5))], dtype=object),
+    ]
+    # return_indices_ranked_by_score=True tests np.isin sorting and ranking
+    issues_ranked = find_label_issues(labels_mix, preds_mix, return_indices_ranked_by_score=True)
+    assert isinstance(issues_ranked, np.ndarray)
+
+    # return_indices_ranked_by_score=False tests boolean mask
+    issues_mask = find_label_issues(labels_mix, preds_mix, return_indices_ranked_by_score=False)
+    assert isinstance(issues_mask, np.ndarray)
+    assert issues_mask.shape == (2,)
+
+    # get_label_quality_scores with empty labels
+    scores = get_label_quality_scores(labels_mix, preds_mix)
+    assert isinstance(scores, np.ndarray)
+    assert scores.shape == (2,)
+
+
+def test_calculate_true_positives_false_positives_empty_preds():
+    pred_empty = np.empty((0, 5))
+    lab_bboxes = np.array([[1, 1, 6, 6], [3, 3, 8, 8]])
+    tp, fp, fn = _calculate_true_positives_false_positives(
+        pred_empty, lab_bboxes, return_false_negative=True
+    )
+    assert tp.shape == (1, 0)
+    assert fp.shape == (1, 0)
+    assert fn.shape == (1, 2)
+    assert np.array_equal(fn, np.array([[1.0, 1.0]]))
+
+    tp, fp = _calculate_true_positives_false_positives(
+        pred_empty, lab_bboxes, return_false_negative=False
+    )
+    assert tp.shape == (1, 0)
+    assert fp.shape == (1, 0)

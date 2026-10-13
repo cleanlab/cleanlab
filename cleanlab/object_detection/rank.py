@@ -247,8 +247,12 @@ def _prune_by_threshold(
 
 def _separate_label(label: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
     """Separates labels into bounding box and class label lists."""
-    bboxes = label["bboxes"]
-    labels = label["labels"]
+    bboxes = np.asarray(label.get("bboxes", []))
+    if bboxes.size == 0 or bboxes.ndim == 1:
+        bboxes = bboxes.reshape(-1, 4) if bboxes.size > 0 else np.empty((0, 4))
+    labels = np.asarray(label.get("labels", []))
+    if labels.ndim == 0 and labels.size > 0:
+        labels = labels.reshape(1)
     return bboxes, labels
 
 
