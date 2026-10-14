@@ -173,7 +173,7 @@ def _find_label_issues(
         scores = get_label_quality_scores(labels, predictions)
         sorted_scores_idx = issues_from_scores(scores, threshold=1.0)
         is_issue_idx = np.where(is_issue == True)[0]
-        sorted_issue_mask = np.in1d(sorted_scores_idx, is_issue_idx, assume_unique=True)
+        sorted_issue_mask = np.isin(sorted_scores_idx, is_issue_idx, assume_unique=True)
         issue_idx = sorted_scores_idx[sorted_issue_mask]
         return issue_idx
     else:
@@ -307,8 +307,9 @@ def _filter_by_class(
     pred_bboxes = [prediction[class_num] for prediction in predictions]
     lab_bboxes = []
     for label in labels:
-        gt_inds = label["labels"] == class_num
-        lab_bboxes.append(label["bboxes"][gt_inds, :])
+        bboxes, lab_labels = _separate_label(label)
+        gt_inds = lab_labels == class_num
+        lab_bboxes.append(bboxes[gt_inds, :])
     return pred_bboxes, lab_bboxes
 
 
@@ -332,6 +333,13 @@ def _calculate_true_positives_false_positives(
         false_positives[...] = 1
         if return_false_negative:
             return true_positives, false_positives, np.array([], dtype=np.float32)
+        else:
+            return true_positives, false_positives
+
+    if num_preds == 0:
+        if return_false_negative:
+            false_negatives = np.ones((num_scales, num_labels), dtype=np.float32)
+            return true_positives, false_positives, false_negatives
         else:
             return true_positives, false_positives
     ious = _get_overlap_matrix(pred_bboxes, lab_bboxes)

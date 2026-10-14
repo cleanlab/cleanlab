@@ -26,7 +26,6 @@ from cleanlab.internal.object_detection_utils import (
     assert_valid_inputs,
 )
 
-
 if TYPE_CHECKING:  # pragma: no cover
     from typing import TypedDict
 
@@ -144,11 +143,9 @@ def issues_from_scores(label_quality_scores: np.ndarray, *, threshold: float = 0
     """
 
     if threshold > 1.0:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             Threshold is a cutoff of label_quality_scores and therefore should be <= 1.
-            """
-        )
+            """)
 
     issue_indices = np.argwhere(label_quality_scores <= threshold).flatten()
     issue_vals = label_quality_scores[issue_indices]
@@ -247,8 +244,12 @@ def _prune_by_threshold(
 
 def _separate_label(label: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
     """Separates labels into bounding box and class label lists."""
-    bboxes = label["bboxes"]
-    labels = label["labels"]
+    bboxes = np.asarray(label.get("bboxes", []))
+    if bboxes.size == 0 or bboxes.ndim == 1:
+        bboxes = bboxes.reshape(-1, 4) if bboxes.size > 0 else np.empty((0, 4))
+    labels = np.asarray(label.get("labels", []))
+    if labels.ndim == 0 and labels.size > 0:
+        labels = labels.reshape(1)
     return bboxes, labels
 
 
