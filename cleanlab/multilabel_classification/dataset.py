@@ -236,7 +236,9 @@ def overall_multilabel_health_score(
         A overall score between 0 and 1, where 1 implies all labels in the dataset are estimated to be correct.
         A score of 0.5 implies that half of the dataset's labels are estimated to have issues.
     """
-    num_examples = _get_num_examples_multilabel(labels=labels)
+    num_examples = _get_num_examples_multilabel(
+        labels=labels, confident_joint=confident_joint
+    )
     issues = find_label_issues(
         labels=labels, pred_probs=pred_probs, confident_joint=confident_joint
     )
@@ -273,7 +275,9 @@ def multilabel_health_summary(
     from cleanlab.internal.util import smart_display_dataframe
 
     if num_examples is None:
-        num_examples = _get_num_examples_multilabel(labels=labels)
+        num_examples = _get_num_examples_multilabel(
+            labels=labels, confident_joint=confident_joint
+        )
 
     if verbose:
         longest_line = f"|   for your dataset with {num_examples:,} examples "
