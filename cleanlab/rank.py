@@ -570,13 +570,26 @@ def get_confidence_weighted_entropy_for_each_label(
     """
 
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
-    self_confidence = np.clip(self_confidence, a_min=CLIPPING_LOWER_BOUND, a_max=None)
 
     # Divide entropy by self confidence
-    label_quality_scores = get_normalized_entropy(pred_probs) / self_confidence
+    entropy = get_normalized_entropy(pred_probs)
+    with np.errstate(over="ignore"):
+        entropy_scores = np.divide(
+            entropy,
+            self_confidence,
+            out=np.full_like(entropy, np.inf),
+            where=self_confidence != 0,
+        )
 
-    # Rescale
-    clipped_scores = np.clip(label_quality_scores, a_min=CLIPPING_LOWER_BOUND, a_max=None)
-    label_quality_scores = np.log(label_quality_scores + 1) / clipped_scores
+    # log(1 + x) / x tends to one at zero and to zero at infinity.
+    label_quality_scores = np.zeros_like(entropy_scores)
+    np.divide(
+        np.log1p(entropy_scores),
+        entropy_scores,
+        out=label_quality_scores,
+        where=(entropy_scores != 0) & np.isfinite(entropy_scores),
+    )
+    label_quality_scores[entropy_scores == 0] = 1.0
+    label_quality_scores[np.isnan(entropy)] = np.nan
 
     return label_quality_scores

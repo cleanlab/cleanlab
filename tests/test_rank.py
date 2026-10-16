@@ -109,6 +109,78 @@ def test_get_self_confidence_for_each_label():
     assert most_confident_label not in label_errors
 
 
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+@pytest.mark.parametrize("num_classes", [2, 3])
+@pytest.mark.parametrize("epsilon", [0.0, 1e-8, 1e-12])
+def test_confidence_weighted_entropy_near_certain_predictions(dtype, num_classes, epsilon):
+    labels = np.arange(num_classes)
+    pred_probs = np.full((num_classes, num_classes), epsilon / (num_classes - 1), dtype=dtype)
+    pred_probs[np.arange(num_classes), labels] = 1 - epsilon
+    original = pred_probs.copy()
+
+    scores = rank.get_label_quality_scores(labels, pred_probs, method="confidence_weighted_entropy")
+
+    np.testing.assert_allclose(scores, np.ones(num_classes), atol=1e-5)
+    np.testing.assert_array_equal(pred_probs, original)
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+@pytest.mark.parametrize("num_classes", [2, 3])
+def test_confidence_weighted_entropy_incorrect_one_hot_predictions(dtype, num_classes):
+    labels = np.arange(num_classes)
+    pred_probs = np.roll(np.eye(num_classes, dtype=dtype), 1, axis=1)
+
+    scores = rank.get_label_quality_scores(labels, pred_probs, method="confidence_weighted_entropy")
+
+    np.testing.assert_array_equal(scores, np.zeros(num_classes))
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+@pytest.mark.parametrize("num_classes", [2, 3])
+@pytest.mark.parametrize("epsilon", [1e-16, 1e-20, 1e-30])
+def test_confidence_weighted_entropy_near_certain_incorrect_predictions(
+    dtype, num_classes, epsilon
+):
+    labels = np.arange(num_classes)
+    pred_probs = np.full((num_classes, num_classes), epsilon / (num_classes - 1), dtype=dtype)
+    pred_probs[np.arange(num_classes), (labels + 1) % num_classes] = 1 - epsilon
+    original = pred_probs.copy()
+
+    scores = rank.get_label_quality_scores(labels, pred_probs, method="confidence_weighted_entropy")
+
+    assert np.isfinite(scores).all()
+    assert (scores < 0.2).all()
+    np.testing.assert_array_equal(pred_probs, original)
+
+
+@pytest.mark.parametrize(
+    "labels, pred_probs",
+    [
+        ([0, 1], [[np.nan, np.nan], [0.2, 0.8]]),
+        ([0, 2], [[0.0, np.nan, 1.0], [0.1, 0.2, 0.7]]),
+    ],
+)
+def test_confidence_weighted_entropy_nan_predictions(labels, pred_probs):
+    labels = np.array(labels)
+    pred_probs = np.array(pred_probs)
+
+    scores = rank.get_label_quality_scores(labels, pred_probs, method="confidence_weighted_entropy")
+
+    assert np.isnan(scores[0])
+    assert np.isfinite(scores[1])
+
+
+def test_confidence_weighted_entropy_rescaling():
+    labels = np.array([0, 1])
+    pred_probs = np.array([[0.9, 0.1], [0.3, 0.7]])
+    entropy = -(pred_probs * np.log(pred_probs)).sum(axis=1) / np.log(2)
+    ratios = entropy / pred_probs[np.arange(2), labels]
+
+    scores = rank.get_label_quality_scores(labels, pred_probs, method="confidence_weighted_entropy")
+
+    np.testing.assert_allclose(scores, np.log1p(ratios) / ratios)
+
+
 def test_bad_rank_by_parameter_error():
     with pytest.raises(ValueError) as e:
         _ = rank.order_label_issues(
