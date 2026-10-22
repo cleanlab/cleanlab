@@ -233,6 +233,34 @@ def test_ensemble_scoring_func(method, adjust_pred_probs, weight_ensemble_member
         ).all(), f"Test failed with scoring method: {method}"
 
 
+@pytest.mark.parametrize("labels", [[0, 1], [0, 2], [1, 2], [0, 1, 2]])
+@pytest.mark.parametrize(
+    "weighting, expected",
+    [("uniform", 0.45), ("accuracy", 0.6), ("custom", 0.45), ("log_loss_search", 0.5)],
+)
+def test_ensemble_scoring_missing_classes(labels, weighting, expected):
+    labels = np.array(labels)
+    pred_probs_list = []
+    for confidence in [0.6, 0.3]:
+        pred_probs = np.full((len(labels), 3), (1 - confidence) / 2)
+        pred_probs[np.arange(len(labels)), labels] = confidence
+        pred_probs_list.append(pred_probs)
+
+    # At t=0 both models have equal weight; at t=1 their weights are 2/3 and 1/3.
+    # The latter gives higher probability to every given label, so the search
+    # must choose it and return 2/3 * 0.6 + 1/3 * 0.3 = 0.5.
+    scores = rank.get_label_quality_ensemble_scores(
+        labels,
+        pred_probs_list,
+        weight_ensemble_members_by=weighting,
+        custom_weights=np.array([0.5, 0.5]) if weighting == "custom" else None,
+        log_loss_search_T_values=[0.0, 1.0],
+        verbose=False,
+    )
+
+    np.testing.assert_allclose(scores, expected)
+
+
 def test_bad_weight_ensemble_members_by_parameter_error():
     with pytest.raises(ValueError) as e:
         labels = data["labels"]
