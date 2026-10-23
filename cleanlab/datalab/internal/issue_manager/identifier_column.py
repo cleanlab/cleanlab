@@ -19,6 +19,7 @@ class IdentifierColumnIssueManager(IssueManager):
    the identifier_column issue
    """
     issue_name: ClassVar[str] = "identifier_column"
+    accepted_args: ClassVar[List[str]] = ["features"]
     verbosity_levels = {
         0: [],
         1: ["identifier_columns"],

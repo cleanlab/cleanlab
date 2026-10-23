@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 import numpy as np
 import pandas as pd
 
@@ -37,6 +37,7 @@ class RegressionLabelIssueManager(IssueManager):
     """
 
     issue_name: ClassVar[str] = "label"
+    accepted_args: ClassVar[List[str]] = ["features", "predictions"]
     verbosity_levels = {
         0: [],
         1: [],

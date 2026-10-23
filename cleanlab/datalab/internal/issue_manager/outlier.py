@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple, Union
 
 from scipy.sparse import csr_matrix
 from scipy.stats import iqr
@@ -9,6 +9,7 @@ import pandas as pd
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.datalab.internal.issue_manager.knn_graph_helpers import knn_exists, set_knn_graph
+from cleanlab.datalab.internal.task import Task
 from cleanlab.internal.outlier import correct_precision_errors
 from cleanlab.outlier import OutOfDistribution, transform_distances_to_scores
 
@@ -28,6 +29,11 @@ class OutlierIssueManager(IssueManager):
     (i.e. potentially out-of-distribution or rare/anomalous instances).
     """
     issue_name: ClassVar[str] = "outlier"
+    accepted_args: ClassVar[Union[List[str], Dict[Task, List[str]]]] = {
+        Task.CLASSIFICATION: ["pred_probs", "features", "knn_graph"],
+        Task.REGRESSION: ["features", "knn_graph"],
+        Task.MULTILABEL: ["features", "knn_graph"],
+    }
     verbosity_levels = {
         0: [],
         1: [],

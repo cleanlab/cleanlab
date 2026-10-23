@@ -29,6 +29,7 @@ class NearDuplicateIssueManager(IssueManager):
     represented as vectors (i.e. feature embeddings).
     """
     issue_name: ClassVar[str] = "near_duplicate"
+    accepted_args: ClassVar[List[str]] = ["features", "knn_graph"]
     verbosity_levels = {
         0: [],
         1: [],

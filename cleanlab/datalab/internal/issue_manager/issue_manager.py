@@ -2,11 +2,25 @@ from __future__ import annotations
 
 from abc import ABC, ABCMeta, abstractmethod
 from itertools import chain
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Set, Tuple, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 import json
 
 import numpy as np
 import pandas as pd
+
+from cleanlab.datalab.internal.task import Task
 
 if TYPE_CHECKING:  # pragma: no cover
     from cleanlab.datalab.datalab import Datalab
@@ -105,6 +119,35 @@ class IssueManager(ABC, metaclass=IssueManagerMeta):
     """Returns a key that is used to store issue summary results about the assigned Lab."""
     issue_score_key: ClassVar[str]
     """Returns a key that is used to store issue score results about the assigned Lab."""
+    accepted_args: ClassVar[Optional[Union[List[str], Dict[Task, List[str]]]]] = None
+    """Accepted keyword argument names for the find_issues method (e.g. ['pred_probs', 'features'])."""
+
+    @classmethod
+    def get_accepted_args(cls, task: Optional[Task] = None) -> List[str]:
+        """Returns the list of argument names accepted by this IssueManager for find_issues."""
+        if cls.accepted_args is not None:
+            if isinstance(cls.accepted_args, dict):
+                if task is not None and task in cls.accepted_args:
+                    return cls.accepted_args[task]
+                return list(cls.accepted_args.values())[0] if cls.accepted_args else []
+            return list(cls.accepted_args)
+
+        # Fallback to inspecting find_issues signature
+        import inspect
+
+        sig = inspect.signature(cls.find_issues)
+        args = [
+            param.name
+            for param in sig.parameters.values()
+            if param.name not in ("self", "kwargs", "args")
+            and param.kind
+            in (
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                inspect.Parameter.KEYWORD_ONLY,
+            )
+        ]
+        return args
+
     verbosity_levels: ClassVar[Dict[int, List[str]]] = {
         0: [],
         1: [],

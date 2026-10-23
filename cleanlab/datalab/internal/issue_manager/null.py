@@ -26,6 +26,7 @@ class NullIssueManager(IssueManager):
     ] = """Examples identified with the null issue correspond to rows that have null/missing values across all feature columns (i.e. the entire row is missing values).
         """
     issue_name: ClassVar[str] = "null"
+    accepted_args: ClassVar[List[str]] = ["features"]
     verbosity_levels = {
         0: [],
         1: [],
