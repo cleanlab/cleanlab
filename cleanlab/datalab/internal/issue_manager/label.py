@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
@@ -44,6 +44,7 @@ class LabelIssueManager(IssueManager):
     """
 
     issue_name: ClassVar[str] = "label"
+    accepted_args: ClassVar[List[str]] = ["pred_probs", "features"]
     verbosity_levels = {
         0: [],
         1: [],

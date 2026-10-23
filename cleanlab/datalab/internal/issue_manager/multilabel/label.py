@@ -35,6 +35,7 @@ class MultilabelIssueManager(IssueManager):
     """Internal variable specifying threshold for predicted label."""
 
     issue_name: ClassVar[str] = "label"
+    accepted_args: ClassVar[List[str]] = ["pred_probs"]
     verbosity_levels = {
         0: [],
         1: [],

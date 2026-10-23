@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Union, Tuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Union, Tuple
 import warnings
 import inspect
 
@@ -49,6 +49,7 @@ class UnderperformingGroupIssueManager(IssueManager):
     are particularly poor (loss evaluation over this subpopulation is high).
     """
     issue_name: ClassVar[str] = "underperforming_group"
+    accepted_args: ClassVar[List[str]] = ["pred_probs", "features", "knn_graph", "cluster_ids"]
     verbosity_levels = {
         0: [],
         1: [],

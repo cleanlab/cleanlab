@@ -242,3 +242,95 @@ class TestRegressionIssueFinder:
                 "features": "features",
             },
         }
+
+
+class TestDynamicIssueTypeArgumentMapping:
+    """Tests for dynamic resolution of accepted arguments for IssueManagers."""
+
+    def test_default_accepted_args(self):
+        from cleanlab.datalab.internal.issue_manager import (
+            ClassImbalanceIssueManager,
+            DataValuationIssueManager,
+            LabelIssueManager,
+            NearDuplicateIssueManager,
+            NonIIDIssueManager,
+            NullIssueManager,
+            OutlierIssueManager,
+        )
+        from cleanlab.datalab.internal.issue_manager.regression import RegressionLabelIssueManager
+        from cleanlab.datalab.internal.issue_manager.multilabel.label import MultilabelIssueManager
+
+        assert LabelIssueManager.get_accepted_args() == ["pred_probs", "features"]
+        assert RegressionLabelIssueManager.get_accepted_args() == ["features", "predictions"]
+        assert MultilabelIssueManager.get_accepted_args() == ["pred_probs"]
+        assert ClassImbalanceIssueManager.get_accepted_args() == []
+        assert NullIssueManager.get_accepted_args() == ["features"]
+        assert NearDuplicateIssueManager.get_accepted_args() == ["features", "knn_graph"]
+        assert DataValuationIssueManager.get_accepted_args() == ["features", "knn_graph"]
+
+        # Task-specific arguments
+        assert OutlierIssueManager.get_accepted_args(Task.CLASSIFICATION) == ["pred_probs", "features", "knn_graph"]
+        assert OutlierIssueManager.get_accepted_args(Task.REGRESSION) == ["features", "knn_graph"]
+        assert NonIIDIssueManager.get_accepted_args(Task.CLASSIFICATION) == ["pred_probs", "features", "knn_graph"]
+        assert NonIIDIssueManager.get_accepted_args(Task.REGRESSION) == ["features", "knn_graph"]
+
+    def test_dynamic_custom_manager_with_accepted_args(self, monkeypatch):
+        import pandas as pd
+        from cleanlab.datalab.internal.issue_finder import _get_task_args_dict
+        from cleanlab.datalab.internal.issue_manager import IssueManager
+        from cleanlab.datalab.internal.issue_manager_factory import REGISTRY, register
+
+        @register
+        class CustomAcceptedArgsManager(IssueManager):
+            issue_name = "custom_accepted"
+            accepted_args = ["features", "custom_param"]
+
+            def find_issues(self, features=None, custom_param=None, **kwargs):
+                self.issues = pd.DataFrame({"is_custom_accepted_issue": [False] * len(self.datalab.labels)})
+                self.summary = pd.DataFrame({"issue_type": ["custom_accepted"], "num_issues": [0]})
+
+            def collect_info(self, datalab):
+                return {}
+
+        try:
+            args_dict = _get_task_args_dict(Task.CLASSIFICATION)
+            assert "custom_accepted" in args_dict
+            assert args_dict["custom_accepted"] == ["features", "custom_param"]
+
+            lab = Datalab(data={"y": [0, 1, 0, 1]}, label_name="y")
+            finder = IssueFinder(datalab=lab, task=Task.CLASSIFICATION)
+            available = finder.get_available_issue_types(
+                features=np.array([[1], [2], [3], [4]]),
+                custom_param="value",
+                issue_types={"custom_accepted": {}},
+            )
+            assert "custom_accepted" in available
+            assert available["custom_accepted"]["custom_param"] == "value"
+        finally:
+            REGISTRY[Task.CLASSIFICATION].pop("custom_accepted", None)
+
+    def test_dynamic_custom_manager_signature_fallback(self):
+        import pandas as pd
+        from cleanlab.datalab.internal.issue_finder import _get_task_args_dict
+        from cleanlab.datalab.internal.issue_manager import IssueManager
+        from cleanlab.datalab.internal.issue_manager_factory import REGISTRY, register
+
+        @register
+        class CustomSignatureManager(IssueManager):
+            issue_name = "custom_signature"
+            # accepted_args is None by default, should inspect find_issues
+
+            def find_issues(self, features=None, special_input=None, **kwargs):
+                self.issues = pd.DataFrame({"is_custom_signature_issue": [False] * len(self.datalab.labels)})
+                self.summary = pd.DataFrame({"issue_type": ["custom_signature"], "num_issues": [0]})
+
+            def collect_info(self, datalab):
+                return {}
+
+        try:
+            args_dict = _get_task_args_dict(Task.CLASSIFICATION)
+            assert "custom_signature" in args_dict
+            assert args_dict["custom_signature"] == ["features", "special_input"]
+        finally:
+            REGISTRY[Task.CLASSIFICATION].pop("custom_signature", None)
+

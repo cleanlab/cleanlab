@@ -70,9 +70,47 @@ _MULTILABEL_ARGS_DICT = {
 }
 
 
+def _get_task_args_dict(task: Task) -> Dict[str, list[str]]:
+    """Dynamically resolves accepted arguments for each registered issue type for a given task."""
+    from cleanlab.datalab.internal.issue_manager_factory import REGISTRY
+
+    fallback_dict = {
+        Task.CLASSIFICATION: _CLASSIFICATION_ARGS_DICT,
+        Task.REGRESSION: _REGRESSION_ARGS_DICT,
+        Task.MULTILABEL: _MULTILABEL_ARGS_DICT,
+    }.get(task, {})
+
+    args_dict = fallback_dict.copy()
+    task_registry = REGISTRY.get(task, {})
+    for issue_type, manager_cls in task_registry.items():
+        if hasattr(manager_cls, "get_accepted_args"):
+            args_dict[issue_type] = manager_cls.get_accepted_args(task=task)
+        elif hasattr(manager_cls, "accepted_args") and manager_cls.accepted_args is not None:
+            accepted = manager_cls.accepted_args
+            if isinstance(accepted, dict):
+                args_dict[issue_type] = accepted.get(task, [])
+            else:
+                args_dict[issue_type] = list(accepted)
+        else:
+            import inspect
+
+            sig = inspect.signature(manager_cls.find_issues)
+            args_dict[issue_type] = [
+                param.name
+                for param in sig.parameters.values()
+                if param.name not in ("self", "kwargs", "args")
+                and param.kind
+                in (
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    inspect.Parameter.KEYWORD_ONLY,
+                )
+            ]
+    return args_dict
+
+
 def _resolve_required_args_for_classification(**kwargs):
     """Resolves the required arguments for each issue type intended for classification tasks."""
-    initial_args_dict = _CLASSIFICATION_ARGS_DICT.copy()
+    initial_args_dict = _get_task_args_dict(Task.CLASSIFICATION)
     args_dict = {
         issue_type: {arg: kwargs.get(arg, None) for arg in initial_args_dict[issue_type]}
         for issue_type in initial_args_dict
@@ -80,7 +118,7 @@ def _resolve_required_args_for_classification(**kwargs):
 
     # Some issue types (like class-imbalance) have no required args.
     # This conditional lambda is used to include them in args dict.
-    keep_empty_argument = lambda k: not len(_CLASSIFICATION_ARGS_DICT[k])
+    keep_empty_argument = lambda k: not len(initial_args_dict.get(k, []))
 
     # Remove None values from argument list, rely on default values in IssueManager
     args_dict = {
@@ -114,14 +152,14 @@ def _resolve_required_args_for_classification(**kwargs):
 
 def _resolve_required_args_for_regression(**kwargs):
     """Resolves the required arguments for each issue type intended for regression tasks."""
-    initial_args_dict = _REGRESSION_ARGS_DICT.copy()
+    initial_args_dict = _get_task_args_dict(Task.REGRESSION)
     args_dict = {
         issue_type: {arg: kwargs.get(arg, None) for arg in initial_args_dict[issue_type]}
         for issue_type in initial_args_dict
     }
     # Some issue types have no required args.
     # This conditional lambda is used to include them in args dict.
-    keep_empty_argument = lambda k: not len(_REGRESSION_ARGS_DICT[k])
+    keep_empty_argument = lambda k: not len(initial_args_dict.get(k, []))
 
     # Remove None values from argument list, rely on default values in IssueManager
     args_dict = {
@@ -139,14 +177,14 @@ def _resolve_required_args_for_regression(**kwargs):
 
 def _resolve_required_args_for_multilabel(**kwargs):
     """Resolves the required arguments for each issue type intended for multilabel tasks."""
-    initial_args_dict = _MULTILABEL_ARGS_DICT.copy()
+    initial_args_dict = _get_task_args_dict(Task.MULTILABEL)
     args_dict = {
         issue_type: {arg: kwargs.get(arg, None) for arg in initial_args_dict[issue_type]}
         for issue_type in initial_args_dict
     }
     # Some issue types have no required args.
     # This conditional lambda is used to include them in args dict.
-    keep_empty_argument = lambda k: not len(_MULTILABEL_ARGS_DICT[k])
+    keep_empty_argument = lambda k: not len(initial_args_dict.get(k, []))
 
     # Remove None values from argument list, rely on default values in IssueManager
     args_dict = {
@@ -305,7 +343,8 @@ class IssueFinder:
 
         failed_managers = []
         data_issues = self.datalab.data_issues
-        for issue_manager, arg_dict in zip(new_issue_managers, issue_types_copy.values()):
+        for issue_manager in new_issue_managers:
+            arg_dict = issue_types_copy.get(issue_manager.issue_name, {})
             try:
                 if self.verbosity:
                     print(f"Finding {issue_manager.issue_name} issues ...")

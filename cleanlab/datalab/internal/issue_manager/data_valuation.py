@@ -74,6 +74,7 @@ class DataValuationIssueManager(IssueManager):
     """
 
     issue_name: ClassVar[str] = "data_valuation"
+    accepted_args: ClassVar[List[str]] = ["features", "knn_graph"]
     issue_score_key: ClassVar[str]
     verbosity_levels: ClassVar[Dict[int, List[str]]] = {
         0: [],

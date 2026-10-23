@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, List
 
 import numpy as np
 import pandas as pd
@@ -28,6 +28,7 @@ class ClassImbalanceIssueManager(IssueManager):
     )
 
     issue_name: ClassVar[str] = "class_imbalance"
+    accepted_args: ClassVar[List[str]] = []
     verbosity_levels = {
         0: ["Rarest Class"],
         1: [],

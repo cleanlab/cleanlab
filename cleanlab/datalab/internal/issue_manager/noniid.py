@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Union, cast
 import itertools
 
 from scipy.stats import gaussian_kde
@@ -10,6 +10,7 @@ from scipy.sparse import csr_matrix
 
 from cleanlab.datalab.internal.issue_manager import IssueManager
 from cleanlab.datalab.internal.issue_manager.knn_graph_helpers import knn_exists, set_knn_graph
+from cleanlab.datalab.internal.task import Task
 
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
@@ -94,6 +95,11 @@ class NonIIDIssueManager(IssueManager):
     tend to have more similar feature values.
     """
     issue_name: ClassVar[str] = "non_iid"
+    accepted_args: ClassVar[Union[List[str], Dict[Task, List[str]]]] = {
+        Task.CLASSIFICATION: ["pred_probs", "features", "knn_graph"],
+        Task.REGRESSION: ["features", "knn_graph"],
+        Task.MULTILABEL: ["features", "knn_graph"],
+    }
     verbosity_levels = {
         0: ["p-value"],
         1: [],
