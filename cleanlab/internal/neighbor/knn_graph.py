@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 from cleanlab.internal.neighbor.metric import decide_default_metric
 from cleanlab.internal.neighbor.search import construct_knn
 
-
 DEFAULT_K = 10
 """Default number of neighbors to consider in the k-nearest neighbors search,
 unless the size of the feature array is too small or the user specifies a different value.
@@ -379,8 +378,10 @@ def correct_knn_distances_and_indices_with_exact_duplicate_sets_inplace(
             # Get indices and distances from knn that are not the same as i
             different_point_mask = np.isin(indices[duplicate_inds], duplicate_inds, invert=True)
 
-            # Get the indices of the first m True values in each row of the mask
-            true_indices = np.argsort(~different_point_mask, axis=1)[:, :-num_same_included]
+            # Preserve distance order among the nonduplicate neighbors.
+            true_indices = np.argsort(~different_point_mask, axis=1, kind="stable")[
+                :, :-num_same_included
+            ]
 
             # Copy the values to the last m columns in dists
             distances[duplicate_inds, -(k - num_same_included) :] = distances[

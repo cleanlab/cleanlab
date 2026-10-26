@@ -93,3 +93,23 @@ class TestDataShapleyKNNScore:
         assert scores.shape == (len(labels),)
         assert np.all(scores >= -1)
         assert np.all(scores <= 1)
+
+
+def test_data_shapley_duplicate_features_match_distance_ordered_graph():
+    features = np.r_[0.0, np.arange(24.0)].reshape(-1, 1)
+    labels = np.arange(len(features)) % 2
+    labels[1] = 0
+    k = 20
+    graph, _ = create_knn_graph_and_index(features, n_neighbors=k, metric="euclidean")
+
+    # Preserve neighbor membership and tie order; only restore distance order.
+    ordered_graph = graph.copy()
+    distances = graph.data.reshape(len(features), k)
+    indices = graph.indices.reshape(len(features), k)
+    order = np.argsort(distances, axis=1, kind="stable")
+    ordered_graph.data[:] = np.take_along_axis(distances, order, axis=1).ravel()
+    ordered_graph.indices[:] = np.take_along_axis(indices, order, axis=1).ravel()
+
+    expected = data_shapley_knn(labels, knn_graph=ordered_graph, k=k)
+    actual = data_shapley_knn(labels, features=features, metric="euclidean", k=k)
+    np.testing.assert_allclose(actual, expected, rtol=0, atol=1e-15)
