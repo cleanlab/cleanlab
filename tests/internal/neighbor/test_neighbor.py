@@ -459,3 +459,17 @@ def test_construct_knn_then_correct_knn_graph_does_the_same_work():
     )
     # knn_graph_from_index does not have correction
     assert not np.all(knn_graph_from_index.toarray() == knn_graph.toarray())
+
+
+@pytest.mark.parametrize("k", [10, 20, 30])
+def test_duplicate_correction_preserves_distance_order(k):
+    features = np.r_[0.0, np.arange(34.0)].reshape(-1, 1)
+    graph, _ = create_knn_graph_and_index(features, n_neighbors=k, metric="euclidean")
+    distances = graph.data.reshape(len(features), k)
+    indices = graph.indices.reshape(len(features), k)
+
+    assert np.all(np.diff(distances, axis=1) >= 0)
+    np.testing.assert_array_equal(distances[:2], np.tile(np.arange(k), (2, 1)))
+    np.testing.assert_allclose(distances, np.abs(features[:, None, 0] - features[indices, 0]))
+    assert indices[0, 0] == 1
+    assert indices[1, 0] == 0
