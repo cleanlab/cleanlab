@@ -22,10 +22,10 @@ faiss-cpu==1.8.0
 datasets>=2.14.6
 xgboost
 matplotlib==3.7.4  # TODO: uncap version
-huggingface_hub==0.26.5  # TODO: uncap version
+huggingface_hub>=0.17.0
 torch==2.1.2  # TODO: uncap version
 torchvision==0.16.2  # TODO: uncap version
 torchaudio==2.1.2  # TODO: uncap version
 timm==0.9.12  # TODO: uncap version
 seaborn==0.13.2  # TODO: uncap version
-scikit-learn==1.5.2  # TODO: uncap version
+scikit-learn>=1.1
