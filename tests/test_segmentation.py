@@ -287,6 +287,26 @@ def test_issues_from_scores_no_pixel_scores():
     assert np.shape(issues_from_score_result) == (num_images,)
 
 
+@pytest.mark.parametrize(
+    "image_scores, threshold, expected_indices",
+    [
+        ([0.9, 0.1, 0.4], 0.5, [1, 2]),
+        ([0.8, 0.5, 0.1], 0.5, [2]),
+        ([0.5, 0.1, 0.5, 0.8], 0.5, [1]),
+        ([0.9, 0.6, 0.8], 0.5, []),
+        ([0.2, 0.0, 0.1], 0.5, [1, 2, 0]),
+        ([], 0.5, []),
+        ([0.2, 0.0, 0.7], 0.0, []),
+        ([0.4, 1.0, 0.0], 1.0, [2, 0]),
+        ([1.0, 1.0], 1.0, []),
+        ([0.4, 0.9, 0.0], 1.0, [2, 0, 1]),
+    ],
+)
+def test_issues_from_scores_image_threshold(image_scores, threshold, expected_indices):
+    issues = issues_from_scores(np.array(image_scores), threshold=threshold)
+    np.testing.assert_array_equal(issues, expected_indices)
+
+
 def test_issues_from_scores_various_thresholds():
     # Test if function works correctly for various values of threshold
     image_scores_softmin, pixel_scores = get_label_quality_scores(

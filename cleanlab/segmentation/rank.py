@@ -183,7 +183,7 @@ def issues_from_scores(
 
     ranking = np.argsort(image_scores)
     cutoff = np.searchsorted(image_scores[ranking], threshold)
-    return ranking[: cutoff + 1]
+    return ranking[:cutoff]
 
 
 def _get_label_quality_per_image(pixel_scores, method=None, temperature=0.1):
