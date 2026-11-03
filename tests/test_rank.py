@@ -124,9 +124,7 @@ def test_order_label_issues_single_class_normalized_margin():
     issues_mask = np.array([True, True, True])
 
     np.testing.assert_array_equal(
-        rank.order_label_issues(
-            issues_mask, labels, pred_probs, rank_by="normalized_margin"
-        ),
+        rank.order_label_issues(issues_mask, labels, pred_probs, rank_by="normalized_margin"),
         [2, 1, 0],
     )
 
