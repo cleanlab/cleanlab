@@ -9,10 +9,10 @@ name = "cleanlab"
 # requirements files see:
 # https://packaging.python.org/en/latest/discussions/install-requires-vs-requirements/
 dependencies = [
-  "numpy>=1.22",
-  "scikit-learn>=1.1",
+  "numpy>=1.23.5",
+  "scikit-learn>=1.1.3",
   "tqdm>=4.53.0",
-  "pandas>=1.4.0",
+  "pandas>=1.5.3",
   "termcolor>=2.4.0",
 ]
 description = "The standard package for data-centric AI, machine learning with label errors, and automatically finding and fixing dataset issues in Python."
@@ -31,7 +31,6 @@ classifiers = [
   "Natural Language :: English",
   # We believe this package works will these versions, but we do not guarantee it!
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -44,7 +43,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 # What does your project relate to?
 keywords = [
   "machine_learning",

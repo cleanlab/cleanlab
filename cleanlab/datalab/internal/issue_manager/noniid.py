@@ -84,9 +84,7 @@ class NonIIDIssueManager(IssueManager):
 
     """
 
-    description: ClassVar[
-        str
-    ] = """Whether the dataset exhibits statistically significant
+    description: ClassVar[str] = """Whether the dataset exhibits statistically significant
     violations of the IID assumption like:
     changepoints or shift, drift, autocorrelation, etc.
     The specific violation considered is whether the

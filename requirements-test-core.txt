@@ -10,5 +10,7 @@ scipy
 typing-extensions>=4.8.0
 wget
 matplotlib
-pillow
+# Security fixes in these releases require Python 3.11 or newer.
+pillow>=13.0.0
+filelock>=4.2.1
 psutil
