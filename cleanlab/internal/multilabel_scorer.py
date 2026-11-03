@@ -3,7 +3,19 @@ Helper classes and functions used internally to compute label quality scores in 
 """
 
 from enum import Enum
-from typing import Callable, Dict, Optional, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterator,
+    Optional,
+    ParamSpec,
+    Protocol,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 from sklearn.model_selection import cross_val_predict
@@ -16,9 +28,30 @@ from cleanlab.rank import (
     get_normalized_margin_for_each_label,
     get_self_confidence_for_each_label,
 )
+from cleanlab.typing import DatasetLike
+
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+_AggregationMethod = Callable[..., np.ndarray]
 
 
-class _Wrapper:
+class _CrossValidationSplitter(Protocol):
+    """Structural interface required by the multilabel split helper."""
+
+    def split(self, X: np.ndarray, y: np.ndarray) -> Iterator[Tuple[np.ndarray, np.ndarray]]: ...
+
+
+class _MultilabelClassifier(Protocol):
+    """Estimator interface used when obtaining cross-validated probabilities."""
+
+    def fit(self, X: DatasetLike, y: np.ndarray) -> "_MultilabelClassifier": ...
+
+    def predict_proba(self, X: DatasetLike) -> np.ndarray: ...
+
+    def get_params(self, deep: bool = True) -> Dict[str, Any]: ...
+
+
+class _Wrapper(Generic[_P, _R]):
     """Helper class for wrapping callable functions as attributes of an Enum instead of
     setting them as methods of the Enum class.
 
@@ -27,13 +60,13 @@ class _Wrapper:
     other cases where functions are used for enumeration values.
     """
 
-    def __init__(self, f: Callable) -> None:
+    def __init__(self, f: Callable[_P, _R]) -> None:
         self.f = f
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: _P.args, **kwargs: _P.kwargs) -> _R:
         return self.f(*args, **kwargs)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.f.__name__
 
 
@@ -62,7 +95,7 @@ class ClassLabelScorer(Enum):
     cleanlab.rank.get_confidence_weighted_entropy_for_each_label
     """
 
-    def __call__(self, labels: np.ndarray, pred_probs: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, labels: np.ndarray, pred_probs: np.ndarray, **kwargs: Any) -> np.ndarray:
         """Returns the label-quality scores for each datapoint based on the given labels and predicted probabilities.
 
         See the documentation for each method for more details.
@@ -87,7 +120,7 @@ class ClassLabelScorer(Enum):
         return self.value(labels, pred_probs)
 
     def _adjust_pred_probs(
-        self, labels: np.ndarray, pred_probs: np.ndarray, **kwargs
+        self, labels: np.ndarray, pred_probs: np.ndarray, **kwargs: Any
     ) -> np.ndarray:
         """Returns adjusted predicted probabilities by subtracting the class confident thresholds and renormalizing.
 
@@ -136,7 +169,7 @@ def exponential_moving_average(
     *,
     alpha: Optional[float] = None,
     axis: int = 1,
-    **_,
+    **_: Any,
 ) -> np.ndarray:
     r"""Exponential moving average (EMA) score aggregation function.
 
@@ -197,7 +230,8 @@ def exponential_moving_average(
     if not (0 <= alpha <= 1):
         raise ValueError(f"alpha must be in the interval [0, 1], got {alpha}")
     s_T = s_sorted.T
-    s_ema, s_next = s_T[0], s_T[1:]
+    s_ema: np.ndarray = s_T[0]
+    s_next = s_T[1:]
     for s_i in s_next:
         s_ema = alpha * s_i + (1 - alpha) * s_ema
     return s_ema
@@ -208,7 +242,7 @@ def softmin(
     *,
     temperature: float = 0.1,
     axis: int = 1,
-    **_,
+    **_: Any,
 ) -> np.ndarray:
     """Softmin score aggregation function.
 
@@ -228,9 +262,10 @@ def softmin(
         Softmin score.
     """
 
-    return np.einsum(
+    scores: np.ndarray = np.einsum(
         "ij,ij->i", s, softmax(x=1 - s, temperature=temperature, axis=axis, shift=True)
     )
+    return scores
 
 
 class Aggregator:
@@ -248,12 +283,12 @@ class Aggregator:
         Additional keyword arguments to pass to the aggregation function when it is called.
     """
 
-    possible_methods: Dict[str, Callable[..., np.ndarray]] = {
+    possible_methods: Dict[str, _AggregationMethod] = {
         "exponential_moving_average": exponential_moving_average,
         "softmin": softmin,
     }
 
-    def __init__(self, method: Union[str, Callable], **kwargs):
+    def __init__(self, method: Union[str, _AggregationMethod], **kwargs: Any) -> None:
         if isinstance(method, str):  # convert to callable
             if method in self.possible_methods:
                 method = self.possible_methods[method]
@@ -267,7 +302,7 @@ class Aggregator:
         self.kwargs = kwargs
 
     @staticmethod
-    def _validate_method(method) -> None:
+    def _validate_method(method: object) -> None:
         if not callable(method):
             raise TypeError(f"Expected callable method, got {type(method)}")
 
@@ -278,7 +313,7 @@ class Aggregator:
                 f"Expected 2D array for scores, got {type(scores)} with shape {scores.shape}"
             )
 
-    def __call__(self, scores: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, scores: np.ndarray, **kwargs: Any) -> np.ndarray:
         """Returns the label quality scores for each datapoint based on the given label quality scores for each class.
 
         Parameters
@@ -296,7 +331,7 @@ class Aggregator:
         updated_kwargs = {**self.kwargs, **kwargs}
         return self.method(scores, **updated_kwargs)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Aggregator(method={self.method.__name__}, kwargs={self.kwargs})"
 
 
@@ -328,10 +363,12 @@ class MultilabelScorer:
     def __init__(
         self,
         base_scorer: ClassLabelScorer = ClassLabelScorer.SELF_CONFIDENCE,
-        aggregator: Union[Aggregator, Callable] = Aggregator(exponential_moving_average, alpha=0.8),
+        aggregator: Union[Aggregator, _AggregationMethod] = Aggregator(
+            exponential_moving_average, alpha=0.8
+        ),
         *,
         strict: bool = True,
-    ):
+    ) -> None:
         self.base_scorer = base_scorer
         if not isinstance(aggregator, Aggregator):
             self.aggregator = Aggregator(aggregator)
@@ -343,8 +380,8 @@ class MultilabelScorer:
         self,
         labels: np.ndarray,
         pred_probs: np.ndarray,
-        base_scorer_kwargs: Optional[dict] = None,
-        **aggregator_kwargs,
+        base_scorer_kwargs: Optional[Dict[str, Any]] = None,
+        **aggregator_kwargs: Any,
     ) -> np.ndarray:
         """
         Computes a quality score for each label in a multi-label classification problem
@@ -400,7 +437,7 @@ class MultilabelScorer:
     def aggregate(
         self,
         class_label_quality_scores: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> np.ndarray:
         """Aggregates the label quality scores for each class into a single overall label quality score for each example.
 
@@ -445,7 +482,7 @@ class MultilabelScorer:
         self,
         labels: np.ndarray,
         pred_probs: np.ndarray,
-        base_scorer_kwargs: Optional[dict] = None,
+        base_scorer_kwargs: Optional[Dict[str, Any]] = None,
     ) -> np.ndarray:
         """Computes separate label quality scores for each class.
 
@@ -503,12 +540,12 @@ class MultilabelScorer:
 
 
 def get_label_quality_scores(
-    labels,
-    pred_probs,
+    labels: np.ndarray,
+    pred_probs: np.ndarray,
     *,
     method: MultilabelScorer = MultilabelScorer(),
-    base_scorer_kwargs: Optional[dict] = None,
-    **aggregator_kwargs,
+    base_scorer_kwargs: Optional[Dict[str, Any]] = None,
+    **aggregator_kwargs: Any,
 ) -> np.ndarray:
     """Computes a quality score for each label in a multi-label classification problem
     based on out-of-sample predicted probabilities.
@@ -594,13 +631,21 @@ def multilabel_py(y: np.ndarray) -> np.ndarray:
 # Cross-validation helpers
 
 
-def _get_split_generator(labels, cv):
+def _get_split_generator(
+    labels: np.ndarray, cv: _CrossValidationSplitter
+) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
     _, multilabel_ids = np.unique(labels, axis=0, return_inverse=True)
     split_generator = cv.split(X=multilabel_ids, y=multilabel_ids)
     return split_generator
 
 
-def get_cross_validated_multilabel_pred_probs(X, labels: np.ndarray, *, clf, cv) -> np.ndarray:
+def get_cross_validated_multilabel_pred_probs(
+    X: DatasetLike,
+    labels: np.ndarray,
+    *,
+    clf: _MultilabelClassifier,
+    cv: _CrossValidationSplitter,
+) -> np.ndarray:
     """Get predicted probabilities for a multi-label classifier via cross-validation.
 
     Note
@@ -648,5 +693,7 @@ def get_cross_validated_multilabel_pred_probs(X, labels: np.ndarray, *, clf, cv)
     >>> get_cross_validated_multilabel_pred_probs(X, labels, clf=clf, cv=cv)
     """
     split_generator = _get_split_generator(labels, cv)
-    pred_probs = cross_val_predict(clf, X, labels, cv=split_generator, method="predict_proba")
+    pred_probs: np.ndarray = cross_val_predict(
+        clf, X, labels, cv=split_generator, method="predict_proba"
+    )
     return pred_probs

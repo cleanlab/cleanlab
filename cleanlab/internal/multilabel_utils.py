@@ -41,7 +41,7 @@ def stack_complement(pred_prob_slice: np.ndarray) -> np.ndarray:
 
 
 def get_onehot_num_classes(
-    labels: list, pred_probs: Optional[np.ndarray] = None
+    labels: List[List[int]], pred_probs: Optional[np.ndarray] = None
 ) -> Tuple[np.ndarray, int]:
     """Returns OneHot encoding of MultiLabel Data, and number of classes"""
     num_classes = get_num_classes(labels=labels, pred_probs=pred_probs)
@@ -54,7 +54,7 @@ def get_onehot_num_classes(
     return y_one, num_classes
 
 
-def int2onehot(labels: list, K: int) -> np.ndarray:
+def int2onehot(labels: List[List[int]], K: int) -> np.ndarray:
     """Convert multi-label classification `labels` from a ``List[List[int]]`` format to a onehot matrix.
     This returns a binarized format of the labels as a multi-hot vector for each example, where the entries in this vector are 1 for each class that applies to this example and 0 otherwise.
 
@@ -69,7 +69,8 @@ def int2onehot(labels: list, K: int) -> np.ndarray:
     from sklearn.preprocessing import MultiLabelBinarizer
 
     mlb = MultiLabelBinarizer(classes=range(K))
-    return mlb.fit_transform(labels)
+    onehot: np.ndarray = mlb.fit_transform(labels)
+    return onehot
 
 
 def onehot2int(onehot_matrix: np.ndarray) -> List[List[int]]:
