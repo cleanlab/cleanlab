@@ -2,7 +2,7 @@
 Helper functions used internally for segmentation tasks.
 """
 
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 import numpy as np
 
@@ -10,7 +10,7 @@ import numpy as np
 def _get_valid_optional_params(
     batch_size: Optional[int] = None,
     n_jobs: Optional[int] = None,
-):
+) -> Tuple[int, Optional[int]]:
     """Takes in optional args and returns good values for them if they are None."""
     if batch_size is None:
         batch_size = 10000
@@ -24,7 +24,7 @@ def _get_summary_optional_params(
     class_names: Optional[List[str]] = None,
     exclude: Optional[List[int]] = None,
     top: Optional[int] = None,
-):
+) -> Tuple[Optional[List[str]], List[int], int]:
     """Takes in optional args and returns good values for them if they are None for summary functions."""
     if exclude is None:
         exclude = []
