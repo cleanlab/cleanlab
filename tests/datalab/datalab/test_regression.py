@@ -4,7 +4,6 @@ import pytest
 from sklearn.neighbors import NearestNeighbors
 from cleanlab.datalab.datalab import Datalab
 
-
 SEED = 42
 
 
