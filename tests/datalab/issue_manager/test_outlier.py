@@ -98,6 +98,46 @@ class TestOutlierIssueManager:
 
         assert issue_manager.threshold == pytest.approx(0.66666, abs=0.01)
 
+    @pytest.mark.parametrize("method", ["entropy", "least_confidence", "gen"])
+    @pytest.mark.parametrize("adjust_pred_probs", [True, False])
+    def test_collect_pred_probs_info(self, lab, method, adjust_pred_probs):
+        """Prediction diagnostics describe the original probabilities for every scoring method."""
+        pred_probs = np.array(
+            [
+                [0.25, 0.725, 0.025],
+                [0.37, 0.42, 0.21],
+                [0.05, 0.05, 0.9],
+                [0.1, 0.05, 0.85],
+                [0.1125, 0.65, 0.2375],
+            ]
+        )
+        original_pred_probs = pred_probs.copy()
+        lab.find_issues(
+            pred_probs=pred_probs,
+            issue_types={
+                "outlier": {"method": method, "adjust_pred_probs": adjust_pred_probs, "M": 3}
+            },
+        )
+        info = lab.get_info("outlier")
+        assert info["predicted_class"] == [1, 1, 2, 2, 1]
+        assert info["max_pred_probs"] == pytest.approx([0.725, 0.42, 0.9, 0.85, 0.65])
+        assert info["find_issues_inputs"]["pred_probs"]
+        assert "nearest_neighbor" not in info
+        np.testing.assert_array_equal(pred_probs, original_pred_probs)
+
+    @pytest.mark.parametrize("provide_pred_probs", [False, True])
+    def test_feature_info_excludes_prediction_diagnostics(self, lab, embeddings, provide_pred_probs):
+        """Unused probabilities do not produce misleading prediction diagnostics."""
+        kwargs = {"pred_probs": np.full((5, 3), 1 / 3)} if provide_pred_probs else {}
+        lab.find_issues(
+            features=embeddings["embedding"], issue_types={"outlier": {"k": 3}}, **kwargs
+        )
+        info = lab.get_info("outlier")
+        assert "predicted_class" not in info
+        assert "max_pred_probs" not in info
+        assert info["nearest_neighbor"] == [3, 0, 3, 0, 2]
+        assert not info["find_issues_inputs"]["pred_probs"]
+
     def test_report(self, issue_manager):
         pred_probs = np.array(
             [
