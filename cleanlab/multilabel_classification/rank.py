@@ -14,7 +14,6 @@ from cleanlab.internal.util import get_num_classes
 from cleanlab.internal.multilabel_utils import int2onehot
 from cleanlab.internal.multilabel_scorer import MultilabelScorer, ClassLabelScorer, Aggregator
 
-
 if TYPE_CHECKING:  # pragma: no cover
     import numpy.typing as npt
 
@@ -38,7 +37,7 @@ def _create_multilabel_scorer(
     method: str,
     adjust_pred_probs: bool,
     aggregator_kwargs: Optional[Dict[str, Any]] = None,
-) -> Tuple[MultilabelScorer, Dict]:
+) -> Tuple[MultilabelScorer, Dict[str, Any]]:
     """This function acts as a factory that creates a MultilabelScorer."""
     base_scorer = ClassLabelScorer.from_str(method)
     base_scorer_kwargs = {"adjust_pred_probs": adjust_pred_probs}

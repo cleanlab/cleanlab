@@ -1,5 +1,6 @@
 import itertools
 import typing
+from functools import partial
 
 import numpy as np
 import pytest
@@ -196,6 +197,15 @@ class TestAggregator:
     @pytest.fixture
     def base_scores(self):
         return np.array([[0.6, 0.3, 0.7, 0.1, 0.9]])
+
+    @pytest.mark.parametrize(
+        "method,expected_name", [(np.mean, "mean"), (partial(np.mean), "functools.partial")]
+    )
+    @pytest.mark.parametrize("factory", [ml_scorer._Wrapper, ml_scorer.Aggregator])
+    def test_callable_repr(self, base_scores, method, expected_name, factory):
+        wrapped = factory(method)
+        assert expected_name in repr(wrapped)
+        np.testing.assert_allclose(wrapped(base_scores, axis=1), np.mean(base_scores, axis=1))
 
     @pytest.mark.parametrize(
         "method",
