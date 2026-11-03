@@ -534,6 +534,10 @@ def get_normalized_margin_for_each_label(
 
     self_confidence = get_self_confidence_for_each_label(labels, pred_probs)
     N, K = pred_probs.shape
+    if K == 1:
+        # No competing class exists, so its maximum probability is zero.
+        return (self_confidence + 1) / 2
+
     del_indices = np.arange(N) * K + labels
     max_prob_not_label = np.max(
         np.delete(pred_probs, del_indices, axis=None).reshape(N, K - 1), axis=-1
