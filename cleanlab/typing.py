@@ -1,4 +1,4 @@
-from typing import Any, Callable, Union
+from typing import Any, Callable, Dict, Iterator, Protocol, Tuple, Union
 import numpy as np
 import pandas as pd
 
@@ -8,6 +8,23 @@ LabelLike = Union[list, np.ndarray, pd.Series, pd.DataFrame]
 
 DatasetLike = Any
 """Type for objects that behave like datasets."""
+
+
+class CrossValidationSplitter(Protocol):
+    """Structural interface for cross-validation splitters (e.g. ``sklearn.model_selection.KFold``)."""
+
+    def split(self, X: np.ndarray, y: np.ndarray) -> Iterator[Tuple[np.ndarray, np.ndarray]]: ...
+
+
+class MultilabelClassifier(Protocol):
+    """Estimator interface used when obtaining cross-validated predicted probabilities."""
+
+    def fit(self, X: DatasetLike, y: np.ndarray) -> object: ...
+
+    def predict_proba(self, X: DatasetLike) -> np.ndarray: ...
+
+    def get_params(self, deep: bool = True) -> Dict[str, Any]: ...
+
 
 ###########################################################
 # Types aliases used in cleanlab/internal/neighbor/ modules

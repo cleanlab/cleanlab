@@ -11,7 +11,6 @@ from typing import (
     Iterator,
     Optional,
     ParamSpec,
-    Protocol,
     Tuple,
     TypeVar,
     Union,
@@ -28,27 +27,11 @@ from cleanlab.rank import (
     get_normalized_margin_for_each_label,
     get_self_confidence_for_each_label,
 )
-from cleanlab.typing import DatasetLike
+from cleanlab.typing import CrossValidationSplitter, DatasetLike, MultilabelClassifier
 
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
 _AggregationMethod = Callable[..., np.ndarray]
-
-
-class _CrossValidationSplitter(Protocol):
-    """Structural interface required by the multilabel split helper."""
-
-    def split(self, X: np.ndarray, y: np.ndarray) -> Iterator[Tuple[np.ndarray, np.ndarray]]: ...
-
-
-class _MultilabelClassifier(Protocol):
-    """Estimator interface used when obtaining cross-validated probabilities."""
-
-    def fit(self, X: DatasetLike, y: np.ndarray) -> "_MultilabelClassifier": ...
-
-    def predict_proba(self, X: DatasetLike) -> np.ndarray: ...
-
-    def get_params(self, deep: bool = True) -> Dict[str, Any]: ...
 
 
 class _Wrapper(Generic[_P, _R]):
@@ -67,7 +50,7 @@ class _Wrapper(Generic[_P, _R]):
         return self.f(*args, **kwargs)
 
     def __repr__(self) -> str:
-        return self.f.__name__
+        return getattr(self.f, "__name__", repr(self.f))
 
 
 class ClassLabelScorer(Enum):
@@ -332,7 +315,8 @@ class Aggregator:
         return self.method(scores, **updated_kwargs)
 
     def __repr__(self) -> str:
-        return f"Aggregator(method={self.method.__name__}, kwargs={self.kwargs})"
+        method_name = getattr(self.method, "__name__", repr(self.method))
+        return f"Aggregator(method={method_name}, kwargs={self.kwargs})"
 
 
 class MultilabelScorer:
@@ -632,7 +616,7 @@ def multilabel_py(y: np.ndarray) -> np.ndarray:
 
 
 def _get_split_generator(
-    labels: np.ndarray, cv: _CrossValidationSplitter
+    labels: np.ndarray, cv: CrossValidationSplitter
 ) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
     _, multilabel_ids = np.unique(labels, axis=0, return_inverse=True)
     split_generator = cv.split(X=multilabel_ids, y=multilabel_ids)
@@ -643,8 +627,8 @@ def get_cross_validated_multilabel_pred_probs(
     X: DatasetLike,
     labels: np.ndarray,
     *,
-    clf: _MultilabelClassifier,
-    cv: _CrossValidationSplitter,
+    clf: MultilabelClassifier,
+    cv: CrossValidationSplitter,
 ) -> np.ndarray:
     """Get predicted probabilities for a multi-label classifier via cross-validation.
 

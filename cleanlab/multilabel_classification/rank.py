@@ -37,7 +37,7 @@ def _create_multilabel_scorer(
     method: str,
     adjust_pred_probs: bool,
     aggregator_kwargs: Optional[Dict[str, Any]] = None,
-) -> Tuple[MultilabelScorer, Dict[str, bool]]:
+) -> Tuple[MultilabelScorer, Dict[str, Any]]:
     """This function acts as a factory that creates a MultilabelScorer."""
     base_scorer = ClassLabelScorer.from_str(method)
     base_scorer_kwargs = {"adjust_pred_probs": adjust_pred_probs}

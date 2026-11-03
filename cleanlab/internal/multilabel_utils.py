@@ -2,7 +2,7 @@
 Helper functions used internally for multi-label classification tasks.
 """
 
-from typing import List, Optional, Tuple
+from typing import Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -54,7 +54,7 @@ def get_onehot_num_classes(
     return y_one, num_classes
 
 
-def int2onehot(labels: List[List[int]], K: int) -> np.ndarray:
+def int2onehot(labels: Sequence[Iterable[int]], K: int) -> np.ndarray:
     """Convert multi-label classification `labels` from a ``List[List[int]]`` format to a onehot matrix.
     This returns a binarized format of the labels as a multi-hot vector for each example, where the entries in this vector are 1 for each class that applies to this example and 0 otherwise.
 
