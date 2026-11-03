@@ -23,7 +23,6 @@ from cleanlab.datalab.internal.issue_manager.knn_graph_helpers import num_neighb
 from cleanlab.datalab.internal.report import Reporter
 from cleanlab.datalab.internal.task import Task
 
-
 SEED = 42
 
 

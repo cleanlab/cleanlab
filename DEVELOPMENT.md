@@ -5,6 +5,8 @@ This document explains how to set up a development environment for
 
 ## Setting up a virtual environment
 
+Use Python 3.11 or newer for development and testing.
+
 While this is not required, we recommend that you do development and testing in
 a virtual environment. There are a number of tools to do this, including
 [uv](https://docs.astral.sh/uv/), [virtualenv](https://virtualenv.pypa.io/),

@@ -3,7 +3,7 @@ Module that handles the string representation of Datalab objects.
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Type, Union
 
 from cleanlab.datalab.internal.task import Task
 
@@ -28,10 +28,10 @@ class RepresentationStrategy(ABC):
         return self.data_issues.get_info("statistics").get("num_classes")
 
     @property
-    def issues_identified(self) -> str:
-        return (
-            self.data_issues.issue_summary["num_issues"].sum() if self.checks_run else "Not checked"
-        )
+    def issues_identified(self) -> Union[int, str]:
+        if self.checks_run:
+            return int(self.data_issues.issue_summary["num_issues"].sum())
+        return "Not checked"
 
     def show_task(self, task: "Task") -> str:
         return f"task={str(task).capitalize()}"

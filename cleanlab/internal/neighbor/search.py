@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 from sklearn.neighbors import NearestNeighbors
 
-
 if TYPE_CHECKING:
 
     from cleanlab.typing import Metric
