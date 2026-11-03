@@ -100,6 +100,45 @@ def test_get_normalized_margin_for_each_label():
     assert most_confident_label not in label_errors
 
 
+@pytest.mark.parametrize(
+    "pred_probs, expected",
+    [
+        (np.array([[1.0], [0.9], [0.8]]), np.array([1.0, 0.95, 0.9])),
+        (np.ones((3, 1)), np.ones(3)),
+    ],
+)
+def test_normalized_margin_single_class(pred_probs, expected):
+    labels = np.zeros(len(pred_probs), dtype=int)
+
+    np.testing.assert_allclose(
+        rank.get_normalized_margin_for_each_label(labels, pred_probs), expected
+    )
+    np.testing.assert_allclose(
+        rank.get_label_quality_scores(labels, pred_probs, method="normalized_margin"), expected
+    )
+
+
+def test_order_label_issues_single_class_normalized_margin():
+    labels = np.array([0, 0, 0])
+    pred_probs = np.array([[1.0], [0.9], [0.8]])
+    issues_mask = np.array([True, True, True])
+
+    np.testing.assert_array_equal(
+        rank.order_label_issues(issues_mask, labels, pred_probs, rank_by="normalized_margin"),
+        [2, 1, 0],
+    )
+
+
+def test_normalized_margin_multiclass_regression():
+    labels = np.array([0, 1, 0])
+    pred_probs = np.array([[0.8, 0.2], [0.3, 0.7], [0.4, 0.6]])
+
+    np.testing.assert_allclose(
+        rank.get_normalized_margin_for_each_label(labels, pred_probs),
+        [0.8, 0.7, 0.4],
+    )
+
+
 def test_get_self_confidence_for_each_label():
     scores = rank.get_self_confidence_for_each_label(data["labels"], data["pred_probs"])
     label_errors = np.arange(len(data["labels"]))[data["label_errors_mask"]]
