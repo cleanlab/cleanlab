@@ -142,7 +142,9 @@ class TestOutlierIssueManager:
         assert info["max_pred_probs"] == pytest.approx([0.7, 0.8, 1.0, 0.9, 0.8])
 
     @pytest.mark.parametrize("provide_pred_probs", [False, True])
-    def test_feature_info_excludes_prediction_diagnostics(self, lab, embeddings, provide_pred_probs):
+    def test_feature_info_excludes_prediction_diagnostics(
+        self, lab, embeddings, provide_pred_probs
+    ):
         """Unused probabilities do not produce misleading prediction diagnostics."""
         kwargs = {"pred_probs": np.full((5, 3), 1 / 3)} if provide_pred_probs else {}
         lab.find_issues(
