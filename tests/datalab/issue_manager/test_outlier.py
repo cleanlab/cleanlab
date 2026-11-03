@@ -127,7 +127,13 @@ class TestOutlierIssueManager:
         """The prediction diagnostics are accessible through Datalab's public API."""
         lab.find_issues(
             pred_probs=np.array(
-                [[0.2, 0.7, 0.1], [0.1, 0.8, 0.1], [0, 0, 1], [0.9, 0.05, 0.05], [0.1, 0.1, 0.8]]
+                [
+                    [0.2, 0.7, 0.1],
+                    [0.1, 0.8, 0.1],
+                    [0, 0, 1],
+                    [0.9, 0.05, 0.05],
+                    [0.1, 0.1, 0.8],
+                ]
             ),
             issue_types={"outlier": {}},
         )
@@ -139,9 +145,7 @@ class TestOutlierIssueManager:
     def test_feature_info_excludes_prediction_diagnostics(self, lab, embeddings, provide_pred_probs):
         """Unused probabilities do not produce misleading prediction diagnostics."""
         kwargs = {"pred_probs": np.full((5, 3), 1 / 3)} if provide_pred_probs else {}
-        lab.find_issues(
-            features=embeddings["embedding"], issue_types={"outlier": {"k": 3}}, **kwargs
-        )
+        lab.find_issues(features=embeddings["embedding"], issue_types={"outlier": {"k": 3}}, **kwargs)
         info = lab.get_info("outlier")
         assert "predicted_class" not in info
         assert "max_pred_probs" not in info
