@@ -20,11 +20,16 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class OutlierIssueManager(IssueManager):
-    """Manages issues related to out-of-distribution examples."""
+    """Manages issues related to out-of-distribution examples.
 
-    description: ClassVar[
-        str
-    ] = """Examples that are very different from the rest of the dataset
+    For prediction-probability-based detection, ``info`` additionally contains
+    ``predicted_class`` (the zero-based column index with the highest probability)
+    and ``max_pred_probs`` (that probability), as lists in dataset order. These
+    diagnostics describe the original probabilities, before any adjustment by
+    confident thresholds, regardless of the outlier scoring method.
+    """
+
+    description: ClassVar[str] = """Examples that are very different from the rest of the dataset
     (i.e. potentially out-of-distribution or rare/anomalous instances).
     """
     issue_name: ClassVar[str] = "outlier"
@@ -180,7 +185,9 @@ class OutlierIssueManager(IssueManager):
 
         self.summary = self.make_summary(score=scores.mean())
 
-        self.info = self.collect_info(issue_threshold=issue_threshold, knn_graph=knn_graph, knn=knn)
+        self.info = self.collect_info(
+            issue_threshold=issue_threshold, knn_graph=knn_graph, knn=knn, pred_probs=pred_probs
+        )
 
     def _knn_graph_works(self, features, kwargs, statistics, k: int) -> bool:
         """Decide whether to skip the knn-based outlier detection and rely on pred_probs instead."""
@@ -214,6 +221,7 @@ class OutlierIssueManager(IssueManager):
         issue_threshold: float,
         knn_graph: Optional[csr_matrix],
         knn: Optional["NearestNeighbors"],
+        pred_probs: Optional[np.ndarray] = None,
     ) -> dict:
         issues_dict = {
             "average_ood_score": self.issues[self.issue_score_key].mean(),
@@ -241,8 +249,13 @@ class OutlierIssueManager(IssueManager):
                 }
             )
 
-        if self.ood.params["confident_thresholds"] is not None:
-            pass  #
+        if knn_graph is None and pred_probs is not None:
+            pred_probs_issues_dict.update(
+                {
+                    "predicted_class": pred_probs.argmax(axis=1).tolist(),
+                    "max_pred_probs": pred_probs.max(axis=1).tolist(),
+                }
+            )
         statistics_dict = self._build_statistics_dictionary(knn_graph=knn_graph)
         ood_params_dict = {
             "ood": self.ood,

@@ -120,7 +120,7 @@ class MultilabelIssueManager(IssueManager):
             },
         )
         # Get a summarized dataframe of the label issues
-        self.summary = self.make_summary(score=scores.mean())
+        self.summary = self.make_summary(score=float(scores.mean()))
 
         # Collect info about the label issues
         self.info = self.collect_info(self.datalab.labels, predicted_labels)

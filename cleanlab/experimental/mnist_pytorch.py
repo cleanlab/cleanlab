@@ -16,7 +16,6 @@ from torch.autograd import Variable
 from torch.utils.data.sampler import SubsetRandomSampler
 import numpy as np
 
-
 MNIST_TRAIN_SIZE = 60000
 MNIST_TEST_SIZE = 10000
 SKLEARN_DIGITS_TRAIN_SIZE = 1247

@@ -99,7 +99,7 @@ class ImagelabDataIssuesAdapter(DataIssues):
                 f"Overwriting columns {overwrite_columns} in self.issues with "
                 f"columns from imagelab."
             )
-            self.issues.drop(columns=overwrite_columns, inplace=True)
+            self.issues = self.issues.drop(columns=overwrite_columns)
         new_columnns = list(set(imagelab.issues.columns).difference(self.issues.columns))
         self.issues = self.issues.join(imagelab.issues[new_columnns], how="outer")
 
@@ -135,7 +135,7 @@ class ImagelabDataIssuesAdapter(DataIssues):
             imagelab_summary_copy, int(IMAGELAB_ISSUES_MAX_PREVALENCE * len(self.issues))
         )
 
-        imagelab_summary_copy.rename({"num_images": "num_issues"}, axis=1, inplace=True)
+        imagelab_summary_copy = imagelab_summary_copy.rename(columns={"num_images": "num_issues"})
         self.issue_summary = pd.concat(
             [self.issue_summary, imagelab_summary_copy], axis=0, ignore_index=True
         )
