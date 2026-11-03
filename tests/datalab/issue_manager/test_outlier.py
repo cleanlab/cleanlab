@@ -112,18 +112,28 @@ class TestOutlierIssueManager:
             ]
         )
         original_pred_probs = pred_probs.copy()
-        lab.find_issues(
-            pred_probs=pred_probs,
-            issue_types={
-                "outlier": {"method": method, "adjust_pred_probs": adjust_pred_probs, "M": 3}
-            },
+        issue_manager = OutlierIssueManager(
+            datalab=lab, method=method, adjust_pred_probs=adjust_pred_probs, M=3
         )
-        info = lab.get_info("outlier")
+        issue_manager.find_issues(pred_probs=pred_probs)
+        info = issue_manager.info
         assert info["predicted_class"] == [1, 1, 2, 2, 1]
         assert info["max_pred_probs"] == pytest.approx([0.725, 0.42, 0.9, 0.85, 0.65])
         assert info["find_issues_inputs"]["pred_probs"]
         assert "nearest_neighbor" not in info
         np.testing.assert_array_equal(pred_probs, original_pred_probs)
+
+    def test_pred_probs_info_available_from_datalab(self, lab):
+        """The prediction diagnostics are accessible through Datalab's public API."""
+        lab.find_issues(
+            pred_probs=np.array(
+                [[0.2, 0.7, 0.1], [0.1, 0.8, 0.1], [0, 0, 1], [0.9, 0.05, 0.05], [0.1, 0.1, 0.8]]
+            ),
+            issue_types={"outlier": {}},
+        )
+        info = lab.get_info("outlier")
+        assert info["predicted_class"] == [1, 1, 2, 0, 2]
+        assert info["max_pred_probs"] == pytest.approx([0.7, 0.8, 1.0, 0.9, 0.8])
 
     @pytest.mark.parametrize("provide_pred_probs", [False, True])
     def test_feature_info_excludes_prediction_diagnostics(self, lab, embeddings, provide_pred_probs):
