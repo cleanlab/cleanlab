@@ -7,11 +7,43 @@ from cleanlab.datalab.internal.issue_manager.underperforming_group import (
     UnderperformingGroupIssueManager,
 )
 from sklearn.datasets import make_blobs, load_iris
+from cleanlab import Datalab
 
 SEED = 42
 
 
 class TestUnderperformingGroupIssueManager:
+    @pytest.mark.parametrize("threshold", [0.3, 0.5])
+    @pytest.mark.parametrize("group_ids", [(0, 1, 2), (1, 0, 2)])
+    def test_worst_group_is_independent_of_cluster_ids(self, threshold, group_ids):
+        """The lowest-confidence group determines the issue mask and summary score."""
+        labels = np.tile([0, 1], 15)
+        confidence = np.repeat([0.1, 0.15, 0.95], 10)
+        pred_probs = np.empty((30, 2))
+        pred_probs[np.arange(30), labels] = confidence
+        pred_probs[np.arange(30), 1 - labels] = 1 - confidence
+        cluster_ids = np.repeat(group_ids, 10)
+        lab = Datalab({"label": labels}, label_name="label")
+
+        lab.find_issues(
+            pred_probs=pred_probs,
+            issue_types={
+                "underperforming_group": {"cluster_ids": cluster_ids, "threshold": threshold}
+            },
+        )
+
+        issues = lab.get_issues("underperforming_group")
+        # Mean confidence is 0.4; the two below-average groups score 0.25 and 0.375.
+        np.testing.assert_array_equal(issues["is_underperforming_group_issue"], np.arange(30) < 10)
+        np.testing.assert_allclose(
+            issues["underperforming_group_score"], np.repeat([0.25, 0.375, 1.0], 10)
+        )
+        summary = lab.get_issue_summary("underperforming_group")
+        assert summary["score"].iloc[0] == pytest.approx(0.25)
+        assert summary["num_issues"].iloc[0] == 10
+        stats = lab.get_info("underperforming_group")["clustering"]["stats"]
+        assert stats["underperforming_cluster_id"] == group_ids[0]
+
     def generate_pred_probs(self, N, K, labels, noisy=False):
         pred_probs = np.full((N, K), 0.1)
         pred_probs[np.arange(N), labels] = 0.9
