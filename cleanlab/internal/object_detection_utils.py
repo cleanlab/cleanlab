@@ -40,10 +40,8 @@ def assert_valid_aggregation_weights(aggregation_weights: Dict[str, Any]) -> Non
     """assert aggregation weights are in the proper format"""
     weights = np.array(list(aggregation_weights.values()))
     if (not np.isclose(np.sum(weights), 1.0)) or (np.min(weights) < 0.0):
-        raise ValueError(
-            f"""Aggregation weights should be non-negative and must sum to 1.0
-                """
-        )
+        raise ValueError(f"""Aggregation weights should be non-negative and must sum to 1.0
+                """)
 
 
 def assert_valid_inputs(
@@ -74,16 +72,12 @@ def assert_valid_inputs(
 
     valid_methods = ["objectlab"]
     if method is not None and method not in valid_methods:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             {method} is not a valid object detection scoring method!
             Please choose a valid scoring_method: {valid_methods}
-            """
-        )
+            """)
 
     if threshold is not None and threshold > 1.0:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             Threshold is a cutoff of predicted probabilities and therefore should be <= 1.
-            """
-        )
+            """)

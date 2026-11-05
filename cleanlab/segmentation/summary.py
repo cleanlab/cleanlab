@@ -131,13 +131,13 @@ def display_issues(
             axes_list = cast(List[Axes], axes) if isinstance(axes, np.ndarray) else [axes]
 
         # First image - Given truth labels
-        if labels is not None and plot_index < len(axes_list):
+        if labels is not None and cmap is not None and plot_index < len(axes_list):
             axes_list[plot_index].imshow(cmap[labels[i]])
             axes_list[plot_index].set_title("Given Labels")
             plot_index += 1
 
         # Second image - Argmaxed pred_probs
-        if pred_probs is not None and plot_index < len(axes_list):
+        if pred_probs is not None and cmap is not None and plot_index < len(axes_list):
             axes_list[plot_index].imshow(cmap[np.argmax(pred_probs[i], axis=0)])
             axes_list[plot_index].set_title("Argmaxed Prediction Probabilities")
             plot_index += 1

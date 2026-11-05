@@ -20,9 +20,7 @@ if TYPE_CHECKING:  # pragma: no cover
 class NearDuplicateIssueManager(IssueManager):
     """Manages issues related to near-duplicate examples."""
 
-    description: ClassVar[
-        str
-    ] = """A (near) duplicate issue refers to two or more examples in
+    description: ClassVar[str] = """A (near) duplicate issue refers to two or more examples in
     a dataset that are extremely similar to each other, relative
     to the rest of the dataset.  The examples flagged with this issue
     may be exactly duplicated, or lie atypically close together when
