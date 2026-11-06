@@ -42,9 +42,7 @@ class UnderperformingGroupIssueManager(IssueManager):
     >>> lab.find_issues(pred_probs=pred_probs, features=X, issue_types=issue_types)
     """
 
-    description: ClassVar[
-        str
-    ] = """An underperforming group refers to a cluster of similar examples
+    description: ClassVar[str] = """An underperforming group refers to a cluster of similar examples
     (i.e. a slice) in the dataset for which the ML model predictions
     are particularly poor (loss evaluation over this subpopulation is high).
     """
@@ -166,18 +164,13 @@ class UnderperformingGroupIssueManager(IssueManager):
             removing outlier clusters and clusters with less than `self.min_cluster_samples`
             number of datapoints.
         """
-        unique_cluster_ids = np.array(
-            [label for label in set(cluster_ids) if label not in self.OUTLIER_CLUSTER_LABELS]
-        )
-        frequencies = np.bincount(cluster_ids[~np.isin(cluster_ids, self.OUTLIER_CLUSTER_LABELS)])
-        unique_cluster_ids = np.array(
-            [
-                cluster_id
-                for cluster_id in unique_cluster_ids
-                if frequencies[cluster_id] >= self.min_cluster_samples
-            ]
-        )
-        return unique_cluster_ids
+        non_outlier_cluster_ids = cluster_ids[~np.isin(cluster_ids, self.OUTLIER_CLUSTER_LABELS)]
+        if not np.issubdtype(non_outlier_cluster_ids.dtype, np.integer):
+            raise TypeError("cluster_ids must contain integers.")
+        if np.any(non_outlier_cluster_ids < 0):
+            raise ValueError("cluster_ids must be nonnegative except for outlier labels.")
+        unique_cluster_ids, frequencies = np.unique(non_outlier_cluster_ids, return_counts=True)
+        return unique_cluster_ids[frequencies >= self.min_cluster_samples]
 
     def get_underperforming_clusters(
         self,
