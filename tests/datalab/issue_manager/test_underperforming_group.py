@@ -7,11 +7,60 @@ from cleanlab.datalab.internal.issue_manager.underperforming_group import (
     UnderperformingGroupIssueManager,
 )
 from sklearn.datasets import make_blobs, load_iris
+from cleanlab import Datalab
 
 SEED = 42
 
 
 class TestUnderperformingGroupIssueManager:
+    @pytest.mark.parametrize("group_ids", [(0, 1), (0, 2**62), (2**62, 0)])
+    def test_large_cluster_ids_preserve_find_issues(self, group_ids):
+        """Renaming groups with large integer IDs must preserve their detected issues."""
+        labels = np.tile([0, 1], 10)
+        confidence = np.repeat([0.05, 0.95], 10)
+        pred_probs = np.empty((20, 2))
+        pred_probs[np.arange(20), labels] = confidence
+        pred_probs[np.arange(20), 1 - labels] = 1 - confidence
+        cluster_ids = np.repeat(np.array(group_ids, dtype=np.int64), 10)
+        original_cluster_ids = cluster_ids.copy()
+        lab = Datalab({"label": labels}, label_name="label")
+
+        lab.find_issues(
+            pred_probs=pred_probs,
+            issue_types={"underperforming_group": {"cluster_ids": cluster_ids, "threshold": 0.2}},
+        )
+
+        issues = lab.get_issues("underperforming_group")
+        np.testing.assert_array_equal(issues["is_underperforming_group_issue"], np.arange(20) < 10)
+        np.testing.assert_allclose(issues["underperforming_group_score"], np.repeat([0.1, 1.0], 10))
+        summary = lab.get_issue_summary("underperforming_group")
+        assert summary["score"].iloc[0] == pytest.approx(0.1)
+        assert summary["num_issues"].iloc[0] == 10
+        stats = lab.get_info("underperforming_group")["clustering"]["stats"]
+        assert stats["n_clusters"] == 2
+        assert stats["underperforming_cluster_id"] == group_ids[0]
+        np.testing.assert_array_equal(cluster_ids, original_cluster_ids)
+
+    @pytest.mark.parametrize("offset", [0, 2**62])
+    def test_cluster_counts_ignore_numeric_range(self, lab, offset):
+        manager = UnderperformingGroupIssueManager(lab, min_cluster_samples=5)
+        cluster_ids = np.array(
+            [offset + 3] * 5 + [offset + 4] * 6 + [offset + 7] * 4 + [-1] * 7,
+            dtype=np.int64,
+        )
+        np.testing.assert_array_equal(
+            np.sort(manager.filter_cluster_ids(cluster_ids)), [offset + 3, offset + 4]
+        )
+
+    @pytest.mark.parametrize(
+        "cluster_ids, error_type",
+        [(np.array([0.0, 1.0]), TypeError), (np.array([-2, 0]), ValueError)],
+    )
+    def test_cluster_id_validation(self, lab, cluster_ids, error_type):
+        manager = UnderperformingGroupIssueManager(lab)
+        with pytest.raises(error_type):
+            manager.filter_cluster_ids(cluster_ids)
+
     def generate_pred_probs(self, N, K, labels, noisy=False):
         pred_probs = np.full((N, K), 0.1)
         pred_probs[np.arange(N), labels] = 0.9

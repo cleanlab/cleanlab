@@ -42,9 +42,7 @@ class UnderperformingGroupIssueManager(IssueManager):
     >>> lab.find_issues(pred_probs=pred_probs, features=X, issue_types=issue_types)
     """
 
-    description: ClassVar[
-        str
-    ] = """An underperforming group refers to a cluster of similar examples
+    description: ClassVar[str] = """An underperforming group refers to a cluster of similar examples
     (i.e. a slice) in the dataset for which the ML model predictions
     are particularly poor (loss evaluation over this subpopulation is high).
     """
@@ -166,18 +164,13 @@ class UnderperformingGroupIssueManager(IssueManager):
             removing outlier clusters and clusters with less than `self.min_cluster_samples`
             number of datapoints.
         """
-        unique_cluster_ids = np.array(
-            [label for label in set(cluster_ids) if label not in self.OUTLIER_CLUSTER_LABELS]
-        )
-        frequencies = np.bincount(cluster_ids[~np.isin(cluster_ids, self.OUTLIER_CLUSTER_LABELS)])
-        unique_cluster_ids = np.array(
-            [
-                cluster_id
-                for cluster_id in unique_cluster_ids
-                if frequencies[cluster_id] >= self.min_cluster_samples
-            ]
-        )
-        return unique_cluster_ids
+        non_outlier_cluster_ids = cluster_ids[~np.isin(cluster_ids, self.OUTLIER_CLUSTER_LABELS)]
+        if not np.issubdtype(non_outlier_cluster_ids.dtype, np.integer):
+            raise TypeError("cluster_ids must contain integers.")
+        if np.any(non_outlier_cluster_ids < 0):
+            raise ValueError("cluster_ids must be nonnegative except for outlier labels.")
+        unique_cluster_ids, frequencies = np.unique(non_outlier_cluster_ids, return_counts=True)
+        return unique_cluster_ids[frequencies >= self.min_cluster_samples]
 
     def get_underperforming_clusters(
         self,
@@ -198,7 +191,7 @@ class UnderperformingGroupIssueManager(IssueManager):
             Tuple[Dict[int, float], int, float]: (Cluster IDs and their scores, Worst Cluster ID, Worst Cluster Quality Score)
         """
         worst_cluster_ratio = 1.0  # Largest possible probability value
-        worst_cluster_id = min(unique_cluster_ids) - 1
+        worst_cluster_id = int(min(unique_cluster_ids)) - 1
         # For calculating mean_performance of the dataset, choose labels and pred-probs of samples belonging to non-noisy clusters
         filtered_cluster_id_mask = np.isin(cluster_ids, unique_cluster_ids)
         filtered_labels = labels[filtered_cluster_id_mask]
@@ -215,10 +208,12 @@ class UnderperformingGroupIssueManager(IssueManager):
                 cur_cluster_ids, cur_cluster_pred_probs
             ).mean()
             if cluster_performance < mean_performance:
-                cluster_ids_to_score[cluster_id] = cluster_performance / mean_performance
+                cluster_ids_to_score[int(cluster_id)] = float(
+                    cluster_performance / mean_performance
+                )
                 if cluster_performance < worst_cluster_ratio:
                     worst_cluster_ratio = cluster_ids_to_score[cluster_id]
-                    worst_cluster_id = cluster_id
+                    worst_cluster_id = int(cluster_id)
         worst_cluster_id = (
             worst_cluster_id
             if worst_cluster_ratio < self.threshold
