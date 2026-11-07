@@ -82,7 +82,7 @@ def get_label_quality_multiannotator(
     pred_probs : np.ndarray
         An array of shape ``(N, K)`` of predicted class probabilities from a trained classifier model.
         Predicted probabilities in the same format expected by the :py:func:`get_label_quality_scores <cleanlab.rank.get_label_quality_scores>`.
-    consensus_method : str or List[str], default = "majority_vote"
+    consensus_method : str or List[str], default = "best_quality"
         Specifies the method used to aggregate labels from multiple annotators into a single consensus label.
         Options include:
 
