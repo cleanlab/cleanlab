@@ -137,12 +137,10 @@ def _compute_label_quality_scores(
     try:
         scoring_func = scoring_funcs[method]
     except KeyError:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             {method} is not a valid scoring method for rank_by!
             Please choose a valid rank_by: self_confidence, normalized_margin, confidence_weighted_entropy
-            """
-        )
+            """)
     if adjust_pred_probs:
         if method == "confidence_weighted_entropy":
             raise ValueError(f"adjust_pred_probs is not currently supported for {method}.")
@@ -236,23 +234,19 @@ def get_label_quality_ensemble_scores(
     assert len(pred_probs_list) > 0, "pred_probs_list is empty."
 
     if len(pred_probs_list) == 1:
-        warnings.warn(
-            """
+        warnings.warn("""
             pred_probs_list only has one element.
             Consider using get_label_quality_scores() if you only have a single array of pred_probs.
-            """
-        )
+            """)
 
     for pred_probs in pred_probs_list:
         assert_valid_inputs(X=None, y=labels, pred_probs=pred_probs, multi_label=False)
 
     # Raise ValueError if user passed custom_weights array but did not choose weight_ensemble_members_by="custom"
     if custom_weights is not None and weight_ensemble_members_by != "custom":
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             custom_weights provided but weight_ensemble_members_by is not "custom"!
-            """
-        )
+            """)
 
     # This weighting scheme performs search of t in log_loss_search_T_values for "best" log loss
     if weight_ensemble_members_by == "log_loss_search":
@@ -356,12 +350,10 @@ def get_label_quality_ensemble_scores(
         label_quality_scores = (scores_ensemble * custom_weights).sum(axis=1)
 
     else:
-        raise ValueError(
-            f"""
+        raise ValueError(f"""
             {weight_ensemble_members_by} is not a valid weighting method for weight_ensemble_members_by!
             Please choose a valid weight_ensemble_members_by: uniform, accuracy, custom
-            """
-        )
+            """)
 
     return label_quality_scores
 
