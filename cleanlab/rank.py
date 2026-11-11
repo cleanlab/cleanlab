@@ -573,10 +573,13 @@ def get_confidence_weighted_entropy_for_each_label(
     self_confidence = np.clip(self_confidence, a_min=CLIPPING_LOWER_BOUND, a_max=None)
 
     # Divide entropy by self confidence
-    label_quality_scores = get_normalized_entropy(pred_probs) / self_confidence
+    entropy_self_conf_ratio = get_normalized_entropy(pred_probs) / self_confidence
 
-    # Rescale
-    clipped_scores = np.clip(label_quality_scores, a_min=CLIPPING_LOWER_BOUND, a_max=None)
-    label_quality_scores = np.log(label_quality_scores + 1) / clipped_scores
+    # Rescale: log(1 + x) / x -> 1 as x -> 0 (confident correct predictions)
+    clipped_ratio = np.clip(entropy_self_conf_ratio, a_min=CLIPPING_LOWER_BOUND, a_max=None)
+    label_quality_scores = np.log(entropy_self_conf_ratio + 1) / clipped_ratio
+    label_quality_scores = np.where(
+        entropy_self_conf_ratio <= CLIPPING_LOWER_BOUND, 1.0, label_quality_scores
+    )
 
     return label_quality_scores
