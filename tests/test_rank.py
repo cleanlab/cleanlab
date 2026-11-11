@@ -402,3 +402,17 @@ def test_find_top_issues():
         top_outlier_indices_k = rank.find_top_issues(quality_scores=ood_scores, top=k)
         assert len(top_outlier_indices_k) == k
         assert (top_outlier_indices_k == top_outlier_indices[:k]).all()  # scores consistent
+
+
+def test_confidence_weighted_entropy_perfect_predictions_score_near_one():
+    """Regression for cleanlab/cleanlab#1347."""
+    labels = np.array([0, 1, 2])
+    pred_probs = np.eye(3)
+    scores = rank.get_label_quality_scores(labels, pred_probs, method="confidence_weighted_entropy")
+    np.testing.assert_allclose(scores, 1.0, rtol=1e-5, atol=1e-5)
+
+    near_certain = np.array([[1.0 - 1e-12, 1e-12]])
+    scores_near = rank.get_label_quality_scores(
+        np.array([0]), near_certain, method="confidence_weighted_entropy"
+    )
+    assert scores_near[0] > 0.99
