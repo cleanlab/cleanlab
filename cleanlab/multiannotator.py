@@ -1004,7 +1004,8 @@ def get_majority_vote_label(
                 tied_idx[idx] = label_mode[min_frequency]
 
     # tiebreak 3: using initial annotator quality scores
-    if len(tied_idx) > 0:
+    # Agreement cannot be estimated without any untied majority-vote examples.
+    if len(tied_idx) > 0 and len(nontied_idx) > 0:
         nontied_majority_vote_label = majority_vote_label[nontied_idx]
         nontied_labels_multiannotator = labels_multiannotator[nontied_idx]
         annotator_agreement_with_consensus = np.zeros(nontied_labels_multiannotator.shape[1])
