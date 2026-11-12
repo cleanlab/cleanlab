@@ -88,8 +88,9 @@ def check_dimension_and_datatype(check_input: ArrayLike, text: str) -> np.ndarra
     if not check_input.size:
         raise ValueError(f"{text} cannot be empty array.")
 
-    # Remove axis with length one
-    check_input = np.squeeze(check_input)
+    # Remove extra singleton axes without removing the sample axis of a one-item array.
+    if check_input.ndim > 0:
+        check_input = np.atleast_1d(np.squeeze(check_input))
 
     # Check if input is 1-D
     if check_input.ndim != 1:
