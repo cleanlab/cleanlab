@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Union, cast
-import itertools
 
 from scipy.stats import gaussian_kde
 import numpy as np
@@ -269,24 +268,12 @@ class NonIIDIssueManager(IssueManager):
 
         if self.seed is not None:
             np.random.seed(self.seed)
-        perms = np.fromiter(
-            itertools.chain.from_iterable(
-                np.random.permutation(N) for i in range(num_permutations)
-            ),
-            dtype=int,
-        ).reshape(num_permutations, N)
-
-        neighbor_index_choices = self.neighbor_index_choices
-        neighbor_index_choices = neighbor_index_choices.reshape(1, *neighbor_index_choices.shape)
-        perm_neighbor_choices = perms[:, neighbor_index_choices].reshape(
-            num_permutations, *neighbor_index_choices.shape[1:]
-        )
-        neighbor_index_distances = np.abs(perms[..., None] - perm_neighbor_choices).reshape(
-            num_permutations, -1
-        )
-
         statistics = []
-        for neighbor_index_dist in neighbor_index_distances:
+        for _ in range(num_permutations):
+            permutation = np.random.permutation(N)
+            neighbor_index_dist = np.abs(
+                permutation[:, None] - permutation[self.neighbor_index_choices]
+            ).reshape(-1)
             stats = self._get_statistics(
                 neighbor_index_dist,
             )
