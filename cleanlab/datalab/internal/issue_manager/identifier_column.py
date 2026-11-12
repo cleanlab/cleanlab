@@ -38,11 +38,7 @@ class IdentifierColumnIssueManager(IssueManager):
         if arr.size == 0:
             return False
         unique_sorted = np.unique(arr)  # Returns a sorted unique list
-        min_val, max_val = unique_sorted[0], unique_sorted[-1]
-        expected_range = np.arange(min_val, max_val + 1)
-        if expected_range.size == 1 or unique_sorted.size != expected_range.size:
-            return False
-        return bool((expected_range == unique_sorted).all())
+        return unique_sorted.size > 1 and bool(np.all(np.diff(unique_sorted) == 1))
 
     def _prepare_features(
         self, features: Optional[Union[npt.NDArray, pd.DataFrame, list, dict]]
