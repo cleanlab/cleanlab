@@ -6,6 +6,7 @@ Methods to find label issues in image semantic segmentation datasets, where each
 from typing import Optional, Tuple
 
 import numpy as np
+from scipy.stats import mode
 
 from cleanlab.experimental.label_issues_batched import LabelInspector
 from cleanlab.internal.segmentation_utils import _check_input, _get_valid_optional_params
@@ -63,6 +64,7 @@ def find_label_issues(
       * downsample: int,
         Optional factor to shrink labels and pred_probs by. Default ``1``
         Must be a factor divisible by both the labels and the pred_probs. Larger values of `downsample` produce faster runtimes but potentially less accurate results due to over-compression. Set to 1 to avoid any downsampling.
+        Labels use the most frequent class in each block (the smallest class in a tie), while predicted probabilities are averaged.
 
     Returns
     -------
@@ -86,9 +88,12 @@ def find_label_issues(
             raise ValueError(
                 f"Height {h} and width {w} not divisible by downsample value of {downsample}. Set kwarg downsample to 1 to avoid downsampling."
             )
-        small_labels = np.round(
-            labels.reshape((num_image, h // factor, factor, w // factor, factor)).mean((4, 2))
+        label_blocks = (
+            labels.reshape((num_image, h // factor, factor, w // factor, factor))
+            .transpose(0, 1, 3, 2, 4)
+            .reshape(num_image, h // factor, w // factor, factor * factor)
         )
+        small_labels = mode(label_blocks, axis=-1).mode.reshape(num_image, h // factor, w // factor)
         small_pred_probs = pred_probs.reshape(
             (num_image, num_classes, h // factor, factor, w // factor, factor)
         ).mean((5, 3))
