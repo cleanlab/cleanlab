@@ -32,8 +32,9 @@ def softmax(
     np.ndarray
         Softmax function applied to the input array.
     """
-    x = x / max(temperature, EPSILON)
+    x = x.astype(np.result_type(x.dtype, np.float32), copy=False)
     if shift:
         x = x - np.max(x, axis=axis, keepdims=True)
+    x = x / max(temperature, EPSILON)
     exp_x = np.exp(x)
     return exp_x / np.sum(exp_x, axis=axis, keepdims=True)
