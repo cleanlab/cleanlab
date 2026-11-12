@@ -293,6 +293,9 @@ class NonIIDIssueManager(IssueManager):
             statistics.append(stats)
 
         ks_stats = np.array([stats["ks"] for stats in statistics])
+        if ks_stats.size and np.all(ks_stats == ks_stats[0]):
+            # A constant permutation null is a point mass, whose inclusive tail is exact.
+            return float(ks_stats[0] >= self.statistics["ks"])
         ks_stats_kde = gaussian_kde(ks_stats)
         p_value = ks_stats_kde.integrate_box(self.statistics["ks"], 100)
 
