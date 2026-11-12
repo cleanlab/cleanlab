@@ -13,7 +13,9 @@ from cleanlab.internal.numerics import softmax
 def bbox_xyxy_to_xywh(bbox: List[float]) -> Optional[List[float]]:
     """Converts bounding box coodrinate types from x1y1,x2y2 to x,y,w,h"""
     if len(bbox) == 4:
-        x1, y1, x2, y2 = bbox
+        x1, y1, x2, y2 = [
+            value.item() if isinstance(value, np.generic) else value for value in bbox
+        ]
         w = x2 - x1
         h = y2 - y1
         return [x1, y1, w, h]
@@ -31,9 +33,15 @@ def softmin1d(scores: np.ndarray, temperature: float = 0.99, axis: int = 0) -> f
 
 def calculate_bounding_box_areas(rectangle_coordinates):
     """Calculate areas of bounding boxes represented by numpy array with x1, y1, x2, y2 format"""
-    widths = rectangle_coordinates[:, 2] - rectangle_coordinates[:, 0]
-    heights = rectangle_coordinates[:, 3] - rectangle_coordinates[:, 1]
-    return widths * heights
+    output_dtype = np.result_type(rectangle_coordinates.dtype, np.float64)
+    # Python integers preserve exact coordinate differences even beyond float64's integer range.
+    arithmetic_dtype = (
+        object if np.issubdtype(rectangle_coordinates.dtype, np.integer) else output_dtype
+    )
+    coordinates = rectangle_coordinates.astype(arithmetic_dtype, copy=False)
+    widths = coordinates[:, 2] - coordinates[:, 0]
+    heights = coordinates[:, 3] - coordinates[:, 1]
+    return np.asarray(widths * heights, dtype=output_dtype)
 
 
 def assert_valid_aggregation_weights(aggregation_weights: Dict[str, Any]) -> None:
