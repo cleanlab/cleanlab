@@ -36,7 +36,7 @@ class TestCleanvisionIntegration:
 
     @pytest.fixture
     def num_datalab_issues(self):
-        return 6
+        return 7
 
     @pytest.fixture
     def pred_probs(self, image_dataset):
@@ -58,8 +58,11 @@ class TestCleanvisionIntegration:
             "Finding dark, light, low_information, odd_aspect_ratio, odd_size, grayscale, blurry images"
             in captured.out
         )
-        # unable to check for non iid as feature space is too small, skipping it in interest of time
-        assert "Failed to check for these issue types: [NonIIDIssueManager]" in captured.out
+        # A fully connected neighbor graph has a constant permutation null.
+        assert "Failed to check for these issue types: [NonIIDIssueManager]" not in captured.out
+        assert datalab.get_info("non_iid")["p-value"] == 1.0
+        assert datalab.get_issue_summary("non_iid")["score"].item() == 1.0
+        assert not datalab.get_issues("non_iid")["is_non_iid_issue"].any()
         assert len(datalab.issues) == len(image_dataset)
 
         # add up imagelab + datalab issues
@@ -74,7 +77,7 @@ class TestCleanvisionIntegration:
             "class_imbalance",
             "null",
             "underperforming_group",
-            # "non_iid",
+            "non_iid",
             # Spurious correlations issue type is checked by default on image datasets
             "spurious_correlations",
         ]
@@ -102,8 +105,9 @@ class TestCleanvisionIntegration:
                     "class_imbalance",
                     "null",
                     "underperforming_group",
+                    "non_iid",
                 ],
-                "num_issues": [1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+                "num_issues": [1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
             }
         )
         expected_count = df.sort_values(by="issue_type")["num_issues"].tolist()
@@ -164,6 +168,7 @@ class TestCleanvisionIntegration:
             "class_imbalance",
             "null",
             "underperforming_group",
+            "non_iid",
         ]
 
         assert set(all_keys) == set(datalab.info.keys())
