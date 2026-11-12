@@ -26,7 +26,6 @@ from cleanlab.internal.object_detection_utils import (
     assert_valid_inputs,
 )
 
-
 if TYPE_CHECKING:  # pragma: no cover
     from typing import TypedDict
 
@@ -300,6 +299,8 @@ def _separate_prediction(
 def _mod_coordinates(x: List[float]) -> Dict[str, Any]:
     """Takes is a list of xyxy coordinates and returns them in dictionary format."""
 
+    # Use Python scalars so coordinate arithmetic cannot wrap in a NumPy integer dtype.
+    x = [value.item() if isinstance(value, np.generic) else value for value in x]
     wd = {"x1": x[0], "y1": x[1], "x2": x[2], "y2": x[3]}
     return wd
 
@@ -387,6 +388,8 @@ def _has_overlap(bbox_list, labels):
 
 def _euc_dis(box1: List[float], box2: List[float]) -> float:
     """Calculates the Euclidean distance between `box1` and `box2`."""
+    box1 = [value.item() if isinstance(value, np.generic) else value for value in box1]
+    box2 = [value.item() if isinstance(value, np.generic) else value for value in box2]
     x1, y1 = (box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2
     x2, y2 = (box2[0] + box2[2]) / 2, (box2[1] + box2[3]) / 2
     p1 = np.array([x1, y1])
