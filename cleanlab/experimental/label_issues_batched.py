@@ -14,7 +14,7 @@ or follow the examples script for the ``LabelInspector`` class if you require gr
 import numpy as np
 from typing import Optional, List, Tuple, Any
 
-from cleanlab.count import get_confident_thresholds, _reduce_issues
+from cleanlab.count import _reduce_issues
 from cleanlab.rank import find_top_issues, _compute_label_quality_scores
 from cleanlab.typing import LabelLike
 from cleanlab.internal.util import value_counts_fill_missing_classes
@@ -346,6 +346,7 @@ class LabelInspector:
         self.confident_thresholds = np.zeros(
             (num_class,)
         )  # current estimate of thresholds based on data seen so far
+        self._self_confidence_sums = np.zeros(num_class)
         self.examples_per_class = np.zeros(
             (num_class,)
         )  # current counts of examples with each given label seen so far
@@ -499,20 +500,20 @@ class LabelInspector:
         """
         labels = _batch_check(labels, pred_probs, self.num_class)
         batch_size = len(labels)
-        batch_thresholds = get_confident_thresholds(
-            labels, pred_probs
-        )  # values for missing classes may exceed 1 but should not matter since we multiply by this class counts in the batch
         batch_class_counts = value_counts_fill_missing_classes(labels, num_classes=self.num_class)
-        self.confident_thresholds = (
-            self.examples_per_class * self.confident_thresholds
-            + batch_class_counts * batch_thresholds
-        ) / np.clip(
-            self.examples_per_class + batch_class_counts, a_min=1, a_max=None
-        )  # avoid division by 0
+        np.add.at(self._self_confidence_sums, labels, pred_probs[np.arange(batch_size), labels])
+        self.examples_per_class += batch_class_counts
+        # Average raw probabilities before clipping; clipped batch means are not additive.
+        # As in count.get_confident_thresholds(), unseen classes cannot be confident.
+        self.confident_thresholds = np.divide(
+            self._self_confidence_sums,
+            self.examples_per_class,
+            out=np.full(self.num_class, 2.0),
+            where=self.examples_per_class > 0,
+        )
         self.confident_thresholds = np.clip(
             self.confident_thresholds, a_min=CONFIDENT_THRESHOLDS_LOWER_BOUND, a_max=None
         )
-        self.examples_per_class += batch_class_counts
         self.examples_processed_thresh += batch_size
 
     def score_label_quality(
