@@ -35,19 +35,18 @@ def _knn_shapley_score(neighbor_indices: np.ndarray, y: np.ndarray, k: int) -> n
         - This simplification implies that the term min(K, j + 1) will always be j + 1, which is offset by the
           corresponding denominator term in the inner loop.
         - Dividing by K in the end achieves the same result as dividing by K* in the paper.
-    - The pre-allocated `scores` array incorporates equation (18) for j = k - 1, ensuring efficient computation.
+    - The contribution of the last neighbor is zero. The recurrence telescopes to
+      the difference between each neighbor's label match and the last neighbor's match.
+      These contributions are accumulated directly, without storing an N-by-N matrix.
     """
     N = y.shape[0]
-    scores = np.zeros((N, N))
+    scores = np.zeros(N)
 
-    for y_alpha, s_alpha, idx in zip(y, scores, neighbor_indices):
+    for y_alpha, idx in zip(y, neighbor_indices):
         y_neighbors = y[idx]
         ans_matches = (y_neighbors == y_alpha).flatten()
-        for j in range(k - 2, -1, -1):
-            s_alpha[idx[j]] = s_alpha[idx[j + 1]] + float(
-                int(ans_matches[j]) - int(ans_matches[j + 1])
-            )
-    return np.mean(scores / k, axis=0)
+        scores[idx[: k - 1]] += ans_matches[: k - 1].astype(float) - int(ans_matches[k - 1])
+    return scores / (N * k)
 
 
 def data_shapley_knn(
