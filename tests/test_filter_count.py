@@ -382,6 +382,24 @@ def test_compute_confident_joint():
     assert np.shape(cj) == (data["m"], data["m"])
 
 
+def test_compute_confident_joint_collision_masking():
+    # This example is confidently in classes 0 and 1 (it meets their thresholds),
+    # but class 2 has the highest raw probability while failing its own threshold.
+    # The true label guess for this collision must be class 1 (the largest
+    # probability among the confident classes), never class 2.
+    pred_probs = np.array([[0.29, 0.35, 0.36]])
+    labels = np.array([0])
+    thresholds = np.array([0.2, 0.25, 0.8])
+    cj = count.compute_confident_joint(
+        labels=labels,
+        pred_probs=pred_probs,
+        thresholds=thresholds,
+        calibrate=False,
+    )
+    assert cj[0, 1] == 1
+    assert cj[0, 2] == 0
+
+
 def test_estimate_latent_py_method():
     for py_method in ["cnt", "eqn", "marginal"]:
         py, nm, inv = count.estimate_latent(

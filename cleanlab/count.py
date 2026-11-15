@@ -550,7 +550,8 @@ def compute_confident_joint(
             if num_confident_bins == 1:
                 confident_joint[s_label][np.argmax(confident_bins)] += 1
             elif num_confident_bins > 1:
-                confident_joint[s_label][np.argmax(row)] += 1
+                masked_row = np.where(confident_bins, row, -np.inf)
+                confident_joint[s_label][np.argmax(masked_row)] += 1
     """
 
     if multi_label:
@@ -583,7 +584,11 @@ def compute_confident_joint(
     # The indices where this is false, are often outliers (not confident of any label)
     at_least_one_confident = num_confident_bins > 0
     more_than_one_confident = num_confident_bins > 1
-    pred_probs_argmax = pred_probs.argmax(axis=1)
+    # Only confident classes may be selected as the true label guess. A class that
+    # failed its own (higher) threshold can still have a larger raw probability
+    # than the confident classes, so mask it out before taking the argmax.
+    masked_pred_probs = np.where(pred_probs_bool, pred_probs, -np.inf)
+    pred_probs_argmax = masked_pred_probs.argmax(axis=1)
     # Note that confident_argmax is meaningless for rows of all False
     confident_argmax = pred_probs_bool.argmax(axis=1)
     # For each example, choose the confident class (greater than threshold)
