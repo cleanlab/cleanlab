@@ -87,26 +87,24 @@ class NullIssueManager(IssueManager):
         Dict[str, Any]
             A dictionary containing the most common issue pattern and the count of rows with this pattern.
         """
-        # Convert the boolean null_tracker matrix into a list of strings.
         most_frequent_pattern = "no_null"
         rows_affected: List[int] = []
         occurrence_of_most_frequent_pattern = 0
         if np.any(null_tracker, axis=None):
             null_row_indices = np.where(np.any(null_tracker, axis=1))[0]
-            null_patterns_as_strings = [
-                "".join(map(str, null_tracker[i].astype(int).tolist())) for i in null_row_indices
+            # Count compact patterns rather than constructing a string for every row.
+            # Counter retains first-occurrence order when several patterns are tied.
+            packed_patterns = [np.packbits(null_tracker[i]).tobytes() for i in null_row_indices]
+            pattern_counter = Counter(packed_patterns)
+            packed_pattern, occurrence_of_most_frequent_pattern = pattern_counter.most_common(1)[0]
+            rows_affected = [
+                int(i)
+                for i, pattern in zip(null_row_indices, packed_patterns)
+                if pattern == packed_pattern
             ]
-
-            # Use Counter to efficiently count occurrences and find the most common pattern.
-            pattern_counter = Counter(null_patterns_as_strings)
-            (
-                most_frequent_pattern,
-                occurrence_of_most_frequent_pattern,
-            ) = pattern_counter.most_common(1)[0]
-            rows_affected = []
-            for idx, row in enumerate(null_patterns_as_strings):
-                if row == most_frequent_pattern:
-                    rows_affected.append(int(null_row_indices[idx]))
+            most_frequent_pattern = "".join(
+                map(str, null_tracker[rows_affected[0]].astype(int).tolist())
+            )
         return {
             "most_common_issue": {
                 "pattern": most_frequent_pattern,
