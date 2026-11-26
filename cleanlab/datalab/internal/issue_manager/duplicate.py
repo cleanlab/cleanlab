@@ -107,15 +107,23 @@ class NearDuplicateIssueManager(IssueManager):
         # Filter the knn_graph based on the threshold
         indices = knn_graph.indices[mask.ravel()]
         near_duplicate_sets = [indices[indptr[i] : indptr[i + 1]] for i in range(N)]
+        if not indices.size:
+            return near_duplicate_sets
 
-        # Second pass over the data is required to ensure each item is included in the near-duplicate sets of its own near-duplicates.
-        # This is important because a "near-duplicate" relationship is reciprocal.
-        # For example, if item A is a near-duplicate of item B, then item B should also be considered a near-duplicate of item A.
-        # NOTE: This approach does not assure that the sets are ordered by increasing distance.
-        for i, near_duplicates in enumerate(near_duplicate_sets):
-            for j in near_duplicates:
-                if i not in near_duplicate_sets[j]:
-                    near_duplicate_sets[j] = np.append(near_duplicate_sets[j], i)
+        # Gather reciprocal edges before extending each set, avoiding repeated copies
+        # of arrays for examples that are neighbors of many other examples.
+        reverse_graph = csr_matrix(
+            (np.ones(len(indices), dtype=bool), indices, indptr), shape=knn_graph.shape
+        ).T.tocsr()
+        reverse_graph.sum_duplicates()
+        for i in np.flatnonzero(np.diff(reverse_graph.indptr)):
+            near_duplicates = near_duplicate_sets[i]
+            start, stop = reverse_graph.indptr[i : i + 2]
+            incoming = reverse_graph.indices[start:stop]
+            missing = incoming[~np.isin(incoming, near_duplicates)]
+            if missing.size:
+                # Keep existing distance order, followed by source indices in order.
+                near_duplicate_sets[i] = np.append(near_duplicates, missing.astype(int))
 
         return near_duplicate_sets
 
