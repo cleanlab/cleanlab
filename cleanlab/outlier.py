@@ -432,14 +432,14 @@ class OutOfDistribution:
 
         # Fit knn estimator on the features if a non-fitted estimator is passed in
         try:
-            knn.kneighbors(features)
+            distances, indices = knn.kneighbors(features)
         except NotFittedError:
             knn.fit(features)
+            distances, indices = knn.kneighbors(features)
 
         # Get distances to k-nearest neighbors Note that the knn object contains the specification of distance metric
         # and n_neighbors (k value) If our query set of features matches the training set used to fit knn, the nearest
         # neighbor of each point is the point itself, at a distance of zero.
-        distances, indices = knn.kneighbors(features)
         if (
             correct_knn
         ):  # This should only happen if knn is None at the start of this function. Will NEVER happen for approximate KNN provided by user.
