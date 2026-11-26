@@ -1453,9 +1453,11 @@ def get_confident_thresholds(
         self_confidence = self_confidence[np.argsort(labels, kind="stable")]
         BIG_VALUE = 2
         confident_thresholds = [
-            np.mean(self_confidence[class_offsets[k] : class_offsets[k + 1]])
-            if class_counts[k]
-            else BIG_VALUE
+            (
+                np.mean(self_confidence[class_offsets[k] : class_offsets[k + 1]])
+                if class_counts[k]
+                else BIG_VALUE
+            )
             for k in range(num_classes)
         ]
         confident_thresholds = np.clip(
