@@ -82,12 +82,9 @@ def get_label_quality_scores(
     downsample_num_pixel_issues = kwargs.get("downsample", 1)
 
     if method == "num_pixel_issues":
-        _, K, _, _ = pred_probs.shape
-        labels_expanded = labels[:, np.newaxis, :, :]
-        mask = np.arange(K)[np.newaxis, :, np.newaxis, np.newaxis] == labels_expanded
-        # Calculate pixel_scores
-        masked_pred_probs = np.where(mask, pred_probs, 0)
-        pixel_scores = masked_pred_probs.sum(axis=1)
+        pixel_scores = np.take_along_axis(
+            pred_probs, labels[:, np.newaxis, :, :].astype(np.intp, copy=False), axis=1
+        ).squeeze(axis=1)
         scores = find_label_issues(
             labels,
             pred_probs,
