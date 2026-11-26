@@ -111,7 +111,8 @@ def rank_classes_by_multilabel_quality(
     These numbers summarize all examples annotated with the class (details listed below under the Returns parameter).
     By default, classes are ordered by "Label Quality Score", so the most problematic classes are reported first in the DataFrame.
 
-    Score values are unnormalized and may be very small. What matters is their relative ranking across the classes.
+    Noise rates are conditioned on the given or estimated true class, so that classes
+    with different numbers of examples can be compared.
 
     **Parameters**:
 
@@ -133,7 +134,7 @@ def rank_classes_by_multilabel_quality(
             - *Label Issues*: Estimated number of examples in the dataset that are labeled as belonging to class k but actually should not belong to this class.
             - *Inverse Label Issues*: Estimated number of examples in the dataset that should actually be labeled as class k but did not receive this label.
             - *Label Noise*: Estimated proportion of examples in the dataset that are labeled as class k but should not be. For each class k: this is computed by dividing the number of examples with "Label Issues" that were labeled as class k by the total number of examples labeled as class k.
-            - *Inverse Label Noise*: Estimated proportion of examples in the dataset that should actually be labeled as class k but did not receive this label.
+            - *Inverse Label Noise*: Estimated proportion of examples that should actually be labeled as class k but did not receive this label. The estimated number of true class-k examples is the number given class k, minus "Label Issues", plus "Inverse Label Issues".
             - *Label Quality Score*: Estimated proportion of examples labeled as class k that have been labeled correctly, i.e. ``1 - label_noise``.
 
         By default, the DataFrame is ordered by "Label Quality Score" (in ascending order), so the classes with the most label issues appear first.
@@ -143,7 +144,8 @@ def rank_classes_by_multilabel_quality(
         labels=labels, pred_probs=pred_probs, class_names=class_names, confident_joint=joint
     )
     issues_dict = defaultdict(defaultdict)  # type: Dict[str, Any]
-    num_examples = _get_num_examples_multilabel(labels=labels, confident_joint=confident_joint)
+    labels_onehot, _ = get_onehot_num_classes(labels, pred_probs)
+    given_class_counts = labels_onehot.sum(axis=0)
     return_columns = [
         "Class Name",
         "Class Index",
@@ -159,20 +161,22 @@ def rank_classes_by_multilabel_quality(
         if row["In Given Label"]:
             if class_names is not None:
                 issues_dict[row["Class Index"]]["Class Name"] = row["Class Name"]
-            issues_dict[row["Class Index"]]["Label Issues"] = int(
-                row["Issue Probability"] * num_examples
-            )
-            issues_dict[row["Class Index"]]["Label Noise"] = row["Issue Probability"]
-            issues_dict[row["Class Index"]]["Label Quality Score"] = (
-                1 - issues_dict[row["Class Index"]]["Label Noise"]
-            )
+            issues_dict[row["Class Index"]]["Label Issues"] = int(row["Num Examples"])
         else:
             if class_names is not None:
                 issues_dict[row["Class Index"]]["Class Name"] = row["Class Name"]
-            issues_dict[row["Class Index"]]["Inverse Label Issues"] = int(
-                row["Issue Probability"] * num_examples
-            )
-            issues_dict[row["Class Index"]]["Inverse Label Noise"] = row["Issue Probability"]
+            issues_dict[row["Class Index"]]["Inverse Label Issues"] = int(row["Num Examples"])
+
+    for class_num, class_issues in issues_dict.items():
+        given_count = given_class_counts[class_num]
+        true_count = (
+            given_count - class_issues["Label Issues"] + class_issues["Inverse Label Issues"]
+        )
+        class_issues["Label Noise"] = class_issues["Label Issues"] / max(given_count, 1)
+        class_issues["Inverse Label Noise"] = class_issues["Inverse Label Issues"] / max(
+            true_count, 1
+        )
+        class_issues["Label Quality Score"] = 1 - class_issues["Label Noise"]
 
     issues_df_dict = defaultdict(list)
     for i in issues_dict:
