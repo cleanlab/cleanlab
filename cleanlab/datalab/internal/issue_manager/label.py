@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import OneHotEncoder
 
 from cleanlab.classification import CleanLearning
 from cleanlab.count import get_confident_thresholds
@@ -145,18 +144,16 @@ class LabelIssueManager(IssueManager):
                 )
                 raise TypeError(error_msg)
 
-            knn = KNeighborsClassifier(n_neighbors=self.k + 1)
+            knn = KNeighborsClassifier(n_neighbors=self.k)
             knn.fit(features, labels)
-            pred_probs = knn.predict_proba(features)
-
-            encoder = OneHotEncoder()
-            label_transform = labels.reshape(-1, 1)
-            one_hot_label = encoder.fit_transform(label_transform)
-
-            # adjust pred_probs so it is out-of-sample
-            pred_probs = np.asarray(
-                (pred_probs - 1 / (self.k + 1) * one_hot_label) * (self.k + 1) / self.k
-            )
+            # Query the fitted data without X so sklearn excludes each example itself.
+            # With duplicate features, a query with X need not include the example
+            # among its nearest neighbors, so subtracting its vote is not valid.
+            neighbor_indices = knn.kneighbors(return_distance=False)
+            neighbor_classes = np.searchsorted(knn.classes_, labels[neighbor_indices])
+            pred_probs = np.zeros((len(labels), len(knn.classes_)))
+            np.add.at(pred_probs, (np.arange(len(labels))[:, None], neighbor_classes), 1)
+            pred_probs /= self.k
 
         self.health_summary_parameters.update({"pred_probs": pred_probs})
         # Find examples with label issues
