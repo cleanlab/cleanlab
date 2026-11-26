@@ -1616,21 +1616,19 @@ def _get_post_pred_probs_and_weights_ensemble(
     for i, labels in enumerate(labels_multiannotator):
         labels_mask = ~np.isnan(labels)
         labels_subset = labels[labels_mask]
-        post_pred_probs[i] = [
-            np.average(
-                [prior_pred_probs[ind][i, true_label] for ind in range(prior_pred_probs.shape[0])]
-                + [
-                    (
-                        consensus_likelihood
-                        if annotator_label == true_label
-                        else non_consensus_likelihood
-                    )
-                    for annotator_label in labels_subset
-                ],
-                weights=np.concatenate((model_weight, adjusted_annotator_agreement[labels_mask])),
-            )
-            for true_label in range(num_classes)
-        ]
+        annotator_likelihoods = np.where(
+            np.arange(num_classes)[:, np.newaxis] == labels_subset,
+            consensus_likelihood,
+            non_consensus_likelihood,
+        )
+        likelihoods = np.concatenate((prior_pred_probs[:, i, :].T, annotator_likelihoods), axis=1)
+        # Match the contiguous contributor sum used by each scalar weighted average.
+        likelihoods = np.ascontiguousarray(likelihoods)
+        post_pred_probs[i] = np.average(
+            likelihoods,
+            weights=np.concatenate((model_weight, adjusted_annotator_agreement[labels_mask])),
+            axis=1,
+        )
 
     return_model_weight = model_weight
     return_annotator_weight = adjusted_annotator_agreement
