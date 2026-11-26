@@ -434,6 +434,9 @@ class CleanLearning(BaseEstimator):
         if model_kwargs is None:
             model_kwargs = {}
 
+        # Keep the original helper call signatures for subclasses when no fit options are needed.
+        model_kwargs_for_helpers = {"model_kwargs": model_kwargs} if model_kwargs else {}
+
         if self.verbose:
             print("Identifying label issues ...")
 
@@ -449,6 +452,7 @@ class CleanLearning(BaseEstimator):
             sorted_index=initial_sorted_index,
             coarse_search_range=coarse_search_range,
             fine_search_size=fine_search_size,
+            **model_kwargs_for_helpers,
         )
 
         # check if initial r2 score (ie. not removing anything) is the best
@@ -462,9 +466,13 @@ class CleanLearning(BaseEstimator):
         residual = predictions - y
 
         if uncertainty is None:
-            epistemic_uncertainty = self.get_epistemic_uncertainty(X, y, predictions=predictions)
+            epistemic_uncertainty = self.get_epistemic_uncertainty(
+                X, y, predictions=predictions, **model_kwargs_for_helpers
+            )
             if self.include_aleatoric_uncertainty:
-                aleatoric_uncertainty = self.get_aleatoric_uncertainty(X, residual)
+                aleatoric_uncertainty = self.get_aleatoric_uncertainty(
+                    X, residual, **model_kwargs_for_helpers
+                )
             else:
                 aleatoric_uncertainty = 0
             uncertainty = epistemic_uncertainty + aleatoric_uncertainty
@@ -539,6 +547,8 @@ class CleanLearning(BaseEstimator):
         X: np.ndarray,
         y: np.ndarray,
         predictions: Optional[np.ndarray] = None,
+        *,
+        model_kwargs: Optional[dict] = None,
     ) -> np.ndarray:
         """
         Compute the epistemic uncertainty of the regression model for each example. This uncertainty is estimated using the bootstrapped
@@ -555,6 +565,9 @@ class CleanLearning(BaseEstimator):
         predictions :
             Model predicted values of y, will be used as an extra bootstrap iteration to calculate the variance.
 
+        model_kwargs :
+            Optional keyword arguments to pass into the model's ``fit()`` method in each cross-validation fold.
+
         Returns
         _______
         epistemic_uncertainty : np.ndarray
@@ -567,7 +580,9 @@ class CleanLearning(BaseEstimator):
         else:
             bootstrap_predictions = np.zeros(shape=(len(y), self.n_boot))
             for i in range(self.n_boot):
-                bootstrap_predictions[:, i] = self._get_cv_predictions(X, y, cv_n_folds=2)
+                bootstrap_predictions[:, i] = self._get_cv_predictions(
+                    X, y, cv_n_folds=2, model_kwargs=model_kwargs
+                )
 
             # add a set of predictions from model that was already trained
             if predictions is not None:
@@ -582,6 +597,8 @@ class CleanLearning(BaseEstimator):
         self,
         X: np.ndarray,
         residual: np.ndarray,
+        *,
+        model_kwargs: Optional[dict] = None,
     ) -> float:
         """
         Compute the aleatoric uncertainty of the data. This uncertainty is estimated by predicting the standard deviation
@@ -596,13 +613,16 @@ class CleanLearning(BaseEstimator):
             The difference between the given value and the model predicted value of each examples, ie.
             `predictions - y`.
 
+        model_kwargs :
+            Optional keyword arguments to pass into the model's ``fit()`` method in each cross-validation fold.
+
         Returns
         _______
         aleatoric_uncertainty : float
             The overall estimated aleatoric uncertainty for this dataset.
         """
         X, residual = assert_valid_regression_inputs(X, residual)
-        residual_predictions = self._get_cv_predictions(X, residual)
+        residual_predictions = self._get_cv_predictions(X, residual, model_kwargs=model_kwargs)
         return np.sqrt(np.var(residual_predictions))
 
     def save_space(self):
@@ -732,6 +752,7 @@ class CleanLearning(BaseEstimator):
         sorted_index: np.ndarray,
         coarse_search_range: list = [0.01, 0.05, 0.1, 0.15, 0.2],
         fine_search_size: int = 3,
+        model_kwargs: Optional[dict] = None,
     ) -> Tuple[float, float]:
         """
         Helper method that conducts a coarse and fine grained grid search to determine the best value
@@ -755,6 +776,7 @@ class CleanLearning(BaseEstimator):
                 y=y,
                 sorted_index=sorted_index,
                 k=curr_k,
+                model_kwargs=model_kwargs,
             )
             best_r2 = r2_score(y, predictions)
             best_k = coarse_search_range[0]
@@ -774,6 +796,7 @@ class CleanLearning(BaseEstimator):
                         y=y,
                         sorted_index=sorted_index,
                         k=curr_k,
+                        model_kwargs=model_kwargs,
                     )
                     r2_coarse[i] = r2_score(y, predictions)
 
@@ -821,6 +844,7 @@ class CleanLearning(BaseEstimator):
                             y=y,
                             sorted_index=sorted_index,
                             k=curr_k,
+                            model_kwargs=model_kwargs,
                         )
                         r2_fine[i] = r2_score(y, predictions)
 
