@@ -37,7 +37,6 @@ from cleanlab.internal.util import (
     clip_noise_rates,
     clip_values,
     get_num_classes,
-    get_unique_classes,
     is_torch_dataset,
     round_preserving_row_totals,
     train_val_split,
@@ -1444,13 +1443,20 @@ def get_confident_thresholds(
         # TODO: if you want this to work for arbitrary softmax outputs where pred_probs.max()
         #  may exceed 1, change BIG_VALUE = 2 --> BIG_VALUE = 2 * pred_probs.max(). Downside of
         #  this approach is that there will be no standard value returned for missing classes.
-        labels = labels_to_array(labels)
-        all_classes = range(pred_probs.shape[1])
-        unique_classes = get_unique_classes(labels, multi_label=multi_label)
+        labels = labels_to_array(labels).astype(np.intp, copy=False)
+        num_classes = pred_probs.shape[1]
+        class_counts = np.bincount(labels, minlength=num_classes)
+        class_offsets = np.concatenate(([0], np.cumsum(class_counts)))
+        self_confidence = pred_probs[np.arange(len(labels)), labels]
+        # Group each class once, keeping the original sample order so np.mean
+        # has the same floating-point reduction order as boolean indexing.
+        self_confidence = self_confidence[np.argsort(labels, kind="stable")]
         BIG_VALUE = 2
         confident_thresholds = [
-            np.mean(pred_probs[:, k][labels == k]) if k in unique_classes else BIG_VALUE
-            for k in all_classes
+            np.mean(self_confidence[class_offsets[k] : class_offsets[k + 1]])
+            if class_counts[k]
+            else BIG_VALUE
+            for k in range(num_classes)
         ]
         confident_thresholds = np.clip(
             confident_thresholds, a_min=CONFIDENT_THRESHOLDS_LOWER_BOUND, a_max=None
